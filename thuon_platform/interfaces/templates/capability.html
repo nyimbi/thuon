@@ -1,0 +1,1061 @@
+{% extends "base.html" %}
+{% block title %}{{ cap_name | replace('_', ' ') | title }} — Thuon{% endblock %}
+
+{% block extra_styles %}
+/* ── Capability page styles ────────────────────────────────────────── */
+
+/* Breadcrumb */
+.cap-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.cap-breadcrumb a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+.cap-breadcrumb a:hover { color: var(--accent); }
+.cap-breadcrumb-sep { color: var(--text-muted); }
+
+/* Page header */
+.cap-page-header {
+  margin-bottom: 28px;
+}
+.cap-page-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+  letter-spacing: -0.2px;
+}
+.cap-page-header .cap-desc-full {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Category badge */
+.cap-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--teal);
+  background: var(--teal-dim);
+  border: 1px solid rgba(62,207,207,0.2);
+  border-radius: 12px;
+  padding: 3px 10px;
+  margin-bottom: 10px;
+}
+
+/* Two-column layout */
+.cap-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .cap-layout { grid-template-columns: 1fr; }
+}
+
+/* Form panel */
+.form-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  position: sticky;
+  top: 74px;
+}
+
+.form-panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.param-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-mid);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.form-panel-body {
+  padding: 20px 18px;
+}
+
+/* Form field */
+.cap-field {
+  margin-bottom: 16px;
+}
+
+.cap-field:last-of-type { margin-bottom: 0; }
+
+.cap-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.cap-label-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.cap-label-type {
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.cap-label-optional {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: auto;
+}
+
+.cap-required-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--red);
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 2px;
+  vertical-align: middle;
+  box-shadow: 0 0 4px var(--red);
+}
+
+.cap-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Run button */
+.form-panel-footer {
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.run-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: all 0.14s ease;
+  box-shadow: 0 2px 10px rgba(124,106,247,0.28);
+  letter-spacing: 0.01em;
+}
+.run-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 4px 20px rgba(124,106,247,0.45);
+}
+.run-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading pulse ring */
+.run-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Result panel */
+.result-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.result-panel-header {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.result-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.result-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.result-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-bright);
+  transition: all 0.3s;
+}
+
+.result-status-dot.running {
+  background: var(--amber);
+  animation: blink 0.8s ease infinite;
+}
+.result-status-dot.success { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.result-status-dot.error   { background: var(--red);   box-shadow: 0 0 5px var(--red); }
+
+/* Result toolbar */
+.result-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.tool-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+  background: var(--bg-elevated);
+}
+
+/* Loading state */
+.result-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px;
+}
+
+.pulse-ring {
+  width: 48px;
+  height: 48px;
+  position: relative;
+}
+.pulse-ring::before,
+.pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: ringPulse 1.4s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+.pulse-ring::after { animation-delay: 0.7s; }
+.pulse-ring-inner {
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.7;
+  animation: innerPulse 1.4s ease infinite;
+}
+
+@keyframes ringPulse {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes innerPulse {
+  0%,100% { opacity: 0.7; transform: scale(1); }
+  50%     { opacity: 0.4; transform: scale(0.85); }
+}
+
+.loading-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.loading-text::after {
+  content: '';
+  display: inline-block;
+  animation: dots 1.2s step-end infinite;
+}
+@keyframes dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+/* Empty result placeholder */
+.result-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 32px;
+  opacity: 0.4;
+}
+
+.placeholder-text {
+  font-size: 13px;
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+.placeholder-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  opacity: 0.6;
+}
+
+/* JSON output */
+.result-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.result-meta {
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+}
+
+.result-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#resultPre {
+  flex: 1;
+  margin: 0;
+  padding: 18px;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  overflow-y: auto;
+  max-height: 600px;
+  border: none;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* JSON syntax highlighting */
+.json-key     { color: #7dd3fc; }
+.json-string  { color: #86efac; }
+.json-number  { color: #fca5a5; }
+.json-boolean { color: var(--teal); }
+.json-null    { color: var(--text-muted); font-style: italic; }
+.json-punct   { color: var(--border-bright); }
+
+/* Error display */
+.result-error {
+  flex: 1;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.error-body {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #fca5a5;
+  background: rgba(248,113,113,0.06);
+  border: 1px solid rgba(248,113,113,0.15);
+  border-radius: var(--r-sm);
+  padding: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+/* Stream toggle */
+.stream-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  cursor: pointer;
+  transition: all 0.13s;
+  flex-shrink: 0;
+  user-select: none;
+}
+.stream-toggle:hover { color: var(--text-primary); border-color: var(--border-bright); }
+.stream-toggle.active {
+  color: var(--teal);
+  border-color: var(--teal);
+  background: rgba(62,207,207,0.08);
+}
+.stream-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.stream-toggle.active .stream-dot { animation: blink 1s ease infinite; }
+
+/* Token stream output */
+.token-stream {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  flex: 1;
+  padding: 18px;
+  overflow-y: auto;
+  max-height: 600px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.token-stream .token-cursor {
+  display: inline-block;
+  width: 2px; height: 1.1em;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: blink 0.7s step-end infinite;
+  margin-left: 1px;
+}
+
+/* Export toolbar */
+.export-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-mid);
+  margin-left: 3px;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.12s;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.export-btn.docx { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.07); }
+.export-btn.docx:hover { background: rgba(96,165,250,0.15); }
+.export-btn.pdf  { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.07); }
+.export-btn.pdf:hover  { background: rgba(248,113,113,0.15); }
+.export-btn.xlsx { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.07); }
+.export-btn.xlsx:hover { background: rgba(52,211,153,0.15); }
+
+/* Param count badge */
+.req-badge {
+  font-size: 10px;
+  color: var(--red);
+  font-weight: 500;
+  padding: 1px 6px;
+  background: rgba(248,113,113,0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(248,113,113,0.2);
+}
+
+@keyframes blink {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.35; }
+}
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav class="cap-breadcrumb" aria-label="Breadcrumb">
+  <a href="/">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Capabilities
+  </a>
+  <span class="cap-breadcrumb-sep">/</span>
+  <span style="color:var(--text-secondary)">{{ cap_name | replace('_', ' ') | title }}</span>
+</nav>
+
+<!-- Page header -->
+<div class="cap-page-header">
+  <div class="cap-cat-badge">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    AI Capability
+  </div>
+  <h1>{{ cap_name | replace('_', ' ') | title }}</h1>
+  <p class="cap-desc-full">{{ cap_info.description }}</p>
+</div>
+
+<!-- Two-column layout -->
+<div class="cap-layout">
+
+  <!-- LEFT: Form panel -->
+  <div class="form-panel" role="form" aria-label="Capability parameters">
+    <div class="form-panel-header">
+      <span class="form-panel-title">Parameters</span>
+      <span class="param-count">
+        {{ cap_info.params | length }} param{{ 's' if cap_info.params | length != 1 else '' }}
+        {% set req_count = cap_info.params | selectattr('required') | list | length %}
+        {% if req_count > 0 %}
+        &nbsp;·&nbsp;<span style="color:var(--red)">{{ req_count }} required</span>
+        {% endif %}
+      </span>
+    </div>
+
+    <form id="capForm">
+      <div class="form-panel-body">
+        {% if cap_info.params %}
+        {% for param in cap_info.params %}
+        <div class="cap-field">
+          <div class="cap-label">
+            <span class="cap-label-name">
+              {{ param.name }}
+              {% if param.required %}<span class="cap-required-dot" title="Required"></span>{% endif %}
+            </span>
+            <span class="cap-label-type">{{ param.type }}</span>
+            {% if not param.required %}
+            <span class="cap-label-optional">optional</span>
+            {% endif %}
+          </div>
+
+          {% if param.type == 'list' %}
+          <textarea
+            class="t-input t-textarea"
+            name="{{ param.name }}"
+            rows="3"
+            placeholder="One item per line{% if param.default %} (default: {{ param.default | join(', ') }}){% endif %}"
+            aria-label="{{ param.name }}"
+          >{% if param.default %}{{ param.default | join('\n') }}{% endif %}</textarea>
+          <div class="cap-hint">↵ One value per line</div>
+
+          {% elif param.type == 'int' %}
+          <input
+            type="number"
+            class="t-input"
+            name="{{ param.name }}"
+            value="{{ param.default or '' }}"
+            {% if param.required %}required aria-required="true"{% endif %}
+            aria-label="{{ param.name }}"
+          >
+
+          {% else %}
+          <input
+            type="text"
+            class="t-input"
+            name="{{ param.name }}"
+            placeholder="{% if param.default %}{{ param.default }}{% else %}Enter {{ param.name | replace('_', ' ') }}{% endif %}"
+            {% if param.required %}required aria-required="true"{% endif %}
+            aria-label="{{ param.name }}"
+          >
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:12px 0">
+          This capability takes no parameters.
+        </p>
+        {% endif %}
+      </div>
+
+      <div class="form-panel-footer">
+        <button type="submit" class="run-btn" id="runBtn" aria-label="Run capability">
+          <span class="run-spinner" id="runSpinner" role="status" aria-label="Running"></span>
+          <svg id="runIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span id="runLabel">Run Capability</span>
+        </button>
+        <button type="button" class="stream-toggle" id="streamToggle" title="Toggle live token streaming" aria-pressed="false">
+          <span class="stream-dot"></span>
+          Stream
+        </button>
+        <button type="button" class="tool-btn" id="resetBtn" title="Clear form" aria-label="Reset form">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.47"/>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- RIGHT: Result panel -->
+  <div class="result-panel" id="resultPanel" role="region" aria-label="Capability result" aria-live="polite">
+    <div class="result-panel-header">
+      <span class="result-panel-title">Result</span>
+      <div class="result-status" id="resultStatus">
+        <span class="result-status-dot" id="statusDot"></span>
+        <span id="statusLabel">Waiting</span>
+      </div>
+      <div class="result-toolbar" id="resultToolbar" style="display:none">
+        <button class="tool-btn" id="copyBtn" onclick="copyResult()" aria-label="Copy result">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy
+        </button>
+        <button class="tool-btn" id="rawBtn" onclick="toggleRaw()" aria-label="Toggle raw/formatted view">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          Raw
+        </button>
+        <div class="export-group" id="exportGroup">
+          <button class="export-btn docx" onclick="exportResult('docx')">DOCX</button>
+          <button class="export-btn pdf"  onclick="exportResult('pdf')">PDF</button>
+          <button class="export-btn xlsx" onclick="exportResult('xlsx')">XLSX</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placeholder (initial state) -->
+    <div class="result-placeholder" id="resultPlaceholder">
+      <div class="placeholder-icon">◎</div>
+      <div class="placeholder-text">Fill in the parameters and run the capability to see results</div>
+      <div class="placeholder-hint">POST /api/{{ cap_name }}</div>
+    </div>
+
+    <!-- Loading state (hidden initially) -->
+    <div class="result-loading" id="resultLoading" style="display:none" aria-hidden="true">
+      <div class="pulse-ring">
+        <div class="pulse-ring-inner"></div>
+      </div>
+      <div class="loading-text">Running</div>
+    </div>
+
+    <!-- Output body (hidden initially) -->
+    <div class="result-body" id="resultBody" style="display:none">
+      <div class="result-meta" id="resultMeta"></div>
+      <pre id="resultPre" aria-label="Result output"></pre>
+    </div>
+
+    <!-- Token stream body (hidden initially) -->
+    <div class="result-body" id="streamBody" style="display:none">
+      <div class="result-meta" id="streamMeta"></div>
+      <div class="token-stream" id="tokenStream" aria-label="Streaming output" aria-live="polite"></div>
+    </div>
+
+    <!-- Error state (hidden initially) -->
+    <div class="result-error" id="resultError" style="display:none">
+      <div class="error-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Error
+      </div>
+      <div class="error-body" id="errorBody"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── State ──────────────────────────────────────────────────────────── */
+let lastRawData = null;
+let showRaw     = false;
+let startTime   = 0;
+let streamMode  = false;
+
+/* ── DOM refs ───────────────────────────────────────────────────────── */
+const form           = document.getElementById('capForm');
+const runBtn         = document.getElementById('runBtn');
+const runSpinner     = document.getElementById('runSpinner');
+const runIcon        = document.getElementById('runIcon');
+const runLabel       = document.getElementById('runLabel');
+const statusDot      = document.getElementById('statusDot');
+const statusLabel    = document.getElementById('statusLabel');
+const resultToolbar  = document.getElementById('resultToolbar');
+const resultPlaceholder = document.getElementById('resultPlaceholder');
+const resultLoading  = document.getElementById('resultLoading');
+const resultBody     = document.getElementById('resultBody');
+const streamBody     = document.getElementById('streamBody');
+const streamMeta     = document.getElementById('streamMeta');
+const tokenStream    = document.getElementById('tokenStream');
+const resultError    = document.getElementById('resultError');
+const resultPre      = document.getElementById('resultPre');
+const resultMeta     = document.getElementById('resultMeta');
+const errorBody      = document.getElementById('errorBody');
+
+/* ── Panels ─────────────────────────────────────────────────────────── */
+function showPanel(name) {
+  resultPlaceholder.style.display = name === 'placeholder' ? 'flex'  : 'none';
+  resultLoading.style.display     = name === 'loading'     ? 'flex'  : 'none';
+  resultBody.style.display        = name === 'body'        ? 'flex'  : 'none';
+  streamBody.style.display        = name === 'stream'      ? 'flex'  : 'none';
+  resultError.style.display       = name === 'error'       ? 'flex'  : 'none';
+  resultLoading.setAttribute('aria-hidden', name !== 'loading');
+}
+
+/* ── Stream toggle ───────────────────────────────────────────────────── */
+const streamToggle = document.getElementById('streamToggle');
+streamToggle.addEventListener('click', () => {
+  streamMode = !streamMode;
+  streamToggle.classList.toggle('active', streamMode);
+  streamToggle.setAttribute('aria-pressed', streamMode);
+  runLabel.textContent = streamMode ? 'Run + Stream' : 'Run Capability';
+});
+
+/* ── JSON syntax highlighter ─────────────────────────────────────────── */
+function syntaxHighlight(json) {
+  const escaped = json
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],:])/g,
+    match => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          // key
+          return `<span class="json-key">${match.slice(0,-1)}</span><span class="json-punct">:</span>`;
+        }
+        return `<span class="json-string">${match}</span>`;
+      }
+      if (/true|false/.test(match)) return `<span class="json-boolean">${match}</span>`;
+      if (/null/.test(match))       return `<span class="json-null">${match}</span>`;
+      if (/^-?\d/.test(match))      return `<span class="json-number">${match}</span>`;
+      return `<span class="json-punct">${match}</span>`;
+    }
+  );
+}
+
+function renderResult(data) {
+  const formatted = JSON.stringify(data, null, 2);
+  if (showRaw) {
+    resultPre.textContent = formatted;
+  } else {
+    resultPre.innerHTML = syntaxHighlight(formatted);
+  }
+}
+
+function toggleRaw() {
+  showRaw = !showRaw;
+  document.getElementById('rawBtn').style.color = showRaw ? 'var(--accent)' : '';
+  if (lastRawData !== null) renderResult(lastRawData);
+}
+
+function copyResult() {
+  if (lastRawData === null) return;
+  navigator.clipboard.writeText(JSON.stringify(lastRawData, null, 2)).then(() => {
+    showToast('Copied to clipboard', '📋');
+    const btn = document.getElementById('copyBtn');
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.style.color = ''; }, 1200);
+  });
+}
+
+/* ── Set status ─────────────────────────────────────────────────────── */
+function setStatus(state, label) {
+  statusDot.className = 'result-status-dot' + (state ? ' ' + state : '');
+  statusLabel.textContent = label;
+}
+
+/* ── Build payload from form ─────────────────────────────────────────── */
+function buildPayload() {
+  const fd = new FormData(form);
+  const payload = {};
+  for (const [key, val] of fd.entries()) {
+    const el = form.querySelector(`[name="${key}"]`);
+    if (el && el.tagName === 'TEXTAREA') {
+      payload[key] = val.split('\n').map(s => s.trim()).filter(Boolean);
+    } else if (el && el.type === 'number') {
+      payload[key] = val === '' ? undefined : Number(val);
+    } else {
+      payload[key] = val;
+    }
+  }
+  return payload;
+}
+
+function setRunning(yes) {
+  runBtn.disabled          = yes;
+  runSpinner.style.display = yes ? 'block' : 'none';
+  runIcon.style.display    = yes ? 'none'  : '';
+  if (yes) runLabel.textContent = 'Running…';
+  else runLabel.textContent = streamMode ? 'Run + Stream' : 'Run Capability';
+}
+
+/* ── Form submit ─────────────────────────────────────────────────────── */
+form.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const payload = buildPayload();
+
+  setRunning(true);
+  showPanel('loading');
+  setStatus('running', 'Running');
+  resultToolbar.style.display = 'none';
+  startTime = performance.now();
+
+  if (streamMode) {
+    await runStream(payload);
+  } else {
+    await runOnce(payload);
+  }
+  setRunning(false);
+});
+
+/* ── One-shot run ────────────────────────────────────────────────────── */
+async function runOnce(payload) {
+  try {
+    const resp = await fetch('/api/{{ cap_name }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+    const data    = await resp.json();
+    lastRawData   = data;
+
+    if (!resp.ok) {
+      showPanel('error');
+      setStatus('error', `${resp.status} ${resp.statusText}`);
+      errorBody.textContent = JSON.stringify(data, null, 2);
+    } else {
+      showPanel('body');
+      setStatus('success', `Done in ${elapsed}s`);
+      resultToolbar.style.display = 'flex';
+      resultMeta.innerHTML = metaHTML(elapsed, data, resp.status);
+      renderResult(data);
+    }
+  } catch (err) {
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+    showPanel('error');
+    setStatus('error', `Failed after ${elapsed}s`);
+    errorBody.textContent = err.message;
+  }
+}
+
+/* ── SSE streaming run ───────────────────────────────────────────────── */
+async function runStream(payload) {
+  showPanel('stream');
+  tokenStream.innerHTML = '<span class="token-cursor"></span>';
+  streamMeta.innerHTML  = '';
+
+  try {
+    const resp = await fetch('/api/stream/{{ cap_name }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok || !resp.body) {
+      showPanel('error');
+      setStatus('error', `${resp.status}`);
+      errorBody.textContent = await resp.text();
+      return;
+    }
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let   buf     = '';
+    let   tokens  = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let event;
+        try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (event.type === 'token') {
+          tokens += event.text;
+          tokenStream.innerHTML = escapeHTML(tokens) + '<span class="token-cursor"></span>';
+          tokenStream.scrollTop = tokenStream.scrollHeight;
+          setStatus('running', 'Streaming…');
+        } else if (event.type === 'done') {
+          const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+          lastRawData   = event.result;
+          // Transition to full result view
+          showPanel('body');
+          setStatus('success', `Done in ${elapsed}s`);
+          resultToolbar.style.display = 'flex';
+          resultMeta.innerHTML = metaHTML(elapsed, event.result, 200);
+          renderResult(event.result);
+        } else if (event.type === 'error') {
+          showPanel('error');
+          setStatus('error', 'Stream error');
+          errorBody.textContent = event.message;
+        }
+      }
+    }
+  } catch (err) {
+    showPanel('error');
+    setStatus('error', 'Stream failed');
+    errorBody.textContent = err.message;
+  }
+}
+
+function escapeHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function metaHTML(elapsed, data, status) {
+  return `
+    <span class="result-meta-item">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      ${elapsed}s
+    </span>
+    <span class="result-meta-item" style="margin-left:10px">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      ${new Blob([JSON.stringify(data)]).size} bytes
+    </span>
+    <span class="result-meta-item" style="margin-left:10px;color:var(--green)">HTTP ${status}</span>`;
+}
+
+/* ── Export ──────────────────────────────────────────────────────────── */
+async function exportResult(fmt) {
+  if (!lastRawData) return;
+  const btn = document.querySelector(`.export-btn.${fmt}`);
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    const resp = await fetch('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: lastRawData, format: fmt, title: '{{ cap_name | replace("_", " ") | title }}' }),
+    });
+    if (!resp.ok) { showToast('Export failed', '✗'); return; }
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `thuon_${Date.now()}.${fmt}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Downloaded as .${fmt.toUpperCase()}`, '⬇');
+  } catch (err) {
+    showToast('Export error: ' + err.message, '✗');
+  } finally {
+    if (btn) { btn.textContent = fmt.toUpperCase(); btn.disabled = false; }
+  }
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────── */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  form.reset();
+  lastRawData = null;
+  showRaw     = false;
+  showPanel('placeholder');
+  setStatus('', 'Waiting');
+  resultToolbar.style.display = 'none';
+});
+
+/* ── Keyboard: Enter in text inputs submits ──────────────────────────── */
+form.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,214 @@
+executive_report:
+  type: report
+  content: |
+    # {{ title }}
+
+    **Prepared by:** Thuon AI Platform
+    **Date:** {{ date }}
+
+    ## Executive Summary
+
+    {{ executive_summary }}
+
+    ## Key Findings
+
+    {{ key_findings }}
+
+    ## Strategic Recommendations
+
+    {{ recommendations }}
+
+    ## Conclusion
+
+    {{ conclusion }}
+
+technical_report:
+  type: report
+  content: |
+    # {{ title }} — Technical Report
+
+    **Date:** {{ date }}
+
+    ## Overview
+
+    {{ overview }}
+
+    ## Methodology
+
+    {{ methodology }}
+
+    ## Analysis
+
+    {{ analysis }}
+
+    ## Results
+
+    {{ results }}
+
+    ## Technical Recommendations
+
+    {{ recommendations }}
+
+market_analysis_report:
+  type: report
+  content: |
+    # Market Analysis: {{ market }}
+
+    **Date:** {{ date }}
+    **Region:** {{ region }}
+
+    ## Market Overview
+
+    {{ market_overview }}
+
+    ## Market Size & Growth
+
+    {{ market_size }}
+
+    ## Customer Segments
+
+    {{ customer_segments }}
+
+    ## Competitive Landscape
+
+    {{ competitive_landscape }}
+
+    ## Opportunities & Threats
+
+    {{ opportunities_threats }}
+
+    ## Recommendations
+
+    {{ recommendations }}
+
+business_proposal:
+  type: proposal
+  content: |
+    # {{ proposal_title }}
+
+    **Prepared for:** {{ client_name }}
+    **Prepared by:** {{ author }}
+    **Date:** {{ date }}
+
+    ## Executive Summary
+
+    {{ executive_summary }}
+
+    ## Problem Statement
+
+    {{ problem_statement }}
+
+    ## Proposed Solution
+
+    {{ proposed_solution }}
+
+    ## Scope of Work
+
+    {{ scope_of_work }}
+
+    ## Timeline
+
+    {{ timeline }}
+
+    ## Investment
+
+    {{ investment }}
+
+    ## Why Choose Us
+
+    {{ why_us }}
+
+    ## Next Steps
+
+    {{ next_steps }}
+
+project_proposal:
+  type: proposal
+  content: |
+    # Project Proposal: {{ project_name }}
+
+    **Date:** {{ date }}
+    **Project Lead:** {{ project_lead }}
+
+    ## Project Overview
+
+    {{ project_overview }}
+
+    ## Objectives
+
+    {{ objectives }}
+
+    ## Deliverables
+
+    {{ deliverables }}
+
+    ## Timeline & Milestones
+
+    {{ timeline }}
+
+    ## Resource Requirements
+
+    {{ resources }}
+
+    ## Risk Assessment
+
+    {{ risks }}
+
+    ## Budget
+
+    {{ budget }}
+
+internal_memo:
+  type: communication
+  content: |
+    **INTERNAL MEMORANDUM**
+
+    **To:** {{ to }}
+    **From:** {{ from_name }}
+    **Date:** {{ date }}
+    **Subject:** {{ subject }}
+
+    ---
+
+    {{ body }}
+
+    ---
+
+    *This communication is confidential and intended for internal use only.*
+
+announcement:
+  type: communication
+  content: |
+    # {{ headline }}
+
+    **Date:** {{ date }}
+
+    {{ body }}
+
+    ---
+    *For more information, contact {{ contact }}*
+
+course_outline:
+  type: course
+  content: |
+    # {{ course_title }}
+
+    **Target Audience:** {{ target_audience }}
+    **Duration:** {{ duration_hours }} hours
+    **Prerequisites:** {{ prerequisites }}
+
+    ## Learning Objectives
+
+    {{ learning_objectives }}
+
+    ## Course Modules
+
+    {{ modules }}
+
+    ## Assessment Methods
+
+    {{ assessment }}
+
+    ## Resources
+
+    {{ resources }}

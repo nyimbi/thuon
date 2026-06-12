@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Thuon{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg-void:        #0a0b10;
+      --bg-surface:     #111318;
+      --bg-elevated:    #181b24;
+      --bg-hover:       #1c2030;
+      --border:         #1c1f2e;
+      --border-mid:     #252a3d;
+      --border-bright:  #2e3450;
+      --accent:         #7c6af7;
+      --accent-hover:   #6a58e5;
+      --accent-dim:     rgba(124,106,247,0.12);
+      --accent-glow:    rgba(124,106,247,0.30);
+      --teal:           #3ecfcf;
+      --teal-dim:       rgba(62,207,207,0.10);
+      --text-primary:   #e4e6f0;
+      --text-secondary: #7e859e;
+      --text-muted:     #3f4460;
+      --green:          #34d399;
+      --red:            #f87171;
+      --amber:          #fbbf24;
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { height: 100%; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-void);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    /* Subtle dot-grid texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(124,106,247,0.06) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Navbar ────────────────────────────────────────────────────── */
+    .t-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+      background: rgba(10,11,16,0.88);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .t-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .t-logo-mark {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 0 14px var(--accent-glow);
+      flex-shrink: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .t-logo-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+
+    .t-nav-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border-mid);
+      flex-shrink: 0;
+    }
+
+    .t-nav-tagline {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .t-nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Health pill */
+    .health-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-mid);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    .health-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      color: var(--text-secondary);
+    }
+
+    .health-item + .health-item {
+      padding-left: 10px;
+      border-left: 1px solid var(--border-mid);
+    }
+
+    .s-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+
+    .s-ok  { background: var(--green); box-shadow: 0 0 5px var(--green); }
+    .s-err { background: var(--red);   box-shadow: 0 0 5px var(--red); }
+    .s-unk { background: var(--amber); animation: blink 2s ease infinite; }
+
+    @keyframes blink {
+      0%,100% { opacity:1; }
+      50%      { opacity:0.35; }
+    }
+
+    .t-nav-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 5px 11px;
+      border-radius: var(--r-sm);
+      border: 1px solid transparent;
+      transition: color 0.12s, background 0.12s, border-color 0.12s;
+    }
+    .t-nav-link:hover {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+      border-color: var(--border-mid);
+    }
+
+    /* ── Page wrapper ──────────────────────────────────────────────── */
+    .t-page {
+      position: relative;
+      z-index: 1;
+      padding: 28px 24px 64px;
+      max-width: 1480px;
+      margin: 0 auto;
+    }
+
+    /* ── Flash / alerts ────────────────────────────────────────────── */
+    .t-flash-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 10px 24px 0;
+    }
+
+    .t-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--r-md);
+      border: 1px solid;
+      margin-bottom: 10px;
+      font-size: 13px;
+      animation: fadeSlideIn 0.18s ease;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity:0; transform:translateY(-5px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .t-alert.alert-danger,
+    .t-alert.alert-error  { background:rgba(248,113,113,.07); border-color:rgba(248,113,113,.22); color:#fca5a5; }
+    .t-alert.alert-success { background:rgba(52,211,153,.07);  border-color:rgba(52,211,153,.22);  color:#6ee7b7; }
+    .t-alert.alert-warning { background:rgba(251,191,36,.07);  border-color:rgba(251,191,36,.22);  color:#fcd34d; }
+    .t-alert.alert-info    { background:rgba(124,106,247,.07); border-color:rgba(124,106,247,.22); color:#a78bfa; }
+
+    .t-alert-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: inherit;
+      opacity: 0.45;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .t-alert-close:hover { opacity: 1; }
+
+    /* ── Toast ─────────────────────────────────────────────────────── */
+    #t-toasts {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .t-toast {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--r-md);
+      padding: 9px 14px;
+      font-size: 12.5px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(124,106,247,0.08);
+      animation: toastIn 0.18s ease;
+      pointer-events: auto;
+    }
+
+    .t-toast.out { animation: toastOut 0.18s ease forwards; }
+
+    @keyframes toastIn  { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:none} }
+    @keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(10px)} }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar       { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:3px; }
+    ::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+
+    /* ── Shared component tokens used by child pages ───────────────── */
+    .t-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+    }
+
+    .t-card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .t-card-body {
+      padding: 18px;
+    }
+
+    .t-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all 0.14s ease;
+      white-space: nowrap;
+    }
+
+    .t-btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 12px rgba(124,106,247,0.28);
+    }
+    .t-btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      box-shadow: 0 4px 20px rgba(124,106,247,0.4);
+      color: #fff;
+    }
+    .t-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .t-btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: var(--border-mid);
+    }
+    .t-btn-ghost:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border-color: var(--border-bright);
+    }
+
+    .t-input {
+      width: 100%;
+      background: var(--bg-void);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-sm);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13.5px;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .t-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    .t-input::placeholder { color: var(--text-muted); }
+
+    .t-textarea {
+      resize: vertical;
+      min-height: 70px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+
+    {% block extra_styles %}{% endblock %}
+  </style>
+</head>
+<body>
+
+<nav class="t-nav" role="navigation" aria-label="Main navigation">
+  <a class="t-logo" href="/">
+    <div class="t-logo-mark">T</div>
+    <span class="t-logo-name">Thuon</span>
+  </a>
+  <div class="t-nav-sep"></div>
+  <span class="t-nav-tagline">AI Business Capability Platform</span>
+
+  <div class="t-nav-right">
+    <div class="health-pill" id="health-pill" title="Service health">
+      <div class="health-item">
+        <span class="s-dot s-unk" id="dot-ollama"></span>
+        <span>Ollama</span>
+      </div>
+      <div class="health-item">
+        <span class="s-dot s-unk" id="dot-db"></span>
+        <span>DB</span>
+      </div>
+    </div>
+    <a href="/pipelines" class="t-nav-link">Pipelines</a>
+    <a href="/api/capabilities" class="t-nav-link" target="_blank">API</a>
+    <a href="/health" class="t-nav-link">Health</a>
+  </div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="t-flash-wrap">
+  {% for category, message in messages %}
+  <div class="t-alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">
+    <span>{{ message }}</span>
+    <button class="t-alert-close" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<main class="t-page">
+  {% block content %}{% endblock %}
+</main>
+
+<div id="t-toasts" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ── Toast ──────────────────────────────────────────────────────────── */
+function showToast(msg, icon = '✓', ms = 2600) {
+  const ct = document.getElementById('t-toasts');
+  const el = document.createElement('div');
+  el.className = 't-toast';
+  el.innerHTML = `<span style="font-size:13px">${icon}</span><span>${msg}</span>`;
+  ct.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('out');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  }, ms);
+}
+
+/* ── Health check ───────────────────────────────────────────────────── */
+(async function checkHealth() {
+  try {
+    const r = await fetch('/health', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json().catch(() => ({}));
+    const set = (id, ok) => {
+      const el = document.getElementById(id);
+      if (el) el.className = 's-dot ' + (ok ? 's-ok' : 's-err');
+    };
+    set('dot-ollama', d.ollama !== false);
+    set('dot-db',     d.db !== false);
+  } catch (_) {
+    ['dot-ollama', 'dot-db'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.className = 's-dot s-err';
+    });
+  }
+})();
+
+/* ── Cmd/Ctrl+K → search focus ──────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    const s = document.getElementById('searchCaps');
+    if (s) { e.preventDefault(); s.focus(); s.select(); }
+  }
+});
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

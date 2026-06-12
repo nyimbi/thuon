@@ -1,0 +1,23 @@
+name: competitive_report
+description: Full competitive intelligence report as PDF
+
+steps:
+  - name: research
+    capability: research_assistant
+    params:
+      query: "competitive landscape {input.industry} {input.company}"
+      num_sources: 5
+
+  - name: intel
+    capability: competitive_intelligence_operative
+    params:
+      company_name: "{input.company}"
+      area_of_interest: "{input.industry}"
+
+  - name: report
+    capability: document_generator
+    params:
+      topic: "Competitive Analysis: {input.company} in {input.industry}"
+      format: "{input.format}"
+      doc_type: report
+      context: "{steps.intel.analysis}"

@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+{% block title %}{{ spec.name | replace('_', ' ') | title }} — Pipeline — Thuon{% endblock %}
+
+{% block extra_styles %}
+/* Breadcrumb */
+.pipe-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.pipe-breadcrumb a { color: var(--text-secondary); text-decoration: none; transition: color 0.12s; }
+.pipe-breadcrumb a:hover { color: var(--accent); }
+
+/* Page header */
+.pipe-page-header { margin-bottom: 28px; }
+.pipe-page-header h1 {
+  font-size: 20px; font-weight: 700; color: var(--text-primary);
+  margin: 0 0 6px; letter-spacing: -0.2px;
+}
+.pipe-page-header p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+
+/* Two-col layout */
+.pipe-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 860px) { .pipe-layout { grid-template-columns: 1fr; } }
+
+/* Form panel */
+.pipe-form-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  position: sticky;
+  top: 74px;
+}
+.pipe-form-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+}
+.pipe-form-body { padding: 18px; }
+.pipe-field { margin-bottom: 16px; }
+.pipe-field:last-of-type { margin-bottom: 0; }
+.pipe-label {
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.pipe-input-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px; color: var(--accent);
+  background: var(--accent-dim);
+  border-radius: 3px; padding: 1px 6px;
+}
+.pipe-form-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+.pipe-run-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--r-sm);
+  font-size: 13.5px; font-weight: 600; font-family: inherit;
+  color: #fff; background: var(--accent); border: 1px solid var(--accent);
+  cursor: pointer; transition: all 0.14s;
+  box-shadow: 0 2px 10px rgba(124,106,247,0.28);
+}
+.pipe-run-btn:hover:not(:disabled) {
+  background: var(--accent-hover); border-color: var(--accent-hover);
+  box-shadow: 0 4px 20px rgba(124,106,247,0.45);
+}
+.pipe-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pipe-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Right panel */
+.pipe-right { display: flex; flex-direction: column; gap: 16px; }
+
+/* Step visualizer */
+.pipe-steps-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.pipe-steps-header {
+  padding: 13px 18px; border-bottom: 1px solid var(--border);
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+}
+.pipe-steps-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+
+.pipe-step-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: border-color 0.2s;
+}
+.pipe-step-row.running { border-color: var(--amber); }
+.pipe-step-row.done    { border-color: var(--green); }
+.pipe-step-row.error   { border-color: var(--red); }
+
+.pipe-step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bg-void); border: 1px solid var(--border-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  flex-shrink: 0; transition: all 0.2s; font-family: 'JetBrains Mono', monospace;
+}
+.pipe-step-row.running .pipe-step-num { border-color: var(--amber); color: var(--amber); }
+.pipe-step-row.done    .pipe-step-num { background: var(--green); border-color: var(--green); color: #000; }
+.pipe-step-row.error   .pipe-step-num { background: var(--red);   border-color: var(--red);   color: #fff; }
+
+.pipe-step-info { flex: 1; min-width: 0; }
+.pipe-step-name {
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.pipe-step-cap {
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+}
+.pipe-step-status {
+  font-size: 10.5px; font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted); flex-shrink: 0;
+  transition: color 0.2s;
+}
+.pipe-step-row.running .pipe-step-status { color: var(--amber); }
+.pipe-step-row.done    .pipe-step-status { color: var(--green); }
+.pipe-step-row.error   .pipe-step-status { color: var(--red); }
+
+/* Result panel */
+.pipe-result-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  min-height: 200px;
+}
+.pipe-result-header {
+  padding: 13px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+}
+.pipe-result-status {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted); margin-left: auto;
+}
+.pipe-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border-bright); transition: all 0.3s;
+}
+.pipe-status-dot.running { background: var(--amber); animation: blink 0.8s ease infinite; }
+.pipe-status-dot.done    { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.pipe-status-dot.error   { background: var(--red);   box-shadow: 0 0 5px var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.pipe-result-body {
+  padding: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; line-height: 1.65;
+  color: var(--text-primary);
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 500px; overflow-y: auto;
+}
+.pipe-result-placeholder {
+  padding: 40px; text-align: center;
+  color: var(--text-muted); font-size: 13px;
+}
+.pipe-copy-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: var(--r-sm);
+  font-size: 11px; font-weight: 500; font-family: inherit;
+  color: var(--text-secondary); background: transparent;
+  border: 1px solid var(--border-mid); cursor: pointer;
+  transition: all 0.12s; margin-left: auto;
+}
+.pipe-copy-btn:hover { color: var(--text-primary); border-color: var(--border-bright); background: var(--bg-elevated); }
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav class="pipe-breadcrumb">
+  <a href="/pipelines">Pipelines</a>
+  <span>/</span>
+  <span style="color:var(--text-secondary)">{{ spec.name | replace('_', ' ') | title }}</span>
+</nav>
+
+<!-- Header -->
+<div class="pipe-page-header">
+  <h1>{{ spec.name | replace('_', ' ') | title }}</h1>
+  <p>{{ spec.description or 'Multi-step pipeline' }}</p>
+</div>
+
+<div class="pipe-layout">
+
+  <!-- LEFT: Inputs form -->
+  <div class="pipe-form-panel">
+    <div class="pipe-form-header">Pipeline Inputs</div>
+    <form id="pipeForm">
+      <div class="pipe-form-body">
+        {% if inputs %}
+        {% for inp in inputs %}
+        <div class="pipe-field">
+          <div class="pipe-label">
+            <span class="pipe-input-name">{{ inp }}</span>
+          </div>
+          <input
+            type="text"
+            class="t-input"
+            name="{{ inp }}"
+            placeholder="Enter {{ inp | replace('_', ' ') }}"
+            required
+            aria-label="{{ inp }}"
+          >
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:12px 0">
+          This pipeline takes no inputs.
+        </p>
+        {% endif %}
+      </div>
+      <div class="pipe-form-footer">
+        <button type="submit" class="pipe-run-btn" id="pipeRunBtn">
+          <span class="pipe-spinner" id="pipeSpinner"></span>
+          <svg id="pipeIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span id="pipeLabel">Run Pipeline</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- RIGHT: Steps + result -->
+  <div class="pipe-right">
+
+    <!-- Step visualizer -->
+    <div class="pipe-steps-panel">
+      <div class="pipe-steps-header">Steps</div>
+      <div class="pipe-steps-body" id="stepsBody">
+        {% for step in spec.steps %}
+        <div class="pipe-step-row" id="step-{{ loop.index0 }}" data-step="{{ step.name }}">
+          <div class="pipe-step-num">{{ loop.index }}</div>
+          <div class="pipe-step-info">
+            <div class="pipe-step-name">{{ step.name | replace('_', ' ') | title }}</div>
+            <div class="pipe-step-cap">{{ step.capability }}</div>
+          </div>
+          <div class="pipe-step-status" id="step-status-{{ loop.index0 }}">pending</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="pipe-result-panel">
+      <div class="pipe-result-header">
+        Result
+        <div class="pipe-result-status">
+          <span class="pipe-status-dot" id="pipeStatusDot"></span>
+          <span id="pipeStatusLabel">Waiting</span>
+        </div>
+        <button class="pipe-copy-btn" id="pipeCopyBtn" onclick="copyPipeResult()" style="display:none">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div id="pipeResultBody">
+        <div class="pipe-result-placeholder">Run the pipeline to see results</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const STEPS = {{ spec.steps | tojson }};
+let lastResult = null;
+
+function setPipeStatus(state, label) {
+  const dot = document.getElementById('pipeStatusDot');
+  dot.className = 'pipe-status-dot' + (state ? ' ' + state : '');
+  document.getElementById('pipeStatusLabel').textContent = label;
+}
+
+function setStepState(idx, state, label) {
+  const row = document.getElementById('step-' + idx);
+  const st  = document.getElementById('step-status-' + idx);
+  if (row) row.className = 'pipe-step-row ' + state;
+  if (st)  st.textContent = label;
+}
+
+function syntaxHL(json) {
+  const esc = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],:])/g,
+    m => {
+      if (/^"/.test(m)) {
+        if (/:$/.test(m)) return `<span style="color:#7dd3fc">${m.slice(0,-1)}</span><span style="color:#444">:</span>`;
+        return `<span style="color:#86efac">${m}</span>`;
+      }
+      if (/true|false/.test(m)) return `<span style="color:var(--teal)">${m}</span>`;
+      if (/null/.test(m)) return `<span style="color:var(--text-muted)">${m}</span>`;
+      if (/^-?\d/.test(m)) return `<span style="color:#fca5a5">${m}</span>`;
+      return `<span style="color:#555">${m}</span>`;
+    }
+  );
+}
+
+function copyPipeResult() {
+  if (!lastResult) return;
+  navigator.clipboard.writeText(JSON.stringify(lastResult, null, 2)).then(() => {
+    showToast('Copied to clipboard', '📋');
+  });
+}
+
+document.getElementById('pipeForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const fd      = new FormData(this);
+  const payload = Object.fromEntries(fd.entries());
+
+  // Reset step states
+  STEPS.forEach((_, i) => setStepState(i, '', 'pending'));
+  document.getElementById('pipeResultBody').innerHTML =
+    '<div class="pipe-result-placeholder" style="color:var(--text-muted)">Running…</div>';
+  document.getElementById('pipeCopyBtn').style.display = 'none';
+
+  const runBtn = document.getElementById('pipeRunBtn');
+  const spinner = document.getElementById('pipeSpinner');
+  const icon    = document.getElementById('pipeIcon');
+  const label   = document.getElementById('pipeLabel');
+  runBtn.disabled = true;
+  spinner.style.display = 'block';
+  icon.style.display    = 'none';
+  label.textContent     = 'Running…';
+  setPipeStatus('running', 'Running');
+
+  // Mark first step as running
+  if (STEPS.length > 0) setStepState(0, 'running', 'running…');
+
+  const t0 = performance.now();
+
+  try {
+    const resp = await fetch('/api/pipeline/{{ pipe_name }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data    = await resp.json();
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+    lastResult    = data;
+
+    if (!resp.ok) {
+      // Mark all pending as error
+      STEPS.forEach((_, i) => setStepState(i, 'error', 'error'));
+      setPipeStatus('error', `Error after ${elapsed}s`);
+      document.getElementById('pipeResultBody').innerHTML =
+        `<div class="pipe-result-body" style="color:var(--red)">${JSON.stringify(data, null, 2)}</div>`;
+    } else {
+      // Mark all steps done
+      STEPS.forEach((s, i) => setStepState(i, 'done', '✓'));
+      setPipeStatus('done', `Done in ${elapsed}s`);
+      document.getElementById('pipeCopyBtn').style.display = 'flex';
+      document.getElementById('pipeResultBody').innerHTML =
+        `<pre class="pipe-result-body">${syntaxHL(JSON.stringify(data, null, 2))}</pre>`;
+    }
+  } catch (err) {
+    STEPS.forEach((_, i) => setStepState(i, 'error', 'error'));
+    setPipeStatus('error', 'Failed');
+    document.getElementById('pipeResultBody').innerHTML =
+      `<div class="pipe-result-body" style="color:var(--red)">${err.message}</div>`;
+  } finally {
+    runBtn.disabled = false;
+    spinner.style.display = 'none';
+    icon.style.display    = '';
+    label.textContent     = 'Run Pipeline';
+  }
+});
+</script>
+{% endblock %}

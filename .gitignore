@@ -1,0 +1,26 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# macOS
+.DS_Store
+
+# Editor / tool state
+.omc/
+
+# Scratch files
+a.json
+test_data.json
+test_data.txt
+hello.py
+misc/
+create_thuon.sh
+create_thuon1.sh
+failed_repos.txt

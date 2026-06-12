@@ -1,0 +1,26 @@
+# requirements.txt
+ollama
+langchain
+weaviate-client
+psycopg2-binary
+flask-appbuilder
+kivy
+beeware
+requests
+beautifulsoup4
+PyYAML
+tavily-python
+duckduckgo-search
+blinker
+feedparser
+python-dotenv
+crawl4ai
+flask-appbuilder
+newspaper3k
+langgraph
+openai
+langchain-community
+langchain-ollama
+langchain-groq
+hf_transfer
+gradio

@@ -1,0 +1,17 @@
+# config/config.yaml
+database:
+  host: 'localhost'
+  port: 5432
+  dbname: 'thuon_db'
+  user: 'thuon_user'
+  password: 'thuon_password'
+api_keys:
+  tavily: 'YOUR_TAVILY_API_KEY'
+  google_serper: 'YOUR_GOOGLE_SERPER_API_KEY'
+ollama:
+  endpoint: 'http://localhost:11434'
+  model: 'qwen3.5:4b'
+  chat_model: 'qwen3.5:4b'
+  vision_model: 'minicpm-v:4.5'
+weaviate:
+  url: 'http://localhost:8080'
