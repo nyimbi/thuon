@@ -120,11 +120,105 @@ uv run python thuon_platform/main.py web [--host 0.0.0.0] [--port 5000] [--debug
 
 | Route | Method | Description |
 |---|---|---|
-| `/` | GET | Capability grid — search, filter by category |
-| `/capability/<name>` | GET | Capability form with live result panel |
+| `/` | GET | Capability grid — search, filter by category, NL dispatch bar |
+| `/capability/<name>` | GET | Capability form with streaming toggle + export toolbar |
 | `/api/<capability>` | POST | Call any capability (JSON in, JSON out) |
+| `/api/stream/<capability>` | POST | SSE stream — `start` → `token` chunks → `done` with full result |
+| `/api/do` | POST | Natural-language dispatch: routes free-text to the right capability |
+| `/api/history` | GET | Last 50 run records (capability, params, status, elapsed, timestamp) |
+| `/api/export` | POST | Download result as `docx`, `pdf`, `xlsx`, or `pptx` |
 | `/api/capabilities` | GET | List all capabilities and their parameter schemas |
+| `/pipelines` | GET | Pipeline card grid |
+| `/pipeline/<name>` | GET | Pipeline run form with step-progress visualiser |
+| `/api/pipeline/<name>` | POST | Execute a YAML pipeline; returns per-step results |
 | `/health` | GET | Health check — Ollama, PostgreSQL, Weaviate status |
+
+---
+
+## Natural language dispatch
+
+The "Ask Thuon" bar on the home page (and `POST /api/do`) accepts plain English. Thuon routes it to the most appropriate capability and returns the result alongside the resolved capability name and parameters.
+
+```bash
+curl -X POST http://localhost:5000/api/do \
+  -H "Content-Type: application/json" \
+  -d '{"instruction": "research the competitive landscape for AI coding assistants"}'
+# → {"capability": "competitive_intelligence_operative", "params": {...}, "result": {...}, "elapsed": 4.2}
+```
+
+Routing uses the LLM first (JSON extraction from a structured prompt) with a keyword-based fallback when the model is unavailable.
+
+---
+
+## Streaming
+
+Every capability has a streaming endpoint that emits [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events):
+
+```
+data: {"type": "start", "capability": "deep_researcher"}
+data: {"type": "token", "text": "AI coding assistants have grown..."}
+data: {"type": "token", "text": " rapidly since 2022, with..."}
+...
+data: {"type": "done", "result": {...}, "elapsed": 12.4}
+```
+
+The capability runs **once** — text fields from the result are chunked into `token` events before the final `done` event. No double LLM call.
+
+```bash
+curl -N -X POST http://localhost:5000/api/stream/research_assistant \
+  -H "Content-Type: application/json" \
+  -d '{"research_query": "quantum computing timelines"}'
+```
+
+The web UI capability page has a **Stream** toggle button that switches between the standard JSON panel and the token-by-token display.
+
+---
+
+## Export
+
+Any result can be downloaded as a document:
+
+```bash
+curl -X POST http://localhost:5000/api/export \
+  -H "Content-Type: application/json" \
+  -d '{"format": "docx", "data": {"report": "...", "title": "Q3 Analysis"}, "title": "Q3 Analysis"}' \
+  --output export.docx
+```
+
+Supported formats: `docx`, `pdf`, `xlsx`, `pptx`. The export endpoint streams the file directly — the temp file is cleaned up server-side after the response completes.
+
+The capability page also has **Export** buttons in the toolbar (visible after a successful run).
+
+---
+
+## Pipelines
+
+Pipelines chain capabilities together using YAML files in `thuon_platform/data/pipelines/`. Each step passes its output to the next via `{prev.key}` template syntax.
+
+```yaml
+# thuon_platform/data/pipelines/research_brief.yaml
+name: research_brief
+description: Research a topic then write an executive brief
+steps:
+  - name: research
+    capability: research_assistant
+    params:
+      research_query: "{input.topic}"
+      depth: medium
+  - name: brief
+    capability: ai_report_writer
+    params:
+      report_type: executive_brief
+      context_data: "{research.summary}"
+```
+
+```bash
+curl -X POST http://localhost:5000/api/pipeline/research_brief \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "synthetic biology commercialisation"}'
+```
+
+Add new pipelines by dropping YAML files into `thuon_platform/data/pipelines/`. They appear automatically in the `/pipelines` grid.
 
 ---
 
@@ -211,13 +305,20 @@ uv run python thuon_platform/main.py cli <subcommand> [options]
 | `legal_compliance_officer` | `review_contract_for_compliance(contract_text, standards)` | Contract review and compliance gaps |
 | `accessibility_compliance_verifier` | `verify_accessibility_compliance(asset_description, standards)` | WCAG / ADA compliance checklist |
 
-### Data & Development
+### Data
 
 | Module | Primary method | Description |
 |---|---|---|
 | `customer_relationship_manager` | `create_customer_profile(name, contact_details, industry)` | CRM profile creation and storage |
 | `data_integrator` | `connect_to_data_source(name, type, parameters)` | Data source connection and schema mapping |
+
+### Dev
+
+| Module | Primary method | Description |
+|---|---|---|
 | `code_writer` | `write_and_run(task_description, language)` | Agentic code generation, execution, testing |
+| `deep_researcher` | `research(query, level)` | Standalone multi-level research engine (7 depths) |
+| `niche_finder` | `find_niches(industry, mode, num_niches, focus_area)` | Strategic niche finder with GTM propositions |
 
 ---
 
