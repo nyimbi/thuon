@@ -348,7 +348,7 @@ class LongFormDocumentEngine:
 		ex_done = 0
 		for sec in gen_order:
 			for ex in sec.exhibits:
-				pre_exhibits[ex.id] = self._generate_exhibit(ex, sec.title)
+				pre_exhibits[ex.id] = self._generate_exhibit(ex, sec.title, plan.title)
 				ex_done += 1
 				_progress('exhibits', ex_done, n_exhibits)
 
@@ -626,19 +626,20 @@ Return ONLY valid JSON:
 
 	# ── Stage 5: Exhibit Generation ───────────────────────────────────────────
 
-	def _generate_exhibit(self, exhibit: ExhibitSpec, section_title: str) -> str:
+	def _generate_exhibit(self, exhibit: ExhibitSpec, section_title: str, doc_topic: str = '') -> str:
 		if exhibit.type == 'table':
-			return self._generate_table_exhibit(exhibit, section_title)
+			return self._generate_table_exhibit(exhibit, section_title, doc_topic)
 		if exhibit.type in ('mermaid', 'chart'):
-			return self._generate_mermaid_exhibit(exhibit, section_title)
+			return self._generate_mermaid_exhibit(exhibit, section_title, doc_topic)
 		return ''
 
-	def _generate_table_exhibit(self, exhibit: ExhibitSpec, section_title: str) -> str:
+	def _generate_table_exhibit(self, exhibit: ExhibitSpec, section_title: str, doc_topic: str = '') -> str:
 		"""Two-step: LLM → structured JSON → validated + pipe-escaped GFM table."""
+		topic_line = f'Document topic: {doc_topic}\n' if doc_topic else ''
 		prompt = f"""/no_think
-Generate structured data for a table exhibit.
+Generate structured data for a table exhibit. The data MUST be specific to the document topic.
 
-Section: {section_title}
+{topic_line}Section: {section_title}
 Exhibit title: {exhibit.title}
 Description: {exhibit.description}
 
@@ -652,7 +653,8 @@ Return ONLY valid JSON:
 }}
 
 Rules:
-- 5–10 data rows with realistic, specific values (no placeholders)
+- Data MUST be relevant to "{doc_topic or section_title}" — no generic placeholder data
+- 5–10 data rows with realistic, specific values
 - Consistent financial units (all $M or all $B, not mixed)
 - Include CAGR or growth rate column where relevant"""
 
@@ -685,7 +687,7 @@ Rules:
 			lines.append(f'\n*Source: {ec(source)}*')
 		return '\n'.join(lines)
 
-	def _generate_mermaid_exhibit(self, exhibit: ExhibitSpec, section_title: str) -> str:
+	def _generate_mermaid_exhibit(self, exhibit: ExhibitSpec, section_title: str, doc_topic: str = '') -> str:
 		"""Focused Mermaid generation. Extracts code from fences if model added them."""
 		desc_lower = exhibit.description.lower()
 		chart_type = next(
@@ -705,10 +707,11 @@ Rules:
 			'stateDiagram-v2': 'States and labelled transitions.',
 		}.get(chart_type, '')
 
+		topic_line = f'Document topic: {doc_topic}\n' if doc_topic else ''
 		prompt = f"""/no_think
-Generate a Mermaid diagram.
+Generate a Mermaid diagram specific to the document topic.
 
-Section: {section_title}
+{topic_line}Section: {section_title}
 Exhibit: {exhibit.title}
 Description: {exhibit.description}
 Chart type: {chart_type}
@@ -779,8 +782,9 @@ Section content (do not repeat the heading):"""
 
 		raw_text = self._enforce_word_count(raw_text, spec, prompt)
 
-		# Strip any leading heading the model prepended — we add our own below
+		# Strip any leading heading or bare "Section N" label the model prepended
 		raw_text = re.sub(r'^#{1,6}\s+[^\n]*\n?', '', raw_text.strip(), count=1).strip()
+		raw_text = re.sub(r'^Section\s+\d[\d\.]*\s*\n?', '', raw_text, flags=re.IGNORECASE, count=1).strip()
 
 		exhibit_blocks: list[str] = []
 		for ex in spec.exhibits:
@@ -863,6 +867,7 @@ Write directly (heading added separately):"""
 		best_raw   = max(candidates, key=lambda t: len(t.split()))
 		best_raw   = self._enforce_word_count(best_raw, spec, prompt)
 		best_raw   = re.sub(r'^#{1,6}\s+[^\n]*\n?', '', best_raw.strip(), count=1).strip()
+		best_raw   = re.sub(r'^Section\s+\d[\d\.]*\s*\n?', '', best_raw, flags=re.IGNORECASE, count=1).strip()
 
 		# Re-attach any exhibits from the original exec summary section
 		exhibit_blocks: list[str] = []
