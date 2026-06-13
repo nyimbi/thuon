@@ -1,0 +1,37 @@
+name: blog_post
+description: Research → Outline → Write → SEO-optimize a complete blog post
+
+steps:
+  - name: research
+    capability: blog_topic_researcher
+    params:
+      domain: "{input.domain}"
+      audience: "{input.audience}"
+      num_topics: 1
+
+  - name: outline
+    capability: blog_outliner
+    params:
+      topic: "{input.topic}"
+      audience: "{input.audience}"
+      target_length: "{input.target_length}"
+      seo_keyword: "{input.seo_keyword}"
+      tone: "{input.tone}"
+
+  - name: write_post
+    capability: blog_section_writer
+    params:
+      heading: "{input.topic}"
+      is_full_post: "true"
+      outline: "{steps.outline.outline}"
+      tone: "{input.tone}"
+      seo_keyword: "{input.seo_keyword}"
+      word_target: "{input.target_length}"
+
+  - name: seo
+    capability: blog_seo_optimizer
+    params:
+      full_content: "{steps.write_post.content}"
+      target_keyword: "{input.seo_keyword}"
+      meta_description: "{steps.outline.meta_description}"
+      save_to_disk: "true"

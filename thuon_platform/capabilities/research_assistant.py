@@ -39,14 +39,19 @@ class ResearchAssistant:
 		depth: str = 'medium',
 	) -> dict:
 		"""
-		depth='quick'         — LLM prior knowledge only, no search (~2s)
-		depth='shallow'       — single search pass + LLM synthesis (~10s)
-		depth='medium'        — agent loop, up to 10 tool calls (~1 min)
-		depth='deep'          — agent loop, up to 20 tool calls, reads full articles (~3 min)
-		depth='comprehensive' — agent loop, 35 iterations, multi-angle search (~5 min)
-		depth='academic'      — multi-phase orchestration with source evaluation (~10 min)
-		depth='phd'           — full systematic review, thesis-quality output (~20 min)
+		depth='quick'        — LLM prior knowledge only, no search (~2s)
+		depth='shallow'      — single search pass + LLM synthesis (~10s)
+		depth='medium'       — agent loop, up to 10 tool calls (~1 min)
+		depth='deep'         — agent loop, up to 20 tool calls, reads full articles (~3 min)
+		depth='comprehensive'— agent loop, 35 iterations, multi-angle search (~5 min)
+		depth='academic'     — multi-phase orchestration with source evaluation (~10 min)
+		depth='phd'          — full systematic review, thesis-quality output (~20 min)
+		depth='consulting'   — McKinsey/BCG-grade: SCQA + MECE issue tree + self-consistency
+		                       + competing hypotheses + pyramid synthesis + G-Eval gate (~15 min)
 		"""
+		# consulting depth routes to ConsultingResearchEngine
+		if depth == 'consulting':
+			return self._consulting_research(research_query)
 		from capabilities.deep_researcher import RESEARCH_LEVELS
 		if depth not in RESEARCH_LEVELS:
 			depth = 'medium'
@@ -116,6 +121,13 @@ class ResearchAssistant:
 		result = dr.research(query, level=depth)
 		result.setdefault('query', query)
 		result.setdefault('depth', depth)
+		return result
+
+	def _consulting_research(self, query: str) -> dict:
+		from capabilities.consulting_research_engine import ConsultingResearchEngine
+		engine = ConsultingResearchEngine(ai_engine=self.ai_engine, search_engine=self.search_engine)
+		result = engine.research(query, output_format='both')
+		result['depth'] = 'consulting'
 		return result
 
 	def summarize_research_findings(self, research_data: dict, length: str = 'medium') -> str:

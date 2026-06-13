@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Blog Posts — Thuon{% endblock %}
+
+{% block extra_styles %}
+.blog-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
+.blog-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.blog-header p { font-size:12.5px; color:var(--text-muted); }
+
+.blog-quick { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; margin-bottom:28px; }
+.blog-quick h3 { font-family:var(--heading-font); font-size:14px; font-weight:700; margin-bottom:14px; }
+.blog-form { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:end; }
+
+.blog-list { display:grid; gap:10px; }
+.blog-item { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-md); padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; transition:border-color .15s; }
+.blog-item:hover { border-color:var(--border-bright); }
+.blog-item-name { font-size:13.5px; color:var(--text-primary); font-weight:500; }
+.blog-item-size { font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+.blog-empty { text-align:center; padding:48px 24px; color:var(--text-muted); font-size:13px; }
+{% endblock %}
+
+{% block content %}
+<div class="blog-header">
+  <div>
+    <h1>Blog Posts</h1>
+    <p>{{ posts|length }} post{{ 's' if posts|length != 1 else '' }} in data/blog/</p>
+  </div>
+  <a href="/pipeline/blog_post" class="t-btn t-btn-primary">+ New Post via Pipeline</a>
+</div>
+
+<!-- Quick topic research -->
+<div class="blog-quick">
+  <h3>Research Topics</h3>
+  <div class="blog-form">
+    <input class="t-input" id="blog-domain" placeholder="Domain (e.g. AI consulting)" />
+    <input class="t-input" id="blog-audience" placeholder="Audience (e.g. CTOs)" />
+    <input class="t-input" id="blog-kw" placeholder="Keyword focus (optional)" />
+    <button class="t-btn t-btn-primary" onclick="researchTopics()">Research</button>
+  </div>
+  <div id="blog-results" style="margin-top:14px"></div>
+</div>
+
+<!-- Post list -->
+<div class="blog-list">
+  {% for post in posts %}
+  <div class="blog-item">
+    <span class="blog-item-name">{{ post.name }}</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="blog-item-size">{{ (post.size/1024)|round(1) }} KB</span>
+      <a href="/capability/blog_seo_optimizer" class="t-btn t-btn-ghost" style="font-size:11.5px;padding:4px 10px">SEO Optimize</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="blog-empty">
+    <div style="font-size:32px;margin-bottom:8px;opacity:.3">📝</div>
+    <div>No blog posts yet</div>
+    <div style="font-size:11.5px;margin-top:6px">Run the <a href="/pipeline/blog_post" style="color:var(--accent)">blog_post pipeline</a> to generate your first post</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function researchTopics() {
+  const domain   = document.getElementById('blog-domain').value.trim();
+  const audience = document.getElementById('blog-audience').value.trim();
+  if (!domain) { showToast('Enter a domain', '⚠️'); return; }
+  const results = document.getElementById('blog-results');
+  results.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Researching topics…</div>';
+  try {
+    const r = await fetch('/api/blog_topic_researcher', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ domain, audience, num_topics: 5 })
+    });
+    const d = await r.json();
+    if (!d.topics) throw new Error(d.error || 'No topics returned');
+    results.innerHTML = d.topics.map(t => `
+      <div style="background:var(--bg-elevated);border:1px solid var(--border-mid);border-radius:var(--r-md);padding:10px 14px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:3px">${t.title}</div>
+        <div style="font-size:11.5px;color:var(--text-muted)">${t.angle} · <code style="color:var(--teal)">${t.target_keyword}</code></div>
+      </div>`).join('');
+  } catch(e) {
+    results.innerHTML = `<div style="color:var(--red);font-size:12px">Error: ${e.message}</div>`;
+  }
+}
+</script>
+{% endblock %}

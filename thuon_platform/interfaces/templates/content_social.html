@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Social Media — Thuon{% endblock %}
+
+{% block extra_styles %}
+.social-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
+.social-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.social-header p { font-size:12.5px; color:var(--text-muted); }
+
+.social-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:800px) { .social-grid { grid-template-columns:1fr; } }
+
+.social-panel { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.social-panel-head { padding:12px 18px; border-bottom:1px solid var(--border); font-family:var(--heading-font); font-size:14px; font-weight:700; }
+.social-panel-body { padding:18px; }
+
+.idea-item { background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:var(--r-md); padding:10px 13px; margin-bottom:8px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.idea-text { font-size:12.5px; color:var(--text-secondary); line-height:1.5; flex:1; }
+.idea-run-btn { font-size:11px; padding:4px 10px; white-space:nowrap; }
+
+.post-output { background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:var(--r-md); padding:14px; margin-top:12px; }
+.post-platform { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:8px; }
+.post-text { font-size:13px; color:var(--text-primary); line-height:1.65; white-space:pre-wrap; }
+.post-char { font-size:11px; color:var(--text-muted); margin-top:6px; }
+
+.idea-form { display:flex; gap:8px; flex-direction:column; }
+{% endblock %}
+
+{% block content %}
+<div class="social-header">
+  <div>
+    <h1>Social Media</h1>
+    <p>Turn ideas into LinkedIn and Twitter posts</p>
+  </div>
+  <a href="/pipeline/social_posts" class="t-btn t-btn-primary">Run Full Pipeline</a>
+</div>
+
+<div class="social-grid">
+  <!-- Ideas board -->
+  <div class="social-panel">
+    <div class="social-panel-head">💡 Ideas Board</div>
+    <div class="social-panel-body">
+      <!-- Add idea -->
+      <div class="idea-form" style="margin-bottom:16px">
+        <textarea class="t-input t-textarea" id="new-idea" placeholder="What are you thinking about? Add an idea for a post…" rows="3"></textarea>
+        <button class="t-btn t-btn-primary" onclick="saveIdea()">Save Idea</button>
+      </div>
+
+      {% for idea in ideas %}
+      <div class="idea-item">
+        <div class="idea-text">{{ idea.text }}{% if idea.text|length == 200 %}…{% endif %}</div>
+        <button class="t-btn t-btn-ghost idea-run-btn" onclick="generatePosts({{ loop.index0 }})">Generate →</button>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px;opacity:.6">No ideas yet. Add one above or check your Obsidian inbox.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Generate posts -->
+  <div class="social-panel">
+    <div class="social-panel-head">✍ Generate Posts</div>
+    <div class="social-panel-body">
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Your idea or topic</label>
+        <textarea class="t-input t-textarea" id="post-idea" placeholder="Enter an idea or topic to write posts about…" rows="3"></textarea>
+      </div>
+      <button class="t-btn t-btn-primary" style="width:100%" onclick="generateFromInput()">Generate LinkedIn + Twitter Posts</button>
+      <div id="post-output"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const _ideas = {{ ideas | tojson }};
+
+async function saveIdea() {
+  const text = document.getElementById('new-idea').value.trim();
+  if (!text) return;
+  await fetch('/api/ideas', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ text })
+  });
+  showToast('Idea saved', '💡');
+  setTimeout(() => location.reload(), 700);
+}
+
+async function generatePosts(idx) {
+  const idea = _ideas[idx]?.text || '';
+  document.getElementById('post-idea').value = idea;
+  await generateFromInput();
+}
+
+async function generateFromInput() {
+  const idea = document.getElementById('post-idea').value.trim();
+  if (!idea) { showToast('Enter an idea first', '⚠️'); return; }
+  const out = document.getElementById('post-output');
+  out.innerHTML = '<div style="margin-top:14px;color:var(--text-muted);font-size:12px">Researching trends and writing posts…</div>';
+  try {
+    const [liRes, twRes] = await Promise.all([
+      fetch('/api/social_post_writer', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ idea, platform: 'linkedin', tone: 'professional-thought-leader' })
+      }),
+      fetch('/api/social_post_writer', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ idea, platform: 'twitter', tone: 'concise-punchy' })
+      }),
+    ]);
+    const li = await liRes.json();
+    const tw = await twRes.json();
+    out.innerHTML = [
+      renderPost('LinkedIn', li, '#0a66c2'),
+      renderPost('Twitter / X', tw, '#1d9bf0'),
+    ].join('');
+  } catch(e) {
+    out.innerHTML = `<div style="margin-top:14px;color:var(--red);font-size:12px">Error: ${e.message}</div>`;
+  }
+}
+
+function renderPost(platform, d, color) {
+  const text = d.post_text || d.error || '';
+  const chars = d.character_count || text.length;
+  const tags  = (d.hashtags || []).join(' ');
+  return `
+    <div class="post-output">
+      <div class="post-platform" style="color:${color}">${platform}</div>
+      <div class="post-text">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      ${tags ? `<div style="margin-top:8px;font-size:11.5px;color:var(--text-muted)">${tags}</div>` : ''}
+      <div class="post-char">${chars} chars</div>
+      <button onclick="navigator.clipboard.writeText(${JSON.stringify(text)}).then(()=>showToast('Copied','📋'))"
+        class="t-btn t-btn-ghost" style="margin-top:8px;font-size:11px;padding:4px 10px">Copy</button>
+    </div>`;
+}
+</script>
+{% endblock %}

@@ -34,3 +34,7 @@ dependencies = [
     "trafilatura>=1.9.0",
     "uuid6>=2024.1.12",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["thuon_platform"]
+testpaths  = ["thuon_platform/tests/ci"]

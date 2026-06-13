@@ -15,3 +15,35 @@ ollama:
   vision_model: 'minicpm-v:4.5'
 weaviate:
   url: 'http://localhost:8080'
+
+company:
+  profile_dir: thuon_platform/data/company
+  name: ''
+  website: ''
+  naics_codes: []
+  rfp_keywords: []
+
+obsidian:
+  vault_path: ''
+  inbox_folder: 'Thuon Inbox'
+  rfp_folder: 'RFPs'
+  blog_folder: 'Blog Posts'
+
+neditor:
+  ipc_queue_path: '~/.neditor/cli-open-queue.jsonl'
+  webhook_secret: ''
+
+website:
+  url: ''
+  site_repo_path: ''
+  pages_to_refresh: []
+
+scheduler:
+  enabled: true
+  rfp_discovery_interval_hours: 6
+  blog_suggestions_day: 'monday'
+  social_daily_hour: 8
+  website_refresh_day: 'sunday'
+
+notifications:
+  retention_count: 50

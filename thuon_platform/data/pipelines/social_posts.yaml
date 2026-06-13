@@ -1,0 +1,25 @@
+name: social_posts
+description: Research trending context → Write LinkedIn + Twitter posts for an idea
+
+steps:
+  - name: research
+    capability: social_trend_researcher
+    params:
+      idea: "{input.idea}"
+      platforms: "{input.platforms}"
+
+  - name: linkedin_post
+    capability: social_post_writer
+    params:
+      idea: "{input.idea}"
+      platform: "linkedin"
+      context: "{steps.research.context_summary}"
+      tone: "professional-thought-leader"
+
+  - name: twitter_post
+    capability: social_post_writer
+    params:
+      idea: "{input.idea}"
+      platform: "twitter"
+      context: "{steps.research.context_summary}"
+      tone: "concise-punchy"

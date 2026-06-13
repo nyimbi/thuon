@@ -24,3 +24,24 @@ misc/
 create_thuon.sh
 create_thuon1.sh
 failed_repos.txt
+
+# Databases and generated data
+*.db
+thuon_platform/data/memory/
+thuon_platform/data/long_documents/
+thuon_platform/data/_company_kb.json
+
+# Logs
+*.log
+thuon_platform/capabilities/audio_logs/
+
+# Temp / scratch capability files
+thuon_platform/capabilities/t.py
+
+# Draft docs (not clean research)
+docs/improv-1.md
+docs/rfp_resp.md
+docs/rfp_resp-1.md
+
+# Obsolete docs subdir (research moved to docs/research/)
+thuon_platform/docs/

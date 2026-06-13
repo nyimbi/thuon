@@ -491,6 +491,366 @@ CAPABILITY_REGISTRY = {
 		'module': 'capabilities.niche_finder',
 		'class': 'NicheFinder',
 	},
+	# ── RFP capabilities ──────────────────────────────────────────────────────
+	'rfp_ingester': {
+		'description': 'Parse an RFP from URL, file path, or pasted text into structured JSON.',
+		'method': 'ingest',
+		'params': [{'name': 'rfp_source', 'type': 'str', 'required': True}],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_ingester',
+		'class': 'RFPIngester',
+	},
+	'rfp_compliance_matrix_builder': {
+		'description': 'Build a compliance matrix mapping every RFP requirement to a response location.',
+		'method': 'build_matrix',
+		'params': [
+			{'name': 'requirements', 'type': 'str', 'required': True},
+			{'name': 'rfp_title', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_compliance_matrix_builder',
+		'class': 'RFPComplianceMatrixBuilder',
+	},
+	'rfp_bid_evaluator': {
+		'description': 'Score an RFP for bid/no-bid with win probability and risk assessment.',
+		'method': 'evaluate',
+		'params': [
+			{'name': 'scope_summary', 'type': 'str', 'required': True},
+			{'name': 'requirements', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'evaluation_criteria', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'budget', 'type': 'str', 'required': False, 'default': 'Not disclosed'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_bid_evaluator',
+		'class': 'RFPBidEvaluator',
+	},
+	'rfp_customer_researcher': {
+		'description': 'Research the RFP issuer\'s strategic priorities, pain points, and budget environment.',
+		'method': 'research',
+		'params': [
+			{'name': 'issuer', 'type': 'str', 'required': True},
+			{'name': 'scope_summary', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.rfp_customer_researcher',
+		'class': 'RFPCustomerResearcher',
+	},
+	'rfp_competitor_analyst': {
+		'description': 'Identify incumbents, likely bidders, and competitive differentiation angles.',
+		'method': 'analyze',
+		'params': [
+			{'name': 'rfp_title', 'type': 'str', 'required': True},
+			{'name': 'scope_summary', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'issuer', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.rfp_competitor_analyst',
+		'class': 'RFPCompetitorAnalyst',
+	},
+	'rfp_win_strategy_builder': {
+		'description': 'Build win themes, solution outline, and discriminators from research and criteria.',
+		'method': 'build_strategy',
+		'params': [
+			{'name': 'evaluation_criteria', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'customer_research', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'competitor_analysis', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'rfp_title', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_win_strategy_builder',
+		'class': 'RFPWinStrategyBuilder',
+	},
+	'rfp_section_writer': {
+		'description': 'Write one proposal section (executive summary, technical approach, management plan, etc.).',
+		'method': 'write_section',
+		'params': [
+			{'name': 'section_name', 'type': 'str', 'required': True},
+			{'name': 'requirements', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'win_themes', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'company_context', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'sow_excerpt', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_section_writer',
+		'class': 'RFPSectionWriter',
+	},
+	'rfp_consistency_checker': {
+		'description': 'Red-team check: verify all sections cover the compliance matrix and flag inconsistencies.',
+		'method': 'check',
+		'params': [
+			{'name': 'sections', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'compliance_matrix', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'rfp_title', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_consistency_checker',
+		'class': 'RFPConsistencyChecker',
+	},
+	'rfp_assembler': {
+		'description': 'Assemble all proposal sections into a single markdown document and save to disk.',
+		'method': 'assemble',
+		'params': [
+			{'name': 'sections', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'rfp_title', 'type': 'str', 'required': False, 'default': 'RFP Response'},
+			{'name': 'rfp_id', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.rfp_assembler',
+		'class': 'RFPAssembler',
+	},
+	# ── Blog capabilities ─────────────────────────────────────────────────────
+	'blog_topic_researcher': {
+		'description': 'Generate SEO-informed blog topic ideas for a domain and audience.',
+		'method': 'research',
+		'params': [
+			{'name': 'domain', 'type': 'str', 'required': True},
+			{'name': 'audience', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'num_topics', 'type': 'int', 'required': False, 'default': 5},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.blog_topic_researcher',
+		'class': 'BlogTopicResearcher',
+	},
+	'blog_outliner': {
+		'description': 'Create a structured, SEO-optimized outline for a blog post.',
+		'method': 'outline',
+		'params': [
+			{'name': 'topic', 'type': 'str', 'required': True},
+			{'name': 'audience', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'target_length', 'type': 'int', 'required': False, 'default': 1200},
+			{'name': 'seo_keyword', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.blog_outliner',
+		'class': 'BlogOutliner',
+	},
+	'blog_section_writer': {
+		'description': 'Write a blog section or full post from an outline.',
+		'method': 'write',
+		'params': [
+			{'name': 'heading', 'type': 'str', 'required': True},
+			{'name': 'subheadings', 'type': 'list', 'required': False, 'default': []},
+			{'name': 'seo_keyword', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'tone', 'type': 'str', 'required': False, 'default': 'authoritative-friendly'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.blog_section_writer',
+		'class': 'BlogSectionWriter',
+	},
+	'blog_seo_optimizer': {
+		'description': 'SEO-optimize a complete blog post and save to data/blog/.',
+		'method': 'optimize',
+		'params': [
+			{'name': 'full_content', 'type': 'str', 'required': True},
+			{'name': 'target_keyword', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'meta_description', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.blog_seo_optimizer',
+		'class': 'BlogSEOOptimizer',
+	},
+	# ── Website capabilities ──────────────────────────────────────────────────
+	'website_content_auditor': {
+		'description': 'Fetch and analyze current website page content for quality and SEO.',
+		'method': 'audit',
+		'params': [
+			{'name': 'url', 'type': 'str', 'required': True},
+			{'name': 'page_path', 'type': 'str', 'required': False, 'default': '/'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.website_content_auditor',
+		'class': 'WebsiteContentAuditor',
+	},
+	'website_gap_analyzer': {
+		'description': 'Identify content gaps, outdated claims, and SEO opportunities on a page.',
+		'method': 'analyze',
+		'params': [
+			{'name': 'current_content', 'type': 'str', 'required': True},
+			{'name': 'target_audience', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'page_path', 'type': 'str', 'required': False, 'default': '/'},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.website_gap_analyzer',
+		'class': 'WebsiteGapAnalyzer',
+	},
+	'website_section_writer': {
+		'description': 'Rewrite or create compelling website copy for a page or section.',
+		'method': 'write',
+		'params': [
+			{'name': 'section_name', 'type': 'str', 'required': True},
+			{'name': 'current_content', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'improvements', 'type': 'list', 'required': False, 'default': []},
+			{'name': 'target_audience', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.website_section_writer',
+		'class': 'WebsiteSectionWriter',
+	},
+	'website_seo_optimizer': {
+		'description': 'Apply SEO optimization to website page content, generating title tags and meta descriptions.',
+		'method': 'optimize',
+		'params': [
+			{'name': 'content', 'type': 'str', 'required': True},
+			{'name': 'page_path', 'type': 'str', 'required': False, 'default': '/'},
+			{'name': 'target_keywords', 'type': 'list', 'required': False, 'default': []},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.website_seo_optimizer',
+		'class': 'WebsiteSEOOptimizer',
+	},
+	'website_change_assembler': {
+		'description': 'Write finalized website content to the static site repo (human reviews and pushes).',
+		'method': 'assemble',
+		'params': [
+			{'name': 'page_path', 'type': 'str', 'required': False, 'default': '/'},
+			{'name': 'optimized_content', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'title_tag', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'meta_description', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.website_change_assembler',
+		'class': 'WebsiteChangeAssembler',
+	},
+	# ── Social media capabilities ─────────────────────────────────────────────
+	'social_trend_researcher': {
+		'description': 'Research trending context for a social media post idea across platforms.',
+		'method': 'research',
+		'params': [
+			{'name': 'idea', 'type': 'str', 'required': True},
+			{'name': 'platforms', 'type': 'list', 'required': False, 'default': ['linkedin', 'twitter']},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.social_trend_researcher',
+		'class': 'SocialTrendResearcher',
+	},
+	'social_post_writer': {
+		'description': 'Write a platform-specific social media post (LinkedIn, Twitter/X, Instagram).',
+		'method': 'write',
+		'params': [
+			{'name': 'idea', 'type': 'str', 'required': True},
+			{'name': 'platform', 'type': 'str', 'required': False, 'default': 'linkedin'},
+			{'name': 'context', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'tone', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.social_post_writer',
+		'class': 'SocialPostWriter',
+	},
+	# ── Daily brief ───────────────────────────────────────────────────────────
+	'daily_brief': {
+		'description': 'Generate a structured daily/weekly digest of news, market signals, and KB highlights.',
+		'method': 'generate',
+		'params': [
+			{'name': 'topics', 'type': 'list', 'required': False, 'default': []},
+			{'name': 'focus_areas', 'type': 'list', 'required': False, 'default': []},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.daily_brief',
+		'class': 'DailyBrief',
+	},
+	'company_profile_generator': {
+		'description': 'Generate all company KB markdown files from structured interview answers.',
+		'method': 'generate',
+		'params': [
+			{'name': 'interview_answers', 'type': 'dict', 'required': True},
+		],
+		'deps': ['ai_engine', 'company_profile'],
+		'module': 'capabilities.company_profile_generator',
+		'class': 'CompanyProfileGenerator',
+	},
+	'meeting_notes_extractor': {
+		'description': 'Extract decisions, action items, and follow-ups from meeting transcripts. Auto-creates tasks and calendar events.',
+		'method': 'extract',
+		'params': [
+			{'name': 'transcript',        'type': 'text',   'required': True},
+			{'name': 'meeting_title',     'type': 'string', 'required': False, 'default': ''},
+			{'name': 'attendees',         'type': 'string', 'required': False, 'default': ''},
+			{'name': 'meeting_date',      'type': 'string', 'required': False, 'default': ''},
+			{'name': 'auto_create_tasks', 'type': 'bool',   'required': False, 'default': True},
+		],
+		'deps': ['ai_engine', 'company_profile'],
+		'module': 'capabilities.meeting_notes_extractor',
+		'class': 'MeetingNotesExtractor',
+	},
+	'pre_meeting_brief': {
+		'description': 'Generate a pre-meeting brief: attendee profiles, relationship history, talking points, open action items.',
+		'method': 'generate',
+		'params': [
+			{'name': 'attendees',         'type': 'string', 'required': True},
+			{'name': 'meeting_purpose',   'type': 'string', 'required': False, 'default': ''},
+			{'name': 'meeting_date',      'type': 'string', 'required': False, 'default': ''},
+			{'name': 'duration_minutes',  'type': 'int',    'required': False, 'default': 60},
+		],
+		'deps': ['ai_engine', 'search_engine', 'company_profile'],
+		'module': 'capabilities.pre_meeting_brief',
+		'class': 'PreMeetingBrief',
+	},
+	'weekly_review_generator': {
+		'description': 'Generate an executive weekly review aggregating RFP pipeline, tasks, calendar, and memory.',
+		'method': 'generate',
+		'params': [
+			{'name': 'week_ending', 'type': 'string', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine', 'company_profile'],
+		'module': 'capabilities.weekly_review_generator',
+		'class': 'WeeklyReviewGenerator',
+	},
+	'memory_consolidator': {
+		'description': 'Background memory consolidation: extract durable facts from recent activity into USER.md and MEMORY.md.',
+		'method': 'consolidate',
+		'params': [
+			{'name': 'conversation',    'type': 'text', 'required': False, 'default': ''},
+			{'name': 'force_full_scan', 'type': 'bool', 'required': False, 'default': False},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.memory_consolidator',
+		'class': 'MemoryConsolidator',
+	},
+	'consulting_research_engine': {
+		'description': (
+			'McKinsey/BCG-grade research reports from Ollama models. '
+			'8-stage pipeline: SCQA framing → MECE issue tree → evidence-first parallel gathering '
+			'→ competing hypotheses testing → pyramid synthesis (self-consistency N=3) '
+			'→ action title validation → G-Eval quality gate → two-layer output '
+			'(executive summary + full analysis).'
+		),
+		'method': 'research',
+		'params': [
+			{'name': 'question',        'type': 'text',   'required': True,  'default': ''},
+			{'name': 'industry',        'type': 'text',   'required': False, 'default': ''},
+			{'name': 'company_context', 'type': 'text',   'required': False, 'default': ''},
+			{'name': 'report_type',     'type': 'select', 'required': False, 'default': 'strategy',
+			 'options': ['strategy', 'market', 'competitive', 'operational', 'technology', 'ma']},
+			{'name': 'output_format',   'type': 'select', 'required': False, 'default': 'both',
+			 'options': ['both', 'executive', 'full']},
+		],
+		'deps': ['ai_engine', 'search_engine'],
+		'module': 'capabilities.consulting_research_engine',
+		'class': 'ConsultingResearchEngine',
+	},
+	'long_form_document_engine': {
+		'description': (
+			'Generates 50,000–200,000-word (100–400+ page) documents of consulting-grade quality. '
+			'Architecture: hierarchical outline planning → LaTeX-style two-pass exhibit numbering '
+			'→ serial section generation (rolling context + entity-state consistency) '
+			'→ cross-reference token resolution → ToC assembly → optional Pandoc PDF render. '
+			'Supports Mermaid diagrams, GFM tables, and self-consistency N=3 for key sections.'
+		),
+		'method': 'generate',
+		'params': [
+			{'name': 'topic',           'type': 'text',   'required': True,  'default': ''},
+			{'name': 'document_type',   'type': 'select', 'required': False, 'default': 'report',
+			 'options': ['report', 'whitepaper', 'proposal', 'strategy']},
+			{'name': 'target_audience', 'type': 'text',   'required': False, 'default': ''},
+			{'name': 'context',         'type': 'textarea', 'required': False, 'default': ''},
+			{'name': 'target_pages',    'type': 'number', 'required': False, 'default': 50},
+			{'name': 'sections_hint',   'type': 'text',   'required': False, 'default': ''},
+			{'name': 'render_pdf',      'type': 'checkbox', 'required': False, 'default': False},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.long_form_document_engine',
+		'class': 'LongFormDocumentEngine',
+	},
 }
 
 
@@ -535,6 +895,41 @@ _CATEGORY_MAP = {
 	'code_writer': 'dev',
 	'deep_researcher': 'research',
 	'niche_finder': 'strategy',
+	# RFP
+	'rfp_ingester': 'strategy',
+	'rfp_compliance_matrix_builder': 'strategy',
+	'rfp_bid_evaluator': 'strategy',
+	'rfp_customer_researcher': 'strategy',
+	'rfp_competitor_analyst': 'strategy',
+	'rfp_win_strategy_builder': 'strategy',
+	'rfp_section_writer': 'strategy',
+	'rfp_consistency_checker': 'strategy',
+	'rfp_assembler': 'strategy',
+	# Blog
+	'blog_topic_researcher': 'content',
+	'blog_outliner': 'content',
+	'blog_section_writer': 'content',
+	'blog_seo_optimizer': 'content',
+	# Website
+	'website_content_auditor': 'content',
+	'website_gap_analyzer': 'content',
+	'website_section_writer': 'content',
+	'website_seo_optimizer': 'content',
+	'website_change_assembler': 'content',
+	# Social
+	'social_trend_researcher': 'content',
+	'social_post_writer': 'content',
+	# Other
+	'daily_brief': 'research',
+	'company_profile_generator': 'strategy',
+	# Productivity / memory
+	'meeting_notes_extractor': 'research',
+	'pre_meeting_brief':       'research',
+	'weekly_review_generator': 'research',
+	'memory_consolidator':     'research',
+	# Consulting research engine
+	'consulting_research_engine':   'research',
+	'long_form_document_engine':    'content',
 }
 
 
@@ -543,6 +938,10 @@ def create_app() -> Flask:
 	app = Flask(__name__, template_folder='templates')
 	app.secret_key = settings.get_setting('flask.secret_key', 'thuon-dev-secret-key')
 	CORS(app)
+
+	# Start background scheduler (idempotent)
+	from core.scheduler import start as _start_scheduler
+	_start_scheduler(app)
 
 	_ICON_MAP = {
 		'research': ('🔬', 'rgba(124,106,247,0.15)', '#7c6af7'),
@@ -589,6 +988,11 @@ def create_app() -> Flask:
 			_services['rag_engine'] = RAGEngine(_services['ai_engine'], _services['kg_manager'])
 		except Exception:
 			_services['rag_engine'] = None
+		try:
+			from core.company_profile import get_company_profile
+			_services['company_profile'] = get_company_profile()
+		except Exception:
+			_services['company_profile'] = None
 		return _services
 
 	def _build_instance(cap_name: str):
@@ -604,6 +1008,7 @@ def create_app() -> Flask:
 			'db_handler': svc.get('db_handler'),
 			'rag_engine': svc.get('rag_engine'),
 			'template_manager': svc.get('template_manager'),
+			'company_profile': svc.get('company_profile'),
 		}
 		needed = {d: dep_map[d] for d in cfg['deps'] if d in dep_map and dep_map[d] is not None}
 
@@ -926,6 +1331,451 @@ def create_app() -> Flask:
 			return jsonify({'pipeline': pipe_name, 'steps': step_results, 'elapsed': elapsed})
 		except Exception as exc:
 			return jsonify({'error': str(exc), 'pipeline': pipe_name}), 500
+
+	# ── RFP tracker ────────────────────────────────────────────────────────────
+
+	@app.route('/rfps')
+	def rfps_index():
+		from core.rfp_tracker import get_rfp_tracker, RFPStatus
+		tracker = get_rfp_tracker()
+		by_status = {s.value: tracker.all(status=s.value) for s in RFPStatus}
+		return render_template('rfps.html', by_status=by_status, RFPStatus=RFPStatus)
+
+	@app.route('/rfp/<rfp_id>')
+	def rfp_detail(rfp_id):
+		from core.rfp_tracker import get_rfp_tracker
+		tracker = get_rfp_tracker()
+		record  = tracker.get(rfp_id)
+		if record is None:
+			flash(f'RFP {rfp_id!r} not found.', 'error')
+			return render_template('rfps.html', by_status={}, RFPStatus=None), 404
+		return render_template('rfp_detail.html', record=record)
+
+	@app.route('/api/rfp/discover', methods=['POST'])
+	def rfp_discover():
+		body   = request.get_json(force=True, silent=True) or {}
+		source = body.get('rfp_source', '')
+		if not source:
+			return jsonify({'error': 'rfp_source required'}), 400
+		from core.rfp_tracker import get_rfp_tracker
+		from core.notification_bus import get_notification_bus
+		tracker = get_rfp_tracker()
+		bus     = get_notification_bus()
+		try:
+			instance = _build_instance('rfp_ingester')
+			parsed   = instance.ingest(rfp_source=source)
+			record   = tracker.create(
+				title=parsed.get('title', 'Untitled RFP'),
+				issuer=parsed.get('issuer', 'Unknown'),
+				summary=parsed.get('scope_summary', ''),
+				source_url=source,
+				deadline=parsed.get('deadline'),
+			)
+			bus.publish('rfp_found', f'New RFP: {record.title}',
+			            body=f'Issuer: {record.issuer}', url=f'/rfp/{record.id}')
+			return jsonify({'rfp_id': record.id, 'title': record.title,
+			                'issuer': record.issuer, 'status': record.status.value})
+		except Exception as exc:
+			return jsonify({'error': str(exc)}), 500
+
+	@app.route('/api/rfp/<rfp_id>/approve', methods=['POST'])
+	def rfp_approve(rfp_id):
+		from core.rfp_tracker import get_rfp_tracker
+		body   = request.get_json(force=True, silent=True) or {}
+		phase  = body.get('phase', '')
+		tracker = get_rfp_tracker()
+		record  = tracker.get(rfp_id)
+		if record is None:
+			return jsonify({'error': 'RFP not found'}), 404
+		if phase not in ('bid', 'strategy', 'review'):
+			return jsonify({'error': f'Unknown phase {phase!r}. Use: bid, strategy, review'}), 400
+		try:
+			# 'bid' requires two FSM hops: discovered→evaluating→awaiting_strategy
+			if phase == 'bid':
+				if record.status.value == 'discovered':
+					tracker.advance_status(rfp_id, 'evaluating')
+				updated = tracker.advance_status(rfp_id, 'awaiting_strategy')
+			elif phase == 'strategy':
+				updated = tracker.advance_status(rfp_id, 'responding')
+			else:  # review
+				updated = tracker.advance_status(rfp_id, 'submitted')
+			return jsonify(updated.to_dict())
+		except ValueError as exc:
+			return jsonify({'error': str(exc)}), 422
+
+	@app.route('/api/rfp/<rfp_id>', methods=['PATCH'])
+	def rfp_update(rfp_id):
+		from core.rfp_tracker import get_rfp_tracker
+		body    = request.get_json(force=True, silent=True) or {}
+		tracker = get_rfp_tracker()
+		record  = tracker.get(rfp_id)
+		if record is None:
+			return jsonify({'error': 'RFP not found'}), 404
+		allowed = {'title', 'issuer', 'summary', 'deadline', 'bid_score',
+		           'bid_recommendation', 'response_dir', 'pipeline_step'}
+		fields  = {k: v for k, v in body.items() if k in allowed}
+		updated = tracker.update(rfp_id, **fields)
+		return jsonify(updated.to_dict())
+
+	@app.route('/api/rfps')
+	def rfp_list_api():
+		from core.rfp_tracker import get_rfp_tracker
+		tracker = get_rfp_tracker()
+		status  = request.args.get('status')
+		return jsonify([r.to_dict() for r in tracker.all(status=status)])
+
+	# ── Content hub ────────────────────────────────────────────────────────────
+
+	@app.route('/content')
+	def content_hub():
+		from pathlib import Path as _Path
+		blog_posts = sorted(
+			(_Path(__file__).parent.parent / 'data' / 'blog').glob('*.md'),
+			reverse=True,
+		)[:10]
+		posts = [{'name': p.stem, 'path': str(p)} for p in blog_posts]
+		return render_template('content_hub.html', posts=posts)
+
+	@app.route('/content/blog')
+	def content_blog():
+		from pathlib import Path as _Path
+		blog_dir = _Path(__file__).parent.parent / 'data' / 'blog'
+		posts    = sorted(blog_dir.glob('*.md'), reverse=True)
+		post_list = [{'name': p.stem, 'size': p.stat().st_size} for p in posts]
+		return render_template('content_blog.html', posts=post_list)
+
+	@app.route('/content/social')
+	def content_social():
+		from pathlib import Path as _Path
+		ideas_dir = _Path(__file__).parent.parent / 'data' / 'ideas'
+		ideas     = []
+		if ideas_dir.is_dir():
+			ideas = [
+				{'name': p.stem, 'text': p.read_text(encoding='utf-8')[:200]}
+				for p in sorted(ideas_dir.glob('*.md'), reverse=True)
+			]
+		return render_template('content_social.html', ideas=ideas)
+
+	@app.route('/content/website')
+	def content_website():
+		from core.settings_manager import get_settings as _gs
+		s     = _gs()
+		url   = s.get_setting('website.url', '')
+		pages = s.get_setting('website.pages_to_refresh', [])
+		from pathlib import Path as _Path
+		out_dir  = _Path(__file__).parent.parent / 'data' / 'website_output'
+		outfiles = list(out_dir.glob('*.md')) if out_dir.is_dir() else []
+		return render_template('content_website.html', url=url, pages=pages,
+		                       outfiles=[f.name for f in outfiles])
+
+	@app.route('/api/ideas', methods=['POST'])
+	def save_idea():
+		import time as _time
+		from pathlib import Path as _Path
+		body  = request.get_json(force=True, silent=True) or {}
+		text  = (body.get('text') or '').strip()
+		if not text:
+			return jsonify({'error': 'text required'}), 400
+		ideas_dir = _Path(__file__).parent.parent / 'data' / 'ideas'
+		ideas_dir.mkdir(parents=True, exist_ok=True)
+		fname = ideas_dir / f'{_time.strftime("%Y%m%d-%H%M%S")}.md'
+		fname.write_text(text, encoding='utf-8')
+		return jsonify({'saved': str(fname)})
+
+	# ── Company settings ───────────────────────────────────────────────────────
+
+	@app.route('/settings/company/wizard')
+	def company_wizard():
+		return render_template('company_wizard.html')
+
+	@app.route('/settings/company')
+	def company_settings():
+		from core.company_profile import get_company_profile
+		profile = get_company_profile()
+		files   = profile.list_files()
+		selected = request.args.get('file', files[0] if files else '')
+		content  = profile.get_file(selected) if selected else ''
+		return render_template('company_settings.html',
+		                       files=files, selected=selected, content=content)
+
+	@app.route('/api/settings/company/<filename>', methods=['POST'])
+	def save_company_file(filename):
+		import re as _re
+		from pathlib import Path as _Path
+		from core.company_profile import get_company_profile
+		if not _re.match(r'^[\w\-]+\.md$', filename):
+			return jsonify({'error': 'Invalid filename'}), 400
+		body    = request.get_json(force=True, silent=True) or {}
+		content = body.get('content', '')
+		profile = get_company_profile()
+		out     = profile._dir / filename
+		out.write_text(content, encoding='utf-8')
+		profile.reload()
+		return jsonify({'saved': filename})
+
+	# ── Notifications (SSE) ────────────────────────────────────────────────────
+
+	@app.route('/api/notifications/stream')
+	def notifications_stream():
+		from flask import Response
+		from core.notification_bus import get_notification_bus
+		bus = get_notification_bus()
+		return Response(
+			bus.stream(),
+			mimetype='text/event-stream',
+			headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+		)
+
+	@app.route('/api/notifications')
+	def notifications_list():
+		from core.notification_bus import get_notification_bus
+		bus   = get_notification_bus()
+		limit = int(request.args.get('limit', 20))
+		return jsonify({
+			'notifications': bus.history(limit=limit),
+			'unread_count':  bus.unread_count(),
+		})
+
+	@app.route('/api/notifications/read', methods=['POST'])
+	def notifications_mark_read():
+		from core.notification_bus import get_notification_bus
+		get_notification_bus().mark_all_read()
+		return jsonify({'ok': True})
+
+	# ── neditor webhook ────────────────────────────────────────────────────────
+
+	@app.route('/api/neditor/webhook', methods=['POST'])
+	def neditor_webhook():
+		from core.notification_bus import get_notification_bus
+		body  = request.get_json(force=True, silent=True) or {}
+		event = body.get('event', '')
+		path  = body.get('path', '')
+		bus   = get_notification_bus()
+		if event == 'exported':
+			bus.publish('neditor_exported', 'Document exported', body=path, url='/rfps')
+		elif event == 'approved':
+			bus.publish('neditor_approved', 'Document approved', body=path)
+		return jsonify({'ok': True})
+
+	# ── Jinja2 filters ─────────────────────────────────────────────────────────
+
+	@app.template_filter('todelta')
+	def todelta_filter(date_str: str) -> int:
+		from datetime import date
+		try:
+			return (date.fromisoformat(date_str) - date.today()).days
+		except Exception:
+			return 0
+
+	@app.template_filter('fromts')
+	def fromts_filter(ts: int) -> str:
+		from datetime import datetime
+		try:
+			return datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')
+		except Exception:
+			return ''
+
+	# ── Tasks ──────────────────────────────────────────────────────────────────
+
+	@app.route('/tasks')
+	def tasks_view():
+		from core.task_store import get_task_store
+		from datetime import date
+		store = get_task_store()
+		return render_template(
+			'tasks.html',
+			by_status=store.by_status(),
+			stats=store.stats(),
+			now_date=date.today().isoformat(),
+		)
+
+	@app.route('/api/tasks', methods=['POST'])
+	def tasks_create():
+		from core.task_store import get_task_store
+		body = request.get_json(force=True, silent=True) or {}
+		title = body.get('title', '').strip()
+		if not title:
+			return jsonify({'error': 'title required'}), 400
+		task = get_task_store().create(
+			title=title,
+			notes=body.get('notes', ''),
+			priority=int(body.get('priority', 2)),
+			due_date=body.get('due_date') or None,
+			project=body.get('project', ''),
+			tags=body.get('tags', ''),
+		)
+		return jsonify(task)
+
+	@app.route('/api/tasks/<task_id>', methods=['PATCH'])
+	def tasks_update(task_id: str):
+		from core.task_store import get_task_store
+		body = request.get_json(force=True, silent=True) or {}
+		task = get_task_store().update(task_id, **body)
+		if task is None:
+			return jsonify({'error': 'not found'}), 404
+		return jsonify(task)
+
+	@app.route('/api/tasks/<task_id>', methods=['DELETE'])
+	def tasks_delete(task_id: str):
+		from core.task_store import get_task_store
+		ok = get_task_store().delete(task_id)
+		return jsonify({'ok': ok})
+
+	@app.route('/api/tasks')
+	def tasks_list():
+		from core.task_store import get_task_store
+		store  = get_task_store()
+		status = request.args.get('status')
+		tasks  = store.all(status=status, include_completed=request.args.get('all') == '1')
+		return jsonify(tasks)
+
+	# ── Calendar ───────────────────────────────────────────────────────────────
+
+	@app.route('/calendar')
+	def calendar_view():
+		from core.calendar_store import get_calendar_store, EVENT_TYPES
+		from datetime import date
+		cal   = get_calendar_store()
+		today = date.today()
+		year  = int(request.args.get('year',  today.year))
+		month = int(request.args.get('month', today.month))
+		month_evs  = cal.for_month(year, month)
+		upcoming   = cal.upcoming(days=30)
+		past_cutoff = today.isoformat()
+		overdue_evs = [e for e in cal.all(include_past=True) if e['date'] < past_cutoff][-5:]
+		return render_template(
+			'calendar.html',
+			month_events=month_evs,
+			upcoming=upcoming,
+			overdue_events=overdue_evs,
+			upcoming_count=len(upcoming),
+			event_types=EVENT_TYPES,
+			current_year=year,
+			current_month=month,
+		)
+
+	@app.route('/api/events', methods=['GET'])
+	def events_list():
+		from core.calendar_store import get_calendar_store
+		cal   = get_calendar_store()
+		year  = request.args.get('year')
+		month = request.args.get('month')
+		if year and month:
+			return jsonify(cal.for_month(int(year), int(month)))
+		return jsonify(cal.upcoming(days=60))
+
+	@app.route('/api/events', methods=['POST'])
+	def events_create():
+		from core.calendar_store import get_calendar_store
+		body = request.get_json(force=True, silent=True) or {}
+		if not body.get('title') or not body.get('date'):
+			return jsonify({'error': 'title and date required'}), 400
+		ev = get_calendar_store().create(
+			title=body['title'],
+			date=body['date'],
+			event_type=body.get('event_type', 'other'),
+			time=body.get('time'),
+			notes=body.get('notes', ''),
+			ref_id=body.get('ref_id'),
+			ref_type=body.get('ref_type'),
+			alert_days=body.get('alert_days', '7,1'),
+		)
+		return jsonify(ev)
+
+	@app.route('/api/events/<event_id>', methods=['PATCH'])
+	def events_update(event_id: str):
+		from core.calendar_store import get_calendar_store
+		body = request.get_json(force=True, silent=True) or {}
+		ev   = get_calendar_store().update(event_id, **body)
+		if ev is None:
+			return jsonify({'error': 'not found'}), 404
+		return jsonify(ev)
+
+	@app.route('/api/events/<event_id>', methods=['DELETE'])
+	def events_delete(event_id: str):
+		from core.calendar_store import get_calendar_store
+		ok = get_calendar_store().delete(event_id)
+		return jsonify({'ok': ok})
+
+	@app.route('/api/events/sync_rfp', methods=['POST'])
+	def events_sync_rfp():
+		from core.calendar_store import get_calendar_store
+		added = get_calendar_store().sync_rfp_deadlines()
+		return jsonify({'added': added})
+
+	# ── Memory ─────────────────────────────────────────────────────────────────
+
+	@app.route('/memory')
+	def memory_view():
+		from core.memory_store import get_memory_store
+		ms = get_memory_store()
+		return render_template(
+			'memory.html',
+			user_content=ms.read_user(),
+			mem_content=ms.read_memory(),
+			episodes=ms.recent_episodes(limit=30),
+			stats=ms.stats(),
+		)
+
+	@app.route('/api/memory/<mem_type>', methods=['POST'])
+	def memory_save(mem_type: str):
+		from core.memory_store import get_memory_store
+		if mem_type not in ('user', 'memory'):
+			return jsonify({'error': 'invalid type'}), 400
+		body    = request.get_json(force=True, silent=True) or {}
+		content = body.get('content', '')
+		ms      = get_memory_store()
+		if mem_type == 'user':
+			ms.write_user(content)
+		else:
+			ms.write_memory(content)
+		return jsonify({'saved': mem_type})
+
+	@app.route('/api/memory/<mem_type>/add_fact', methods=['POST'])
+	def memory_add_fact(mem_type: str):
+		from core.memory_store import get_memory_store
+		if mem_type not in ('user', 'memory'):
+			return jsonify({'error': 'invalid type'}), 400
+		body = request.get_json(force=True, silent=True) or {}
+		fact = body.get('fact', '').strip()
+		if not fact:
+			return jsonify({'error': 'fact required'}), 400
+		ms = get_memory_store()
+		if mem_type == 'user':
+			ms.add_user_fact(fact)
+		else:
+			ms.add_memory_fact(fact)
+		return jsonify({'added': fact})
+
+	@app.route('/api/memory/episodes')
+	def memory_episodes():
+		from core.memory_store import get_memory_store
+		ms    = get_memory_store()
+		query = request.args.get('q', '').strip()
+		limit = int(request.args.get('limit', 20))
+		if query:
+			results = ms.search_episodes(query, limit=limit)
+		else:
+			results = ms.recent_episodes(limit=limit)
+		return jsonify(results)
+
+	@app.route('/api/memory/consolidate', methods=['POST'])
+	def memory_consolidate():
+		from core.memory_store import get_memory_store
+		body         = request.get_json(force=True, silent=True) or {}
+		conversation = body.get('conversation', '')
+		svc          = _get_services()
+		try:
+			import importlib
+			mod  = importlib.import_module('capabilities.memory_consolidator')
+			inst = mod.MemoryConsolidator(ai_engine=svc['ai_engine'])
+			result = inst.consolidate(
+				conversation=conversation,
+				force_full_scan=body.get('force_full_scan', not conversation),
+			)
+		except Exception as exc:
+			return jsonify({'error': str(exc)}), 500
+		return jsonify(result)
 
 	return app
 

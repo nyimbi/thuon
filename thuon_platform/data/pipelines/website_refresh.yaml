@@ -1,0 +1,39 @@
+name: website_refresh
+description: Audit → Gap analysis → Rewrite → SEO optimize → Write to repo
+
+steps:
+  - name: audit
+    capability: website_content_auditor
+    params:
+      url: "{input.url}"
+      page_path: "{input.page_path}"
+
+  - name: gap_analysis
+    capability: website_gap_analyzer
+    params:
+      current_content: "{steps.audit.current_content}"
+      target_audience: "{input.target_audience}"
+      page_path: "{input.page_path}"
+
+  - name: rewrite
+    capability: website_section_writer
+    params:
+      section_name: "{input.page_path}"
+      current_content: "{steps.audit.current_content}"
+      improvements: "{steps.gap_analysis.improvement_priority}"
+      target_audience: "{input.target_audience}"
+
+  - name: seo
+    capability: website_seo_optimizer
+    params:
+      content: "{steps.rewrite.new_content}"
+      page_path: "{input.page_path}"
+      target_keywords: "{steps.gap_analysis.seo_gaps}"
+
+  - name: assemble
+    capability: website_change_assembler
+    params:
+      page_path: "{input.page_path}"
+      optimized_content: "{steps.seo.optimized_content}"
+      title_tag: "{steps.seo.title_tag}"
+      meta_description: "{steps.seo.meta_description}"

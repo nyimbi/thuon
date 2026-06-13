@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Company Settings — Thuon{% endblock %}
+
+{% block extra_styles %}
+.settings-header { margin-bottom:24px; }
+.settings-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.settings-header p { font-size:12.5px; color:var(--text-muted); }
+
+.settings-layout { display:grid; grid-template-columns:220px 1fr; gap:20px; }
+@media(max-width:800px) { .settings-layout { grid-template-columns:1fr; } }
+
+.file-sidebar { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.file-sidebar-head { padding:10px 14px; border-bottom:1px solid var(--border); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+.file-link { display:block; padding:9px 14px; font-size:12.5px; font-family:'JetBrains Mono',monospace; color:var(--text-secondary); text-decoration:none; border-bottom:1px solid var(--border); transition:background .12s,color .12s; }
+.file-link:hover { background:var(--bg-elevated); color:var(--text-primary); }
+.file-link.active { background:var(--accent-dim); color:var(--accent); border-right:2px solid var(--accent); }
+
+.editor-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; height:100%; display:flex; flex-direction:column; }
+.editor-toolbar { padding:10px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.editor-filename { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:var(--text-primary); }
+.editor-area { flex:1; padding:0; }
+.editor-area textarea { width:100%; height:600px; background:var(--bg-void); border:none; border-radius:0; color:var(--text-primary); font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.7; padding:20px; resize:none; outline:none; }
+.save-indicator { font-size:11.5px; color:var(--green); display:none; }
+{% endblock %}
+
+{% block content %}
+<div class="settings-header">
+  <h1>Company Knowledge Base</h1>
+  <p>Edit company profile files — these power all RFP, content, and strategy capabilities</p>
+</div>
+
+<div class="settings-layout">
+  <!-- File list -->
+  <div class="file-sidebar">
+    <div class="file-sidebar-head">Files</div>
+    {% for f in files %}
+    <a class="file-link {{ 'active' if f == selected }}" href="/settings/company?file={{ f }}">{{ f }}</a>
+    {% else %}
+    <div style="padding:16px;font-size:12px;color:var(--text-muted)">No files found in data/company/</div>
+    {% endfor %}
+  </div>
+
+  <!-- Editor -->
+  <div class="editor-card">
+    {% if selected %}
+    <div class="editor-toolbar">
+      <span class="editor-filename">{{ selected }}</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="save-indicator" id="save-indicator">✓ Saved</span>
+        <button class="t-btn t-btn-primary" onclick="saveFile()">Save</button>
+      </div>
+    </div>
+    <div class="editor-area">
+      <textarea id="editor" spellcheck="false" oninput="onEdit()">{{ content }}</textarea>
+    </div>
+    {% else %}
+    <div style="display:flex;align-items:center;justify-content:center;height:400px;color:var(--text-muted);font-size:13px">
+      Select a file to edit
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _dirty = false;
+
+function onEdit() { _dirty = true; }
+
+async function saveFile() {
+  const content = document.getElementById('editor').value;
+  const filename = '{{ selected }}';
+  try {
+    const r = await fetch('/api/settings/company/' + filename, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ content })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    _dirty = false;
+    const ind = document.getElementById('save-indicator');
+    ind.style.display = 'inline';
+    setTimeout(() => { ind.style.display = 'none'; }, 2500);
+    showToast('Saved — KB reloaded', '✓');
+  } catch(e) {
+    showToast(e.message, '✕', 5000);
+  }
+}
+
+/* Ctrl/Cmd+S to save */
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    saveFile();
+  }
+});
+
+/* Warn on unsaved changes */
+window.addEventListener('beforeunload', e => {
+  if (_dirty) e.preventDefault();
+});
+</script>
+{% endblock %}

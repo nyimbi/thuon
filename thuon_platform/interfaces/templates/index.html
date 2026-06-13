@@ -4,6 +4,16 @@
 {% block extra_styles %}
 /* ── Index-specific styles ─────────────────────────────────────────── */
 
+/* ── Category accent colors (keyed to data-cat set by JS) ──────────── */
+.cap-card[data-cat="research"]  { --cat-color: #3ecfcf; }
+.cap-card[data-cat="content"]   { --cat-color: #fbbf24; }
+.cap-card[data-cat="analytics"] { --cat-color: #34d399; }
+.cap-card[data-cat="hr"]        { --cat-color: #c084fc; }
+.cap-card[data-cat="risk"]      { --cat-color: #f87171; }
+.cap-card[data-cat="strategy"]  { --cat-color: #fb923c; }
+.cap-card[data-cat="data"]      { --cat-color: #60a5fa; }
+.cap-card[data-cat="dev"]       { --cat-color: #a78bfa; }
+
 /* ── Ask Thuon bar ──────────────────────────────────────────────────── */
 .ask-bar-wrap {
   margin-bottom: 28px;
@@ -224,6 +234,7 @@
 }
 
 .idx-header-left h1 {
+  font-family: var(--heading-font);
   font-size: 22px;
   font-weight: 700;
   margin: 0 0 4px;
@@ -345,6 +356,7 @@
 .cap-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
+  border-top: 2px solid var(--cat-color, var(--border));
   border-radius: var(--r-lg);
   padding: 0;
   display: flex;
@@ -403,7 +415,7 @@
 
 .cap-method-badge {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--text-muted);
   background: var(--bg-void);
   border: 1px solid var(--border);

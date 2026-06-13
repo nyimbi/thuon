@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Website Refresh — Thuon{% endblock %}
+
+{% block extra_styles %}
+.site-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
+.site-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.site-header p { font-size:12.5px; color:var(--text-muted); }
+
+.site-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
+@media(max-width:900px) { .site-grid { grid-template-columns:1fr; } }
+
+.site-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:16px; }
+.site-card-head { padding:12px 18px; border-bottom:1px solid var(--border); font-family:var(--heading-font); font-size:14px; font-weight:700; }
+.site-card-body { padding:18px; }
+
+.page-item { background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:var(--r-md); padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.page-path { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--teal); }
+
+.audit-form { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+{% endblock %}
+
+{% block content %}
+<div class="site-header">
+  <div>
+    <h1>Website Refresh</h1>
+    <p>{{ 'Targeting: ' + url if url else 'Configure website.url in config.yaml' }}</p>
+  </div>
+  <a href="/pipeline/website_refresh" class="t-btn t-btn-primary">Run Full Pipeline</a>
+</div>
+
+<div class="site-grid">
+  <div>
+    <!-- Audit a page -->
+    <div class="site-card">
+      <div class="site-card-head">Audit a Page</div>
+      <div class="site-card-body">
+        <div class="audit-form">
+          <input class="t-input" id="audit-url" placeholder="Page URL" value="{{ url }}" />
+          <input class="t-input" id="audit-path" placeholder="Page path e.g. /about" value="/" />
+          <button class="t-btn t-btn-primary" onclick="auditPage()">Audit</button>
+        </div>
+        <div id="audit-result" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- Configured pages -->
+    {% if pages %}
+    <div class="site-card">
+      <div class="site-card-head">Configured Pages</div>
+      <div class="site-card-body">
+        {% for page in pages %}
+        <div class="page-item">
+          <span class="page-path">{{ page }}</span>
+          <button class="t-btn t-btn-ghost" style="font-size:11.5px;padding:4px 10px" onclick="refreshPage('{{ page }}')">Refresh →</button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <!-- Output files -->
+    <div class="site-card">
+      <div class="site-card-head">Generated Files</div>
+      <div class="site-card-body">
+        {% for f in outfiles %}
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border)">{{ f }}</div>
+        {% else %}
+        <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px">No output files yet</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="site-card">
+      <div class="site-card-head">Quick Capabilities</div>
+      <div class="site-card-body" style="display:flex;flex-direction:column;gap:8px">
+        <a href="/capability/website_content_auditor" class="t-btn t-btn-ghost" style="justify-content:center">Audit Page</a>
+        <a href="/capability/website_gap_analyzer" class="t-btn t-btn-ghost" style="justify-content:center">Gap Analysis</a>
+        <a href="/capability/website_section_writer" class="t-btn t-btn-ghost" style="justify-content:center">Rewrite Section</a>
+        <a href="/capability/website_seo_optimizer" class="t-btn t-btn-ghost" style="justify-content:center">SEO Optimize</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function auditPage() {
+  const url  = document.getElementById('audit-url').value.trim();
+  const path = document.getElementById('audit-path').value.trim();
+  if (!url) { showToast('Enter a URL', '⚠️'); return; }
+  const res = document.getElementById('audit-result');
+  res.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Fetching and analyzing page…</div>';
+  try {
+    const r = await fetch('/api/website_content_auditor', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ url, page_path: path })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    res.innerHTML = `
+      <div style="background:var(--bg-elevated);border:1px solid var(--border-mid);border-radius:var(--r-md);padding:14px">
+        <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text-muted)">Words: <b style="color:var(--text-primary)">${d.word_count||'?'}</b></span>
+          <span style="font-size:12px;color:var(--text-muted)">Tone: <b style="color:var(--text-primary)">${d.tone||'?'}</b></span>
+          <span style="font-size:12px;color:var(--text-muted)">Quality: <b style="color:var(--amber)">${d.overall_quality_score||'?'}/100</b></span>
+        </div>
+        ${d.seo_issues?.length ? `<div style="font-size:12px;color:var(--red);margin-bottom:6px"><b>SEO issues:</b> ${d.seo_issues.join(', ')}</div>` : ''}
+        ${d.content_gaps?.length ? `<div style="font-size:12px;color:var(--amber)"><b>Gaps:</b> ${d.content_gaps.join(', ')}</div>` : ''}
+      </div>`;
+  } catch(e) {
+    res.innerHTML = `<div style="color:var(--red);font-size:12px">Error: ${e.message}</div>`;
+  }
+}
+
+async function refreshPage(path) {
+  const url = document.getElementById('audit-url')?.value.trim() || '';
+  showToast('Starting website refresh pipeline for ' + path, '🔄');
+  const r = await fetch('/api/pipeline/website_refresh', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ url, page_path: path, target_audience: 'business decision makers' })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error, '✕', 5000); return; }
+  showToast('Refresh complete — files written', '✓');
+  setTimeout(() => location.reload(), 1200);
+}
+</script>
+{% endblock %}

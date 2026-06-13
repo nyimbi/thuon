@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}{{ record.title }} — Thuon{% endblock %}
+
+{% block extra_styles %}
+.rfp-detail-header { margin-bottom:28px; }
+.rfp-detail-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 6px; letter-spacing:-0.3px; }
+.rfp-issuer { font-size:14px; color:var(--text-secondary); margin-bottom:12px; }
+.rfp-meta-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.rfp-status-chip { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; text-transform:uppercase; letter-spacing:0.05em; }
+
+.rfp-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
+.rfp-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.rfp-card-head { padding:12px 18px; border-bottom:1px solid var(--border); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); }
+.rfp-card-body { padding:18px; font-size:13.5px; line-height:1.7; color:var(--text-secondary); }
+
+.checkpoint-box { background:rgba(124,106,247,.06); border:1px solid rgba(124,106,247,.3); border-radius:var(--r-lg); padding:20px; margin-bottom:20px; }
+.checkpoint-box h3 { font-family:var(--heading-font); font-size:15px; font-weight:700; margin-bottom:6px; color:var(--text-primary); }
+.checkpoint-box p { font-size:12.5px; color:var(--text-secondary); margin-bottom:14px; }
+.approve-btn { padding:10px 22px; font-size:13px; font-weight:700; background:var(--green); border:none; border-radius:var(--r-sm); color:#fff; cursor:pointer; transition:opacity .15s; }
+.approve-btn:hover { opacity:.85; }
+.approve-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+.score-ring { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.score-val { font-family:var(--heading-font); font-size:40px; font-weight:800; line-height:1; }
+.score-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.07em; }
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:12px">
+  <a href="/rfps" style="font-size:12px;color:var(--text-muted);text-decoration:none">← All RFPs</a>
+</div>
+
+<div class="rfp-detail-header">
+  <h1>{{ record.title }}</h1>
+  <div class="rfp-issuer">{{ record.issuer }}</div>
+  <div class="rfp-meta-row">
+    <span class="rfp-status-chip" style="background:rgba(124,106,247,.12);color:var(--accent)">{{ record.status.value.replace('_',' ') }}</span>
+    {% if record.deadline %}<span style="font-size:12px;color:var(--text-muted)">Deadline: {{ record.deadline }}</span>{% endif %}
+    {% if record.source_url %}<a href="{{ record.source_url }}" target="_blank" style="font-size:12px;color:var(--accent)">Source ↗</a>{% endif %}
+  </div>
+</div>
+
+<!-- Human checkpoint boxes -->
+{% if record.status.value == 'evaluating' %}
+<div class="checkpoint-box">
+  <h3>⚑ Bid / No-Bid Decision Required</h3>
+  <p>Review the bid evaluation results below. Approve to continue with strategy development, or mark as no-bid to close this opportunity.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="approve-btn" onclick="approve('bid')">✓ Approve — Go</button>
+    <button class="approve-btn" onclick="noBid()" style="background:var(--red)">✕ No Bid</button>
+  </div>
+</div>
+{% elif record.status.value == 'awaiting_strategy' %}
+<div class="checkpoint-box">
+  <h3>⚑ Strategy Approval Required</h3>
+  <p>Review the win strategy and themes below. Approve to begin section writing.</p>
+  <button class="approve-btn" onclick="approve('strategy')">✓ Approve Strategy — Begin Writing</button>
+</div>
+{% elif record.status.value == 'responding' %}
+<div class="checkpoint-box" style="border-color:rgba(62,207,207,.3);background:rgba(62,207,207,.04)">
+  <h3>✍ Proposal In Progress</h3>
+  <p>Run the full pipeline to generate sections, or run individual capabilities.</p>
+  <a href="/pipeline/rfp_response" class="approve-btn" style="text-decoration:none;display:inline-block">Run Full Pipeline</a>
+</div>
+{% endif %}
+
+<div class="rfp-grid">
+  <div>
+    <!-- Summary -->
+    <div class="rfp-card" style="margin-bottom:16px">
+      <div class="rfp-card-head">Scope Summary</div>
+      <div class="rfp-card-body">{{ record.summary or '—' }}</div>
+    </div>
+
+    <!-- Pipeline state details -->
+    {% if record.pipeline_state %}
+    <div class="rfp-card" style="margin-bottom:16px">
+      <div class="rfp-card-head">Pipeline State</div>
+      <div class="rfp-card-body">
+        <pre style="font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap;color:var(--text-secondary)">{{ record.pipeline_state | tojson(indent=2) }}</pre>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Response output -->
+    {% if record.response_dir %}
+    <div class="rfp-card">
+      <div class="rfp-card-head">Response Output</div>
+      <div class="rfp-card-body">
+        <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--teal)">{{ record.response_dir }}</code>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <!-- Bid score -->
+    {% if record.bid_score is not none %}
+    <div class="rfp-card" style="margin-bottom:16px;text-align:center;padding:24px">
+      <div class="score-ring">
+        <div class="score-val" style="color:{% if record.bid_score >= 70 %}var(--green){% elif record.bid_score >= 40 %}var(--amber){% else %}var(--red){% endif %}">{{ record.bid_score|int }}</div>
+        <div class="score-label">Bid Score / 100</div>
+      </div>
+      {% if record.bid_recommendation %}
+      <div style="margin-top:12px">
+        <span class="rfp-status-chip" style="{% if record.bid_recommendation == 'go' %}background:rgba(52,211,153,.12);color:var(--green){% else %}background:rgba(248,113,113,.12);color:var(--red){% endif %}">
+          {{ record.bid_recommendation }}
+        </span>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Quick actions -->
+    <div class="rfp-card">
+      <div class="rfp-card-head">Run Capability</div>
+      <div class="rfp-card-body" style="display:flex;flex-direction:column;gap:8px">
+        <a href="/capability/rfp_ingester" class="t-btn t-btn-ghost" style="justify-content:center">Re-Ingest RFP</a>
+        <a href="/capability/rfp_bid_evaluator" class="t-btn t-btn-ghost" style="justify-content:center">Re-Evaluate Bid</a>
+        <a href="/capability/rfp_win_strategy_builder" class="t-btn t-btn-ghost" style="justify-content:center">Build Win Strategy</a>
+        <a href="/capability/rfp_section_writer" class="t-btn t-btn-ghost" style="justify-content:center">Write Section</a>
+        <a href="/pipeline/rfp_response" class="t-btn t-btn-primary" style="justify-content:center">Full Pipeline →</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function approve(phase) {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Approving…';
+  try {
+    const r = await fetch('/api/rfp/{{ record.id }}/approve', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phase })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showToast('Status advanced to: ' + d.status, '✓');
+    setTimeout(() => location.reload(), 900);
+  } catch(e) {
+    showToast(e.message, '✕', 5000);
+    btn.disabled = false; btn.textContent = '✓ Approve';
+  }
+}
+
+async function noBid() {
+  if (!confirm('Mark this RFP as No Bid?')) return;
+  const r = await fetch('/api/rfp/{{ record.id }}/approve', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ phase: 'no_bid_direct' })
+  });
+  // Direct status update
+  await fetch('/api/rfp/{{ record.id }}', {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({})
+  });
+  showToast('Marked as No Bid', '✕');
+  setTimeout(() => window.location.href = '/rfps', 1000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Tasks — Thuon{% endblock %}
+
+{% block extra_styles %}
+.tasks-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
+.tasks-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.tasks-header p { font-size:12.5px; color:var(--text-muted); }
+
+.task-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+.task-stat { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-md); padding:10px 16px; }
+.task-stat-val { font-family:var(--heading-font); font-size:22px; font-weight:800; line-height:1; }
+.task-stat-lbl { font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+.stat-overdue .task-stat-val { color:var(--red); }
+.stat-progress .task-stat-val { color:var(--accent); }
+.stat-done .task-stat-val { color:var(--green); }
+
+.task-board { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+@media(max-width:900px) { .task-board { grid-template-columns:1fr; } }
+
+.task-col { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.task-col-head { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+.task-col-label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+.task-col-count { font-family:'JetBrains Mono',monospace; font-size:10px; background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:4px; padding:1px 6px; color:var(--text-secondary); }
+.task-col-body { padding:8px; display:flex; flex-direction:column; gap:6px; min-height:80px; }
+
+.task-card { background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:var(--r-md); padding:10px 12px; cursor:pointer; transition:border-color .15s; }
+.task-card:hover { border-color:var(--accent); }
+.task-card-title { font-size:12.5px; font-weight:600; color:var(--text-primary); margin-bottom:4px; line-height:1.4; }
+.task-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.task-badge { font-size:9.5px; font-family:'JetBrains Mono',monospace; padding:2px 6px; border-radius:4px; border:1px solid var(--border-mid); background:var(--bg-void); color:var(--text-secondary); }
+.task-badge.overdue { background:rgba(248,113,113,.1); border-color:rgba(248,113,113,.3); color:var(--red); }
+.task-badge.p1 { background:rgba(248,113,113,.08); border-color:rgba(248,113,113,.25); color:var(--red); }
+.task-badge.p3 { background:rgba(100,116,139,.08); border-color:rgba(100,116,139,.2); color:var(--text-muted); }
+.task-actions { display:flex; gap:4px; margin-top:6px; }
+.task-action { font-size:10px; padding:2px 7px; border:1px solid var(--border-mid); border-radius:3px; background:none; cursor:pointer; color:var(--text-muted); transition:all .12s; }
+.task-action:hover { background:var(--bg-surface); color:var(--text-primary); }
+.task-action.done { color:var(--green); border-color:rgba(52,211,153,.3); }
+.task-action.done:hover { background:rgba(52,211,153,.08); }
+
+.add-task-form { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; margin-bottom:24px; }
+.add-task-form h3 { font-family:var(--heading-font); font-size:14px; font-weight:700; margin-bottom:14px; }
+.add-form-row { display:grid; grid-template-columns:1fr 120px 120px 120px auto; gap:10px; align-items:end; }
+
+.empty-col { text-align:center; padding:16px; color:var(--text-muted); font-size:11px; opacity:.4; }
+{% endblock %}
+
+{% block content %}
+<div class="tasks-header">
+  <div>
+    <h1>Tasks</h1>
+    <p>{{ stats.pending + stats.in_progress }} active · {{ stats.overdue }} overdue</p>
+  </div>
+  <button class="t-btn t-btn-primary" onclick="document.getElementById('add-task').scrollIntoView({behavior:'smooth'})">+ Add Task</button>
+</div>
+
+<!-- Stats -->
+<div class="task-stats">
+  <div class="task-stat"><div class="task-stat-val">{{ stats.pending }}</div><div class="task-stat-lbl">Pending</div></div>
+  <div class="task-stat stat-progress"><div class="task-stat-val">{{ stats.in_progress }}</div><div class="task-stat-lbl">In Progress</div></div>
+  <div class="task-stat stat-overdue"><div class="task-stat-val">{{ stats.overdue }}</div><div class="task-stat-lbl">Overdue</div></div>
+  <div class="task-stat stat-done"><div class="task-stat-val">{{ stats.completed }}</div><div class="task-stat-lbl">Completed</div></div>
+</div>
+
+<!-- Add task -->
+<div class="add-task-form" id="add-task">
+  <h3>New Task</h3>
+  <div class="add-form-row">
+    <input class="t-input" id="task-title" placeholder="Task title…" />
+    <input class="t-input" id="task-due" type="date" />
+    <select class="t-input" id="task-priority">
+      <option value="1">High</option>
+      <option value="2" selected>Medium</option>
+      <option value="3">Low</option>
+    </select>
+    <input class="t-input" id="task-project" placeholder="Project (optional)" />
+    <button class="t-btn t-btn-primary" onclick="addTask()">Add</button>
+  </div>
+  <div style="margin-top:8px">
+    <textarea class="t-input t-textarea" id="task-notes" rows="2" placeholder="Notes (optional)"></textarea>
+  </div>
+</div>
+
+<!-- Kanban board -->
+<div class="task-board">
+  {% set cols = [
+    ('pending',     'Pending',     '#94a3b8'),
+    ('in_progress', 'In Progress', '#7c6af7'),
+    ('completed',   'Completed',   '#34d399'),
+  ] %}
+  {% for status, label, color in cols %}
+  <div class="task-col">
+    <div class="task-col-head" style="border-top:2px solid {{ color }}">
+      <span class="task-col-label" style="color:{{ color }}">{{ label }}</span>
+      <span class="task-col-count">{{ by_status.get(status, [])|length }}</span>
+    </div>
+    <div class="task-col-body" id="col-{{ status }}">
+      {% for task in by_status.get(status, []) %}
+      <div class="task-card" id="task-{{ task.id }}">
+        <div class="task-card-title">{{ task.title }}</div>
+        <div class="task-card-meta">
+          {% set today = now_date %}
+          {% if task.due_date %}
+            {% if task.due_date < today %}
+              <span class="task-badge overdue">{{ task.due_date }} !</span>
+            {% else %}
+              <span class="task-badge">{{ task.due_date }}</span>
+            {% endif %}
+          {% endif %}
+          {% if task.priority == 1 %}<span class="task-badge p1">high</span>
+          {% elif task.priority == 3 %}<span class="task-badge p3">low</span>{% endif %}
+          {% if task.project %}<span class="task-badge">{{ task.project }}</span>{% endif %}
+        </div>
+        {% if task.notes %}<div style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.4">{{ task.notes[:80] }}{% if task.notes|length > 80 %}…{% endif %}</div>{% endif %}
+        <div class="task-actions">
+          {% if status == 'pending' %}
+            <button class="task-action" onclick="updateStatus('{{ task.id }}','in_progress')">▶ Start</button>
+          {% elif status == 'in_progress' %}
+            <button class="task-action done" onclick="updateStatus('{{ task.id }}','completed')">✓ Done</button>
+            <button class="task-action" onclick="updateStatus('{{ task.id }}','pending')">⏸ Pause</button>
+          {% elif status == 'completed' %}
+            <button class="task-action" onclick="updateStatus('{{ task.id }}','pending')">↩ Reopen</button>
+          {% endif %}
+          <button class="task-action" onclick="deleteTask('{{ task.id }}')" style="color:var(--red);margin-left:auto">✕</button>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-col">—</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function addTask() {
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { showToast('Enter a task title', '⚠️'); return; }
+  const r = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      title,
+      due_date: document.getElementById('task-due').value || null,
+      priority: +document.getElementById('task-priority').value,
+      project:  document.getElementById('task-project').value.trim(),
+      notes:    document.getElementById('task-notes').value.trim(),
+    })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error, '✕'); return; }
+  showToast('Task added', '✓');
+  setTimeout(() => location.reload(), 400);
+}
+
+async function updateStatus(id, status) {
+  const r = await fetch('/api/tasks/' + id, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ status })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error, '✕'); return; }
+  setTimeout(() => location.reload(), 200);
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await fetch('/api/tasks/' + id, { method: 'DELETE' });
+  document.getElementById('task-' + id)?.remove();
+}
+
+document.getElementById('task-title')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+</script>
+{% endblock %}

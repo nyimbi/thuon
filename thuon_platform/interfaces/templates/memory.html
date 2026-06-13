@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Memory — Thuon{% endblock %}
+
+{% block extra_styles %}
+.mem-header { margin-bottom:28px; }
+.mem-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.mem-header p { font-size:12.5px; color:var(--text-muted); }
+
+.mem-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+.mem-stat { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-md); padding:10px 16px; }
+.mem-stat-val { font-family:var(--heading-font); font-size:20px; font-weight:800; line-height:1; color:var(--accent); }
+.mem-stat-lbl { font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+
+.mem-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:1024px) { .mem-layout { grid-template-columns:1fr; } }
+
+.mem-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; display:flex; flex-direction:column; }
+.mem-card-head { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.mem-card-title { font-family:var(--heading-font); font-size:14px; font-weight:700; }
+.mem-card-body { flex:1; padding:0; }
+.mem-card-body textarea { width:100%; height:380px; background:var(--bg-void); border:none; color:var(--text-primary); font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.7; padding:16px; resize:none; outline:none; }
+.mem-card-foot { padding:10px 16px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.save-indicator { font-size:11.5px; color:var(--green); display:none; }
+
+.quick-add { display:flex; gap:8px; }
+
+.episode-list { display:flex; flex-direction:column; gap:6px; padding:12px; height:380px; overflow-y:auto; }
+.episode-row { background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:var(--r-md); padding:9px 12px; }
+.ep-type { font-family:'JetBrains Mono',monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.06em; padding:1px 5px; border-radius:3px; background:var(--bg-void); color:var(--text-muted); margin-bottom:4px; display:inline-block; }
+.ep-content { font-size:12px; color:var(--text-secondary); line-height:1.5; }
+.ep-time { font-size:10px; color:var(--text-muted); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+
+.consolidate-box { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; margin-top:20px; }
+.consolidate-box h3 { font-family:var(--heading-font); font-size:14px; font-weight:700; margin-bottom:6px; }
+.consolidate-box p { font-size:12.5px; color:var(--text-secondary); margin-bottom:14px; }
+{% endblock %}
+
+{% block content %}
+<div class="mem-header">
+  <h1>Memory</h1>
+  <p>Persistent context Thuon maintains about you and the company — Hermes-inspired three-tier architecture</p>
+</div>
+
+<!-- Stats -->
+<div class="mem-stats">
+  <div class="mem-stat"><div class="mem-stat-val">{{ stats.user_facts }}</div><div class="mem-stat-lbl">User Facts</div></div>
+  <div class="mem-stat"><div class="mem-stat-val">{{ stats.memory_facts }}</div><div class="mem-stat-lbl">Company Facts</div></div>
+  <div class="mem-stat"><div class="mem-stat-val">{{ stats.episodes }}</div><div class="mem-stat-lbl">Episodes</div></div>
+  <div class="mem-stat"><div class="mem-stat-val">{{ stats.sessions }}</div><div class="mem-stat-lbl">Sessions</div></div>
+</div>
+
+<div class="mem-layout">
+  <!-- USER.md editor -->
+  <div class="mem-card">
+    <div class="mem-card-head">
+      <div>
+        <div class="mem-card-title">👤 User Profile</div>
+        <div style="font-size:11px;color:var(--text-muted)">USER.md — what Thuon knows about you</div>
+      </div>
+    </div>
+    <div class="mem-card-body">
+      <textarea id="user-editor" spellcheck="false">{{ user_content }}</textarea>
+    </div>
+    <div class="mem-card-foot">
+      <span class="save-indicator" id="user-saved">✓ Saved</span>
+      <div class="quick-add">
+        <input class="t-input" id="user-fact" placeholder="Add a fact…" style="font-size:12px" />
+        <button class="t-btn t-btn-ghost" onclick="addUserFact()">Add</button>
+      </div>
+      <button class="t-btn t-btn-primary" onclick="saveMemory('user')">Save</button>
+    </div>
+  </div>
+
+  <!-- MEMORY.md editor -->
+  <div class="mem-card">
+    <div class="mem-card-head">
+      <div>
+        <div class="mem-card-title">🧠 Company Memory</div>
+        <div style="font-size:11px;color:var(--text-muted)">MEMORY.md — facts about the company and context</div>
+      </div>
+    </div>
+    <div class="mem-card-body">
+      <textarea id="mem-editor" spellcheck="false">{{ mem_content }}</textarea>
+    </div>
+    <div class="mem-card-foot">
+      <span class="save-indicator" id="mem-saved">✓ Saved</span>
+      <div class="quick-add">
+        <input class="t-input" id="mem-fact" placeholder="Add a fact…" style="font-size:12px" />
+        <button class="t-btn t-btn-ghost" onclick="addMemFact()">Add</button>
+      </div>
+      <button class="t-btn t-btn-primary" onclick="saveMemory('memory')">Save</button>
+    </div>
+  </div>
+
+  <!-- Episode search + list -->
+  <div class="mem-card" style="grid-column:1/-1">
+    <div class="mem-card-head">
+      <div>
+        <div class="mem-card-title">📼 Episodic Memory</div>
+        <div style="font-size:11px;color:var(--text-muted)">SQLite FTS5 session log — {{ stats.episodes }} events</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="t-input" id="ep-search" placeholder="Search episodes…" style="width:220px;font-size:12px" />
+        <button class="t-btn t-btn-ghost" onclick="searchEpisodes()">Search</button>
+      </div>
+    </div>
+    <div class="episode-list" id="episode-list">
+      {% for ep in episodes %}
+      <div class="episode-row">
+        <div><span class="ep-type">{{ ep.type }}</span></div>
+        <div class="ep-content">{{ ep.content[:200] }}{% if ep.content|length > 200 %}…{% endif %}</div>
+        <div class="ep-time">{{ ep.created_at | int | fromts }}</div>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">No episodes recorded yet. Episodes are logged as you use Thuon.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Auto-consolidate -->
+<div class="consolidate-box">
+  <h3>🔄 Auto-Consolidate Memory</h3>
+  <p>Scan recent activity and extract durable facts into USER.md and MEMORY.md automatically — Hermes background review pattern.</p>
+  <button class="t-btn t-btn-primary" id="consolidate-btn" onclick="consolidate()">Run Memory Consolidation</button>
+  <div id="consolidate-result" style="margin-top:10px;font-size:12.5px;color:var(--text-muted)"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveMemory(type) {
+  const content = document.getElementById(type === 'user' ? 'user-editor' : 'mem-editor').value;
+  const r = await fetch('/api/memory/' + type, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ content })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error, '✕'); return; }
+  const ind = document.getElementById(type === 'user' ? 'user-saved' : 'mem-saved');
+  ind.style.display = 'inline';
+  setTimeout(() => ind.style.display = 'none', 2500);
+  showToast('Saved', '✓');
+}
+
+async function addUserFact() {
+  const fact = document.getElementById('user-fact').value.trim();
+  if (!fact) return;
+  const r = await fetch('/api/memory/user/add_fact', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ fact })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error, '✕'); return; }
+  showToast('Fact added', '✓');
+  document.getElementById('user-fact').value = '';
+  setTimeout(() => location.reload(), 400);
+}
+
+async function addMemFact() {
+  const fact = document.getElementById('mem-fact').value.trim();
+  if (!fact) return;
+  const r = await fetch('/api/memory/memory/add_fact', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ fact })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error, '✕'); return; }
+  showToast('Fact added', '✓');
+  document.getElementById('mem-fact').value = '';
+  setTimeout(() => location.reload(), 400);
+}
+
+async function searchEpisodes() {
+  const q = document.getElementById('ep-search').value.trim();
+  const url = '/api/memory/episodes' + (q ? `?q=${encodeURIComponent(q)}` : '');
+  const r = await fetch(url);
+  const episodes = await r.json();
+  const list = document.getElementById('episode-list');
+  if (!episodes.length) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">No results</div>'; return; }
+  list.innerHTML = episodes.map(ep => `
+    <div class="episode-row">
+      <div><span class="ep-type">${ep.type}</span></div>
+      <div class="ep-content">${ep.content.slice(0,200).replace(/</g,'&lt;')}${ep.content.length>200?'…':''}</div>
+    </div>`).join('');
+}
+
+async function consolidate() {
+  const btn = document.getElementById('consolidate-btn');
+  btn.disabled = true; btn.textContent = 'Consolidating…';
+  const res = document.getElementById('consolidate-result');
+  res.textContent = 'Scanning recent activity and extracting facts…';
+  try {
+    const r = await fetch('/api/memory/consolidate', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const d = await r.json();
+    res.textContent = d.summary || 'Done.';
+    showToast('Consolidation complete', '✓');
+    setTimeout(() => location.reload(), 1500);
+  } catch(e) {
+    res.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run Memory Consolidation';
+  }
+}
+
+document.getElementById('ep-search')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchEpisodes();
+});
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    const focused = document.activeElement?.id;
+    if (focused === 'user-editor') saveMemory('user');
+    else if (focused === 'mem-editor') saveMemory('memory');
+  }
+});
+</script>
+{% endblock %}

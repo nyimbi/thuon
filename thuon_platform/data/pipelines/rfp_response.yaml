@@ -1,0 +1,95 @@
+name: rfp_response
+description: Full RFP response — ingest → compliance matrix → bid evaluation [HUMAN GATE] → research → win strategy [HUMAN GATE] → write sections → consistency check → assemble
+
+steps:
+  - name: ingest
+    capability: rfp_ingester
+    params:
+      rfp_source: "{input.rfp_source}"
+
+  - name: compliance_matrix
+    capability: rfp_compliance_matrix_builder
+    params:
+      requirements: "{steps.ingest.requirements}"
+      rfp_title: "{steps.ingest.title}"
+
+  - name: bid_evaluation
+    capability: rfp_bid_evaluator
+    params:
+      scope_summary: "{steps.ingest.scope_summary}"
+      requirements: "{steps.ingest.requirements}"
+      evaluation_criteria: "{steps.ingest.evaluation_criteria}"
+      budget: "{steps.ingest.budget}"
+
+  - name: customer_research
+    capability: rfp_customer_researcher
+    params:
+      issuer: "{steps.ingest.issuer}"
+      scope_summary: "{steps.ingest.scope_summary}"
+
+  - name: competitor_analysis
+    capability: rfp_competitor_analyst
+    params:
+      rfp_title: "{steps.ingest.title}"
+      scope_summary: "{steps.ingest.scope_summary}"
+      issuer: "{steps.ingest.issuer}"
+
+  - name: win_strategy
+    capability: rfp_win_strategy_builder
+    params:
+      evaluation_criteria: "{steps.ingest.evaluation_criteria}"
+      customer_research: "{steps.customer_research.strategic_priorities}"
+      competitor_analysis: "{steps.competitor_analysis.differentiation_angles}"
+      rfp_title: "{steps.ingest.title}"
+
+  - name: executive_summary
+    capability: rfp_section_writer
+    params:
+      section_name: "executive_summary"
+      requirements: "{steps.ingest.requirements}"
+      win_themes: "{steps.win_strategy.win_themes}"
+      sow_excerpt: "{steps.ingest.scope_summary}"
+
+  - name: technical_approach
+    capability: rfp_section_writer
+    params:
+      section_name: "technical_approach"
+      requirements: "{steps.ingest.requirements}"
+      win_themes: "{steps.win_strategy.win_themes}"
+      sow_excerpt: "{steps.ingest.scope_summary}"
+
+  - name: management_plan
+    capability: rfp_section_writer
+    params:
+      section_name: "management_plan"
+      requirements: "{steps.ingest.requirements}"
+      win_themes: "{steps.win_strategy.win_themes}"
+
+  - name: past_performance
+    capability: rfp_section_writer
+    params:
+      section_name: "past_performance"
+      requirements: "{steps.ingest.requirements}"
+      win_themes: "{steps.win_strategy.win_themes}"
+
+  - name: consistency_check
+    capability: rfp_consistency_checker
+    params:
+      sections:
+        executive_summary: "{steps.executive_summary.content}"
+        technical_approach: "{steps.technical_approach.content}"
+        management_plan: "{steps.management_plan.content}"
+        past_performance: "{steps.past_performance.content}"
+      compliance_matrix: "{steps.compliance_matrix.matrix}"
+      rfp_title: "{steps.ingest.title}"
+
+  - name: assemble
+    capability: rfp_assembler
+    params:
+      sections:
+        executive_summary: "{steps.executive_summary.content}"
+        technical_approach: "{steps.technical_approach.content}"
+        management_plan: "{steps.management_plan.content}"
+        past_performance: "{steps.past_performance.content}"
+      rfp_title: "{steps.ingest.title}"
+      compliance_matrix: "{steps.compliance_matrix.matrix}"

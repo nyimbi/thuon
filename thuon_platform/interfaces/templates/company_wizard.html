@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+{% block title %}Company Profile Setup — Thuon{% endblock %}
+
+{% block extra_styles %}
+.wiz-shell { max-width:760px; margin:0 auto; }
+.wiz-header { text-align:center; margin-bottom:36px; }
+.wiz-header h1 { font-family:var(--heading-font); font-size:26px; font-weight:800; margin:0 0 6px; letter-spacing:-0.5px; }
+.wiz-header p { font-size:13.5px; color:var(--text-muted); max-width:500px; margin:0 auto; }
+
+/* Progress */
+.wiz-progress { display:flex; align-items:center; gap:0; margin-bottom:36px; }
+.wiz-step-dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-muted); flex-shrink:0; transition:all .2s; position:relative; z-index:1; }
+.wiz-step-dot.active { border-color:var(--accent); background:var(--accent); color:#fff; box-shadow:0 0 0 4px rgba(124,106,247,.2); }
+.wiz-step-dot.done { border-color:var(--green); background:var(--green); color:#fff; }
+.wiz-step-line { flex:1; height:2px; background:var(--border); transition:background .2s; }
+.wiz-step-line.done { background:var(--green); }
+
+/* Cards */
+.wiz-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:32px; display:none; }
+.wiz-card.active { display:block; }
+.wiz-card-title { font-family:var(--heading-font); font-size:18px; font-weight:800; margin:0 0 4px; letter-spacing:-0.3px; }
+.wiz-card-sub { font-size:12.5px; color:var(--text-muted); margin-bottom:24px; }
+
+.wiz-field { margin-bottom:18px; }
+.wiz-field label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
+.wiz-field label .hint { font-weight:400; color:var(--text-muted); margin-left:6px; }
+.wiz-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.wiz-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+
+/* Repeatable subform */
+.rep-list { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+.rep-item { background:var(--bg-elevated); border:1px solid var(--border-mid); border-radius:var(--r-md); padding:12px 14px; position:relative; }
+.rep-item-remove { position:absolute; top:8px; right:10px; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px; transition:color .12s; }
+.rep-item-remove:hover { color:var(--red); }
+.rep-item-fields { display:grid; gap:8px; }
+
+.add-btn { font-size:12px; color:var(--accent); background:none; border:1px dashed var(--accent); border-radius:var(--r-sm); padding:7px 14px; cursor:pointer; width:100%; transition:background .12s; }
+.add-btn:hover { background:rgba(124,106,247,.06); }
+
+/* Nav */
+.wiz-nav { display:flex; justify-content:space-between; margin-top:28px; }
+
+/* Result */
+.wiz-result { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:32px; text-align:center; display:none; }
+.wiz-result h2 { font-family:var(--heading-font); font-size:20px; font-weight:800; margin:0 0 8px; }
+.wiz-result p { font-size:13px; color:var(--text-secondary); margin-bottom:20px; }
+.file-chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px; }
+.file-chip { font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 10px; background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.3); border-radius:6px; color:var(--green); }
+.file-chip.error { background:rgba(248,113,113,.1); border-color:rgba(248,113,113,.3); color:var(--red); }
+
+/* Generating state */
+.wiz-generating { display:none; text-align:center; padding:48px 24px; }
+.wiz-spinner { width:44px; height:44px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 16px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.gen-status { font-size:13px; color:var(--text-muted); }
+.gen-file { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--accent); margin-top:6px; }
+{% endblock %}
+
+{% block content %}
+<div class="wiz-shell">
+  <div class="wiz-header">
+    <h1>Company Profile Setup</h1>
+    <p>Answer a few questions and Thuon will generate your complete knowledge base — all 9 files — using AI.</p>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="wiz-progress" id="wiz-progress">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Steps -->
+  <div id="wiz-steps">
+
+    <!-- Step 1: Company Basics -->
+    <div class="wiz-card active" data-step="1" data-title="Company Basics">
+      <div class="wiz-card-title">Company Basics</div>
+      <div class="wiz-card-sub">The foundation — name, size, and what you do at a glance</div>
+
+      <div class="wiz-row2">
+        <div class="wiz-field"><label>Company name <span class="hint">*</span></label><input class="t-input" name="company_name" placeholder="Acme Federal Solutions" required /></div>
+        <div class="wiz-field"><label>Tagline / elevator pitch</label><input class="t-input" name="tagline" placeholder="We solve X for Y" /></div>
+      </div>
+      <div class="wiz-field"><label>Mission statement</label><textarea class="t-input t-textarea" name="mission" rows="2" placeholder="What drives the company?"></textarea></div>
+      <div class="wiz-row3">
+        <div class="wiz-field"><label>Website</label><input class="t-input" name="website" placeholder="https://acme.com" /></div>
+        <div class="wiz-field"><label>HQ location</label><input class="t-input" name="hq_location" placeholder="Washington, DC" /></div>
+        <div class="wiz-field"><label>Founded year</label><input class="t-input" name="founded_year" placeholder="2015" /></div>
+      </div>
+      <div class="wiz-row3">
+        <div class="wiz-field"><label>Team size</label><input class="t-input" name="team_size" placeholder="45 FTEs" /></div>
+        <div class="wiz-field"><label>Annual revenue (approx)</label><input class="t-input" name="annual_revenue" placeholder="$8M" /></div>
+        <div class="wiz-field"><label>Legal structure</label><input class="t-input" name="legal_structure" placeholder="LLC / C-Corp / S-Corp" /></div>
+      </div>
+      <div class="wiz-row2">
+        <div class="wiz-field"><label>NAICS codes <span class="hint">comma-separated</span></label><input class="t-input" name="naics_codes" placeholder="541511, 541512, 541519" /></div>
+        <div class="wiz-field"><label>SAM.gov UEI</label><input class="t-input" name="uei" placeholder="Optional" /></div>
+      </div>
+      <div class="wiz-field"><label>Certifications &amp; socioeconomic status <span class="hint">check all that apply</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px" id="cert-checkboxes">
+          {% for cert in ['8(a)','WOSB','EDWOSB','SDVOSB','VOSB','HUBZone','SBA Small Business','ISO 9001','ISO 27001','CMMI DEV L3','CMMI SVC L3','CMMC Level 1','CMMC Level 2','SAFe','PMI-certified PMs','Secret Clearance Facility','Top Secret Facility'] %}
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);cursor:pointer">
+            <input type="checkbox" name="certifications" value="{{ cert }}" style="accent-color:var(--accent)"> {{ cert }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Services & Capabilities -->
+    <div class="wiz-card" data-step="2" data-title="Services & Capabilities">
+      <div class="wiz-card-title">Services &amp; Capabilities</div>
+      <div class="wiz-card-sub">What do you actually do? Be specific — this drives all proposal writing.</div>
+
+      <div class="wiz-field"><label>Core service lines <span class="hint">list your main offerings, one per line</span></label>
+        <textarea class="t-input t-textarea" name="core_services" rows="5" placeholder="IT Modernization&#10;Cloud Migration (AWS, Azure, GCP)&#10;DevSecOps Pipeline Implementation&#10;Data Analytics &amp; BI&#10;Cybersecurity Assessment &amp; Remediation"></textarea>
+      </div>
+      <div class="wiz-field"><label>Technical specialties &amp; platforms</label>
+        <textarea class="t-input t-textarea" name="technical_specialties" rows="3" placeholder="Kubernetes, Terraform, Splunk, ServiceNow, Salesforce, Python/ML stack..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Delivery methodologies</label>
+        <textarea class="t-input t-textarea" name="methodologies" rows="2" placeholder="SAFe Agile, DevSecOps, ITIL v4, human-centered design..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Industries &amp; sectors you serve</label>
+        <textarea class="t-input t-textarea" name="sectors" rows="2" placeholder="DoD, DHS, HHS, State/Local, Intelligence Community, Commercial healthcare..."></textarea>
+      </div>
+      <div class="wiz-field"><label>What makes your delivery approach different? <span class="hint">be honest and specific</span></label>
+        <textarea class="t-input t-textarea" name="delivery_differentiators" rows="3" placeholder="What do clients say after working with you that they couldn't get from a big integrator?"></textarea>
+      </div>
+    </div>
+
+    <!-- Step 3: Key Personnel -->
+    <div class="wiz-card" data-step="3" data-title="Key Personnel">
+      <div class="wiz-card-title">Key Personnel</div>
+      <div class="wiz-card-sub">People who appear on proposals. Add as many as you need.</div>
+
+      <div class="rep-list" id="personnel-list"></div>
+      <button type="button" class="add-btn" onclick="addPersonnel()">+ Add Person</button>
+    </div>
+
+    <!-- Step 4: Past Performance -->
+    <div class="wiz-card" data-step="4" data-title="Past Performance">
+      <div class="wiz-card-title">Past Performance</div>
+      <div class="wiz-card-sub">Your strongest contract write-ups. Aim for 3-6. Quantify outcomes.</div>
+
+      <div class="rep-list" id="perf-list"></div>
+      <button type="button" class="add-btn" onclick="addProject()">+ Add Project</button>
+    </div>
+
+    <!-- Step 5: Competitive Position -->
+    <div class="wiz-card" data-step="5" data-title="Competitive Position">
+      <div class="wiz-card-title">Competitive Position</div>
+      <div class="wiz-card-sub">Why do you win? What do competitors consistently fail to deliver?</div>
+
+      <div class="wiz-field"><label>Top 3-5 reasons you win deals <span class="hint">be brutally honest and specific</span></label>
+        <textarea class="t-input t-textarea" name="why_we_win" rows="4" placeholder="1. We embed a cleared PM on-site from day 1&#10;2. Our ML engineers have actual domain clearances&#10;3. We've migrated 12 legacy COBOL systems to cloud-native..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Known competitors you frequently face</label>
+        <textarea class="t-input t-textarea" name="known_competitors" rows="2" placeholder="Booz Allen, Leidos, SAIC, Peraton, smaller boutique firms..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Where competitors consistently fall short (ghosting opportunities)</label>
+        <textarea class="t-input t-textarea" name="competitor_weaknesses" rows="3" placeholder="Large firms can't flex below GS-14 equivalents. Boutiques lack cleared staff. Nobody has our specific combo of X + Y..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Awards, recognition, notable client testimonials</label>
+        <textarea class="t-input t-textarea" name="awards" rows="2" placeholder="Inc 5000, FedHealth IT award, '...best vendor we've ever worked with' — CIO at DHS"></textarea>
+      </div>
+    </div>
+
+    <!-- Step 6: Bid Strategy -->
+    <div class="wiz-card" data-step="6" data-title="Bid Strategy">
+      <div class="wiz-card-title">Bid Strategy &amp; Criteria</div>
+      <div class="wiz-card-sub">Define the rules for when to pursue — and when to walk away.</div>
+
+      <div class="wiz-row2">
+        <div class="wiz-field"><label>Minimum contract value to bid</label><input class="t-input" name="min_contract_value" placeholder="$500K" /></div>
+        <div class="wiz-field"><label>Sweet spot contract size</label><input class="t-input" name="sweet_spot_value" placeholder="$2M–$10M" /></div>
+      </div>
+      <div class="wiz-field"><label>Contract vehicles you hold or are pursuing</label>
+        <textarea class="t-input t-textarea" name="contract_vehicles" rows="2" placeholder="GSA MAS IT 70, CIO-SP3, SEWP V, OASIS+, state IDIQ vehicles..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Automatic no-bid triggers</label>
+        <textarea class="t-input t-textarea" name="no_bid_triggers" rows="3" placeholder="No cleared staff available, requires manufacturing, outside CONUS only, conflict with existing client, competitor is incumbent and won't move..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Strategic priorities — what should Thuon prioritize when discovering RFPs?</label>
+        <textarea class="t-input t-textarea" name="strategic_priorities" rows="3" placeholder="Grow our DHS footprint, land first DoD contract, expand state/local healthcare IT..."></textarea>
+      </div>
+    </div>
+
+    <!-- Step 7: Pricing & Rates -->
+    <div class="wiz-card" data-step="7" data-title="Pricing">
+      <div class="wiz-card-title">Pricing &amp; Rate Card</div>
+      <div class="wiz-card-sub">Used by the proposal writer to frame pricing narratives and populate rate tables.</div>
+
+      <div class="wiz-field"><label>Labor categories &amp; hourly rates <span class="hint">one per line: "Category: $XXX/hr"</span></label>
+        <textarea class="t-input t-textarea" name="rate_card" rows="6" placeholder="Program Manager: $185/hr&#10;Senior Software Engineer: $210/hr&#10;Software Engineer: $165/hr&#10;Data Scientist: $220/hr&#10;Business Analyst: $145/hr&#10;Junior Developer: $120/hr"></textarea>
+      </div>
+      <div class="wiz-row3">
+        <div class="wiz-field"><label>Overhead rate</label><input class="t-input" name="overhead_rate" placeholder="42%" /></div>
+        <div class="wiz-field"><label>G&amp;A rate</label><input class="t-input" name="ga_rate" placeholder="15%" /></div>
+        <div class="wiz-field"><label>Profit target</label><input class="t-input" name="profit_target" placeholder="10–12%" /></div>
+      </div>
+      <div class="wiz-row2">
+        <div class="wiz-field"><label>Fringe / benefit rate</label><input class="t-input" name="fringe_rate" placeholder="28%" /></div>
+        <div class="wiz-field"><label>Annual escalation</label><input class="t-input" name="escalation" placeholder="3% or CPI" /></div>
+      </div>
+      <div class="wiz-field"><label>Pricing strategy notes</label>
+        <textarea class="t-input t-textarea" name="pricing_strategy" rows="2" placeholder="We price to win on small IDIQ task orders, hold margin on large development efforts..."></textarea>
+      </div>
+    </div>
+
+    <!-- Step 8: Voice & Compliance -->
+    <div class="wiz-card" data-step="8" data-title="Voice & Compliance">
+      <div class="wiz-card-title">Voice &amp; Compliance</div>
+      <div class="wiz-card-sub">How you sound in proposals, and your standard legal representations.</div>
+
+      <div class="wiz-field"><label>Proposal tone &amp; voice</label>
+        <textarea class="t-input t-textarea" name="proposal_tone" rows="2" placeholder="Direct, confident, mission-focused. Avoid buzzwords. Write like the evaluator is a CTO, not an attorney..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Phrases or language to avoid</label>
+        <textarea class="t-input t-textarea" name="forbidden_phrases" rows="2" placeholder="'robust', 'cutting-edge', 'world-class', 'synergy', 'leverage' as a verb..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Insurance coverage (types &amp; limits)</label>
+        <textarea class="t-input t-textarea" name="insurance" rows="2" placeholder="General Liability $2M, Professional E&amp;O $5M, Cyber Liability $2M, Workers Comp statutory..."></textarea>
+      </div>
+      <div class="wiz-field"><label>Anything else Thuon should know about your company</label>
+        <textarea class="t-input t-textarea" name="additional_context" rows="3" placeholder="Veteran-owned, recently acquired XYZ Corp, currently pursuing ISO 27001, key subpartner relationships..."></textarea>
+      </div>
+    </div>
+
+  </div><!-- /wiz-steps -->
+
+  <!-- Generating state -->
+  <div class="wiz-generating" id="wiz-generating">
+    <div class="wiz-spinner"></div>
+    <div class="gen-status" id="gen-status">Preparing to generate your company profile…</div>
+    <div class="gen-file" id="gen-file"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="wiz-result" id="wiz-result">
+    <div style="font-size:40px;margin-bottom:12px">✓</div>
+    <h2>Company Profile Generated</h2>
+    <p id="result-summary"></p>
+    <div class="file-chips" id="file-chips"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/settings/company" class="t-btn t-btn-primary">Review &amp; Edit Files →</a>
+      <button class="t-btn t-btn-ghost" onclick="location.reload()">Start Over</button>
+    </div>
+  </div>
+
+  <!-- Nav (hidden during generating/result) -->
+  <div class="wiz-nav" id="wiz-nav">
+    <button class="t-btn t-btn-ghost" id="wiz-back" onclick="wizBack()" style="visibility:hidden">← Back</button>
+    <div style="font-size:12px;color:var(--text-muted);align-self:center" id="wiz-step-label">Step 1 of 8</div>
+    <button class="t-btn t-btn-primary" id="wiz-next" onclick="wizNext()">Next →</button>
+  </div>
+
+</div><!-- /wiz-shell -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOTAL_STEPS = 8;
+let currentStep = 1;
+
+/* ── Progress bar ─────────────────────────────────────────────────────── */
+function renderProgress() {
+  const bar = document.getElementById('wiz-progress');
+  let html = '';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const cls = i < currentStep ? 'done' : (i === currentStep ? 'active' : '');
+    html += `<div class="wiz-step-dot ${cls}" title="Step ${i}">${i < currentStep ? '✓' : i}</div>`;
+    if (i < TOTAL_STEPS) {
+      html += `<div class="wiz-step-line ${i < currentStep ? 'done' : ''}"></div>`;
+    }
+  }
+  bar.innerHTML = html;
+  document.getElementById('wiz-step-label').textContent = `Step ${currentStep} of ${TOTAL_STEPS}`;
+  document.getElementById('wiz-back').style.visibility = currentStep > 1 ? 'visible' : 'hidden';
+  document.getElementById('wiz-next').textContent = currentStep === TOTAL_STEPS ? 'Generate Profile →' : 'Next →';
+}
+
+function showStep(n) {
+  document.querySelectorAll('.wiz-card').forEach(el => {
+    el.classList.toggle('active', +el.dataset.step === n);
+  });
+  currentStep = n;
+  renderProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function wizNext() {
+  if (currentStep === 1) {
+    const name = document.querySelector('[name=company_name]').value.trim();
+    if (!name) { showToast('Company name is required', '⚠️'); return; }
+  }
+  if (currentStep < TOTAL_STEPS) {
+    showStep(currentStep + 1);
+  } else {
+    generateProfile();
+  }
+}
+
+function wizBack() {
+  if (currentStep > 1) showStep(currentStep - 1);
+}
+
+/* ── Personnel repeater ──────────────────────────────────────────────── */
+let personnelCount = 0;
+function addPersonnel(data = {}) {
+  const id = ++personnelCount;
+  const el = document.createElement('div');
+  el.className = 'rep-item';
+  el.id = `person-${id}`;
+  el.innerHTML = `
+    <button type="button" class="rep-item-remove" onclick="document.getElementById('person-${id}').remove()">×</button>
+    <div class="rep-item-fields" style="grid-template-columns:1fr 1fr">
+      <div class="wiz-field"><label>Full name</label><input class="t-input" name="person_name_${id}" value="${data.name||''}" placeholder="Jane Smith" /></div>
+      <div class="wiz-field"><label>Title</label><input class="t-input" name="person_title_${id}" value="${data.title||''}" placeholder="Chief Technology Officer" /></div>
+    </div>
+    <div class="wiz-field" style="margin-top:8px"><label>Bio / expertise <span class="hint">2-4 sentences</span></label>
+      <textarea class="t-input t-textarea" name="person_bio_${id}" rows="2" placeholder="15 years in federal IT modernization...">${data.bio||''}</textarea>
+    </div>
+    <div class="wiz-field"><label>Certifications &amp; clearances</label>
+      <input class="t-input" name="person_certs_${id}" value="${data.certs||''}" placeholder="PMP, CISSP, TS/SCI, AWS Solutions Architect" />
+    </div>`;
+  document.getElementById('personnel-list').appendChild(el);
+}
+
+/* ── Past performance repeater ──────────────────────────────────────── */
+let projectCount = 0;
+function addProject(data = {}) {
+  const id = ++projectCount;
+  const el = document.createElement('div');
+  el.className = 'rep-item';
+  el.id = `proj-${id}`;
+  el.innerHTML = `
+    <button type="button" class="rep-item-remove" onclick="document.getElementById('proj-${id}').remove()">×</button>
+    <div class="rep-item-fields" style="grid-template-columns:1fr 1fr">
+      <div class="wiz-field"><label>Client / agency</label><input class="t-input" name="proj_client_${id}" value="${data.client||''}" placeholder="Dept. of Homeland Security" /></div>
+      <div class="wiz-field"><label>Contract value</label><input class="t-input" name="proj_value_${id}" value="${data.value||''}" placeholder="$4.2M" /></div>
+    </div>
+    <div class="rep-item-fields" style="grid-template-columns:1fr 1fr">
+      <div class="wiz-field"><label>Period of performance</label><input class="t-input" name="proj_period_${id}" value="${data.period||''}" placeholder="Jan 2022 – Dec 2024" /></div>
+      <div class="wiz-field"><label>Contract number / vehicle</label><input class="t-input" name="proj_contract_${id}" value="${data.contract||''}" placeholder="70RDND22F00001 / BPA" /></div>
+    </div>
+    <div class="wiz-field" style="margin-top:6px"><label>Scope &amp; deliverables</label>
+      <textarea class="t-input t-textarea" name="proj_scope_${id}" rows="2" placeholder="Migrated 3 legacy systems to AWS GovCloud...">${data.scope||''}</textarea>
+    </div>
+    <div class="wiz-field"><label>Measurable outcomes</label>
+      <textarea class="t-input t-textarea" name="proj_outcomes_${id}" rows="2" placeholder="Reduced processing time 68%, zero downtime migration, $1.2M in avoided costs...">${data.outcomes||''}</textarea>
+    </div>`;
+  document.getElementById('perf-list').appendChild(el);
+}
+
+/* ── Gather all form data ───────────────────────────────────────────── */
+function gatherAnswers() {
+  const answers = {};
+  // Simple fields
+  document.querySelectorAll('.wiz-card input[name]:not([type=checkbox]), .wiz-card textarea[name]').forEach(el => {
+    if (el.value.trim()) answers[el.name] = el.value.trim();
+  });
+  // Checkboxes
+  const checked = [...document.querySelectorAll('[name=certifications]:checked')].map(c => c.value);
+  if (checked.length) answers.certifications = checked;
+
+  // Personnel repeaters
+  const personnel = [];
+  document.querySelectorAll('[id^=person-]').forEach(el => {
+    const id = el.id.split('-')[1];
+    const name  = (document.querySelector(`[name=person_name_${id}]`)?.value || '').trim();
+    if (!name) return;
+    personnel.push({
+      name,
+      title:  (document.querySelector(`[name=person_title_${id}]`)?.value || '').trim(),
+      bio:    (document.querySelector(`[name=person_bio_${id}]`)?.value || '').trim(),
+      certs:  (document.querySelector(`[name=person_certs_${id}]`)?.value || '').trim(),
+    });
+  });
+  if (personnel.length) answers.key_personnel = personnel;
+
+  // Past performance repeaters
+  const projects = [];
+  document.querySelectorAll('[id^=proj-]').forEach(el => {
+    const id = el.id.split('-')[1];
+    const client = (document.querySelector(`[name=proj_client_${id}]`)?.value || '').trim();
+    if (!client) return;
+    projects.push({
+      client,
+      value:    (document.querySelector(`[name=proj_value_${id}]`)?.value || '').trim(),
+      period:   (document.querySelector(`[name=proj_period_${id}]`)?.value || '').trim(),
+      contract: (document.querySelector(`[name=proj_contract_${id}]`)?.value || '').trim(),
+      scope:    (document.querySelector(`[name=proj_scope_${id}]`)?.value || '').trim(),
+      outcomes: (document.querySelector(`[name=proj_outcomes_${id}]`)?.value || '').trim(),
+    });
+  });
+  if (projects.length) answers.past_performance_projects = projects;
+
+  return answers;
+}
+
+/* ── Generate ──────────────────────────────────────────────────────────── */
+const FILE_LABELS = [
+  'profile.md', 'capabilities.md', 'personnel.md', 'past_performance.md',
+  'pricing.md', 'win_themes.md', 'style_guide.md', 'bid_criteria.md', 'compliance_boilerplate.md'
+];
+
+async function generateProfile() {
+  const answers = gatherAnswers();
+  if (!answers.company_name) { showToast('Company name is required', '⚠️'); showStep(1); return; }
+
+  // Switch to generating state
+  document.getElementById('wiz-steps').style.display = 'none';
+  document.getElementById('wiz-nav').style.display = 'none';
+  document.getElementById('wiz-progress').style.display = 'none';
+  const gen = document.getElementById('wiz-generating');
+  gen.style.display = 'block';
+
+  // Animate file labels while waiting
+  let fi = 0;
+  const fileAnim = setInterval(() => {
+    document.getElementById('gen-status').textContent = `Generating ${FILE_LABELS[fi]} (${fi+1}/${FILE_LABELS.length})…`;
+    document.getElementById('gen-file').textContent = FILE_LABELS[fi];
+    fi = (fi + 1) % FILE_LABELS.length;
+  }, 3200);
+
+  try {
+    const r = await fetch('/api/company_profile_generator', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interview_answers: answers }),
+    });
+    clearInterval(fileAnim);
+    const d = await r.json();
+
+    // Show result
+    gen.style.display = 'none';
+    const res = document.getElementById('wiz-result');
+    res.style.display = 'block';
+    document.getElementById('result-summary').textContent = d.summary || `Generated ${(d.files_written||[]).length} files.`;
+
+    const chips = document.getElementById('file-chips');
+    (d.files_written || []).forEach(f => {
+      const chip = document.createElement('span');
+      chip.className = 'file-chip';
+      chip.textContent = f;
+      chips.appendChild(chip);
+    });
+    (d.errors || []).forEach(e => {
+      const chip = document.createElement('span');
+      chip.className = 'file-chip error';
+      chip.textContent = e;
+      chips.appendChild(chip);
+    });
+  } catch(e) {
+    clearInterval(fileAnim);
+    gen.style.display = 'none';
+    document.getElementById('wiz-steps').style.display = '';
+    document.getElementById('wiz-nav').style.display = '';
+    document.getElementById('wiz-progress').style.display = '';
+    showToast('Generation failed: ' + e.message, '✕', 6000);
+    showStep(currentStep);
+  }
+}
+
+/* ── Init ──────────────────────────────────────────────────────────────── */
+renderProgress();
+// Seed one empty slot for personnel and past perf
+addPersonnel();
+addProject();
+
+/* Keyboard nav */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || (e.key === 'Enter' && e.target.tagName !== 'BUTTON')) wizNext();
+  if (e.key === 'ArrowLeft') wizBack();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Calendar — Thuon{% endblock %}
+
+{% block extra_styles %}
+.cal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
+.cal-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.cal-header p { font-size:12.5px; color:var(--text-muted); }
+
+.cal-layout { display:grid; grid-template-columns:1fr 320px; gap:20px; }
+@media(max-width:1024px) { .cal-layout { grid-template-columns:1fr; } }
+
+/* Mini calendar grid */
+.cal-grid-wrap { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.cal-nav-title { font-family:var(--heading-font); font-size:16px; font-weight:700; }
+.cal-nav-btn { background:none; border:1px solid var(--border); border-radius:var(--r-sm); padding:5px 10px; cursor:pointer; color:var(--text-secondary); transition:all .12s; }
+.cal-nav-btn:hover { background:var(--bg-elevated); color:var(--text-primary); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-dow { text-align:center; font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; padding:4px 0 8px; }
+.cal-day { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:4px; border-radius:6px; cursor:default; font-size:11.5px; position:relative; }
+.cal-day.other-month { opacity:.25; }
+.cal-day.today { background:rgba(124,106,247,.15); font-weight:800; color:var(--accent); }
+.cal-day.has-events::after { content:''; display:block; width:4px; height:4px; background:var(--accent); border-radius:50%; margin-top:2px; }
+.cal-day-num { line-height:1; color:var(--text-secondary); }
+
+/* Event dots */
+.cal-dots { display:flex; gap:2px; margin-top:2px; flex-wrap:wrap; justify-content:center; }
+.cal-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+/* Upcoming list */
+.upcoming-panel { display:flex; flex-direction:column; gap:20px; }
+.upcoming-section { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.upcoming-head { padding:12px 16px; border-bottom:1px solid var(--border); font-family:var(--heading-font); font-size:14px; font-weight:700; }
+.upcoming-body { padding:12px; }
+
+.event-row { display:flex; align-items:flex-start; gap:10px; padding:8px; border-radius:var(--r-md); transition:background .12s; cursor:default; }
+.event-row:hover { background:var(--bg-elevated); }
+.event-icon { font-size:14px; width:20px; flex-shrink:0; text-align:center; }
+.event-info { flex:1; min-width:0; }
+.event-title { font-size:12.5px; font-weight:600; color:var(--text-primary); line-height:1.3; }
+.event-date { font-size:11px; color:var(--text-muted); margin-top:2px; font-family:'JetBrains Mono',monospace; }
+.event-days { font-size:10px; padding:1px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace; flex-shrink:0; align-self:flex-start; margin-top:2px; }
+
+.add-event-form { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; margin-bottom:24px; }
+.add-event-form h3 { font-family:var(--heading-font); font-size:14px; font-weight:700; margin-bottom:14px; }
+{% endblock %}
+
+{% block content %}
+<div class="cal-header">
+  <div>
+    <h1>Calendar</h1>
+    <p>{{ upcoming_count }} upcoming events in next 30 days</p>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button class="t-btn t-btn-ghost" onclick="syncRfp()">Sync RFP Deadlines</button>
+    <button class="t-btn t-btn-primary" onclick="document.getElementById('add-event').scrollIntoView({behavior:'smooth'})">+ Add Event</button>
+  </div>
+</div>
+
+<div class="cal-layout">
+  <!-- Calendar grid -->
+  <div>
+    <div class="cal-grid-wrap">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="navMonth(-1)">←</button>
+        <div class="cal-nav-title" id="cal-title"></div>
+        <button class="cal-nav-btn" onclick="navMonth(1)">→</button>
+      </div>
+      <div class="cal-grid" id="cal-grid">
+        {% for dow in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+        <div class="cal-dow">{{ dow }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Add event form -->
+    <div class="add-event-form" id="add-event" style="margin-top:16px">
+      <h3>Add Event</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <input class="t-input" id="ev-title" placeholder="Event title" />
+        <input class="t-input" id="ev-date" type="date" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px">
+        <select class="t-input" id="ev-type">
+          {% for key, meta in event_types.items() %}
+          <option value="{{ key }}">{{ meta.icon }} {{ meta.label }}</option>
+          {% endfor %}
+        </select>
+        <input class="t-input" id="ev-notes" placeholder="Notes (optional)" />
+        <button class="t-btn t-btn-primary" onclick="addEvent()">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming panel -->
+  <div class="upcoming-panel">
+
+    {% if overdue_events %}
+    <div class="upcoming-section">
+      <div class="upcoming-head" style="color:var(--red)">⚠ Overdue / Past</div>
+      <div class="upcoming-body">
+        {% for ev in overdue_events[:5] %}
+        <div class="event-row">
+          <div class="event-icon">{{ ev._type_meta.icon }}</div>
+          <div class="event-info">
+            <div class="event-title">{{ ev.title }}</div>
+            <div class="event-date">{{ ev.date }}</div>
+          </div>
+          <span class="event-days" style="background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.3)">past</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="upcoming-section">
+      <div class="upcoming-head">📅 Next 30 Days</div>
+      <div class="upcoming-body">
+        {% for ev in upcoming %}
+        {% set days_until = (ev.date | todelta) %}
+        <div class="event-row">
+          <div class="event-icon">{{ ev._type_meta.icon }}</div>
+          <div class="event-info">
+            <div class="event-title">{{ ev.title }}</div>
+            <div class="event-date">{{ ev.date }}{% if ev.time %} {{ ev.time }}{% endif %}</div>
+          </div>
+          <span class="event-days"
+            style="background:{{ ev._type_meta.color }}18;color:{{ ev._type_meta.color }};border:1px solid {{ ev._type_meta.color }}44">
+            {{ days_until }}d
+          </span>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">No upcoming events</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Event type legend -->
+    <div class="upcoming-section">
+      <div class="upcoming-head">Legend</div>
+      <div class="upcoming-body" style="display:flex;flex-wrap:wrap;gap:6px">
+        {% for key, meta in event_types.items() %}
+        <span style="font-size:11px;padding:3px 8px;border-radius:4px;background:{{ meta.color }}18;border:1px solid {{ meta.color }}44;color:{{ meta.color }}">{{ meta.icon }} {{ meta.label }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const _events = {{ month_events | tojson }};
+let _year = {{ current_year }}, _month = {{ current_month }};  // 1-indexed
+
+const DOW_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function renderCalendar(year, month) {
+  document.getElementById('cal-title').textContent = `${MONTH_NAMES[month-1]} ${year}`;
+  const grid = document.getElementById('cal-grid');
+  // Remove old day cells (keep DOW headers = first 7 children)
+  while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+  const firstDay = new Date(year, month-1, 1);
+  const lastDay  = new Date(year, month, 0);
+  // Mon=0 offset
+  let startDow = (firstDay.getDay() + 6) % 7;
+
+  // Build event index for fast lookup
+  const evIdx = {};
+  _events.forEach(e => {
+    const d = e.date;
+    if (!evIdx[d]) evIdx[d] = [];
+    evIdx[d].push(e);
+  });
+
+  const today = new Date(); const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // Prev month filler
+  for (let i=0; i<startDow; i++) {
+    const d = document.createElement('div'); d.className='cal-day other-month';
+    const prevLast = new Date(year, month-1, 0); const prevDay = prevLast.getDate() - (startDow - 1 - i);
+    d.innerHTML=`<span class="cal-day-num">${prevDay}</span>`; grid.appendChild(d);
+  }
+  // Current month
+  for (let day=1; day<=lastDay.getDate(); day++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const d = document.createElement('div');
+    d.className = 'cal-day' + (dateStr===todayStr?' today':'');
+    const evs = evIdx[dateStr] || [];
+    let inner = `<span class="cal-day-num">${day}</span>`;
+    if (evs.length) {
+      inner += `<div class="cal-dots">${evs.slice(0,3).map(e=>`<div class="cal-dot" style="background:${e._type_meta?.color||'var(--accent)'}"></div>`).join('')}</div>`;
+    }
+    d.innerHTML = inner;
+    if (evs.length) d.title = evs.map(e=>e.title).join(', ');
+    grid.appendChild(d);
+  }
+  // Next month filler
+  const total = startDow + lastDay.getDate();
+  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i=1; i<=rem; i++) {
+    const d=document.createElement('div'); d.className='cal-day other-month';
+    d.innerHTML=`<span class="cal-day-num">${i}</span>`; grid.appendChild(d);
+  }
+}
+
+function navMonth(delta) {
+  _month += delta;
+  if (_month > 12) { _month=1; _year++; }
+  if (_month < 1)  { _month=12; _year--; }
+  fetch(`/api/events?year=${_year}&month=${_month}`).then(r=>r.json()).then(data => {
+    _events.length = 0;
+    data.forEach(e => _events.push(e));
+    renderCalendar(_year, _month);
+  });
+}
+
+async function addEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  const date  = document.getElementById('ev-date').value;
+  if (!title || !date) { showToast('Title and date are required', '⚠️'); return; }
+  const r = await fetch('/api/events', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      title,
+      date,
+      event_type: document.getElementById('ev-type').value,
+      notes: document.getElementById('ev-notes').value.trim(),
+    })
+  });
+  const d = await r.json();
+  if (d.error) { showToast(d.error,'✕'); return; }
+  showToast('Event added','✓');
+  setTimeout(()=>location.reload(), 400);
+}
+
+async function syncRfp() {
+  const r = await fetch('/api/events/sync_rfp', { method:'POST' });
+  const d = await r.json();
+  showToast(`Synced ${d.added} RFP deadlines`, '✓');
+  setTimeout(()=>location.reload(), 600);
+}
+
+renderCalendar(_year, _month);
+</script>
+{% endblock %}

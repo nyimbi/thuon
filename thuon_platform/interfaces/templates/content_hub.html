@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Content Hub — Thuon{% endblock %}
+
+{% block extra_styles %}
+.hub-header { margin-bottom:28px; }
+.hub-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.hub-header p { font-size:12.5px; color:var(--text-muted); }
+
+.hub-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+@media(max-width:900px) { .hub-grid { grid-template-columns:1fr; } }
+
+.hub-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:22px; display:flex; flex-direction:column; gap:12px; transition:border-color .15s, box-shadow .15s; text-decoration:none; }
+.hub-card:hover { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent),0 8px 28px rgba(124,106,247,.12); }
+.hub-card-icon { font-size:28px; }
+.hub-card-name { font-family:var(--heading-font); font-size:16px; font-weight:700; color:var(--text-primary); }
+.hub-card-desc { font-size:12.5px; color:var(--text-secondary); line-height:1.55; flex:1; }
+.hub-card-cta { font-size:12px; color:var(--accent); font-weight:600; }
+
+.recent-section h2 { font-family:var(--heading-font); font-size:15px; font-weight:700; margin-bottom:14px; color:var(--text-secondary); }
+.recent-list { display:grid; gap:8px; }
+.recent-item { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-md); padding:11px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.recent-item-name { font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--text-primary); }
+{% endblock %}
+
+{% block content %}
+<div class="hub-header">
+  <h1>Content Hub</h1>
+  <p>Blog posts, social media, and website refresh — all in one place</p>
+</div>
+
+<div class="hub-grid">
+  <a class="hub-card" href="/content/blog">
+    <div class="hub-card-icon">📝</div>
+    <div class="hub-card-name">Blog Posts</div>
+    <div class="hub-card-desc">Research topics, outline structure, write full posts, and SEO-optimize automatically.</div>
+    <div class="hub-card-cta">Manage blog →</div>
+  </a>
+  <a class="hub-card" href="/content/social">
+    <div class="hub-card-icon">📢</div>
+    <div class="hub-card-name">Social Media</div>
+    <div class="hub-card-desc">Turn your ideas into ready-to-post LinkedIn and Twitter content with trending context.</div>
+    <div class="hub-card-cta">Manage social →</div>
+  </a>
+  <a class="hub-card" href="/content/website">
+    <div class="hub-card-icon">🌐</div>
+    <div class="hub-card-name">Website Refresh</div>
+    <div class="hub-card-desc">Audit pages, fill gaps, rewrite copy, and push updates to your static site repo.</div>
+    <div class="hub-card-cta">Manage website →</div>
+  </a>
+</div>
+
+{% if posts %}
+<div class="recent-section">
+  <h2>Recent Blog Posts</h2>
+  <div class="recent-list">
+    {% for post in posts %}
+    <div class="recent-item">
+      <span class="recent-item-name">{{ post.name }}</span>
+      <a href="/pipeline/blog_post" class="t-btn t-btn-ghost" style="font-size:11.5px;padding:5px 11px">Pipeline</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
