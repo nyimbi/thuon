@@ -1,0 +1,19 @@
+name: long_document
+description: >
+  Generate a high-quality 50,000–200,000-word document (100–400+ pages)
+  via hierarchical planning, exhibit pre-generation, serial section writing,
+  executive summary refinement, contradiction sweep, and back-matter index.
+  Outputs .md; optionally renders PDF (Pandoc Typst) and DOCX.
+
+steps:
+  - name: generate
+    capability: long_form_document_engine
+    params:
+      topic:           "{input.topic}"
+      document_type:   "{input.document_type}"
+      target_audience: "{input.target_audience}"
+      context:         "{input.context}"
+      target_pages:    "{input.target_pages}"
+      sections_hint:   "{input.sections_hint}"
+      render_pdf:      "{input.render_pdf}"
+      render_docx:     "{input.render_docx}"

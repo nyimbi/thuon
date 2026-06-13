@@ -416,6 +416,7 @@ class TestLongFormDocumentEngine:
 
 	def test_key_section_uses_self_consistency(self):
 		# is_key=True sections should call generate_text N=3 times
+		# Return 600 words so word-count enforcement never fires extra calls
 		plan = self.engine._minimal_plan('Topic', 'report', '', 2000)
 		registry = RefRegistry(plan)
 		entity_state = self.engine._init_entity_state('Topic', plan)
@@ -424,10 +425,10 @@ class TestLongFormDocumentEngine:
 		call_count = [0]
 		def count_calls(prompt):
 			call_count[0] += 1
-			return 'Generated content for key section.'
+			return 'word ' * 600
 		self.ai.generate_text.side_effect = count_calls
 
-		self.engine._generate_section(key_sec, plan, registry, '', entity_state, '')
+		self.engine._generate_section(key_sec, plan, registry, '', entity_state, '', '', {})
 		from capabilities.long_form_document_engine import _SELF_CONSISTENCY_N
 		assert call_count[0] == _SELF_CONSISTENCY_N
 
@@ -440,8 +441,8 @@ class TestLongFormDocumentEngine:
 		call_count = [0]
 		def count_calls(prompt):
 			call_count[0] += 1
-			return 'Generated section content.'
+			return 'word ' * 600
 		self.ai.generate_text.side_effect = count_calls
 
-		self.engine._generate_section(non_key, plan, registry, '', entity_state, '')
+		self.engine._generate_section(non_key, plan, registry, '', entity_state, '', '', {})
 		assert call_count[0] == 1
