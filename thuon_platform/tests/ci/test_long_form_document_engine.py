@@ -234,7 +234,7 @@ class TestEntityState:
 		state = self.engine._init_entity_state('Digital transformation', plan)
 		assert 'defined_terms' in state
 		assert 'key_statistics' in state
-		assert 'entities_mentioned' in state
+		assert 'topic' in state
 
 	def test_update_entity_state_extracts_stats(self):
 		plan = _make_plan()
