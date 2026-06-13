@@ -779,6 +779,9 @@ Section content (do not repeat the heading):"""
 
 		raw_text = self._enforce_word_count(raw_text, spec, prompt)
 
+		# Strip any leading heading the model prepended — we add our own below
+		raw_text = re.sub(r'^#{1,6}\s+[^\n]*\n?', '', raw_text.strip(), count=1).strip()
+
 		exhibit_blocks: list[str] = []
 		for ex in spec.exhibits:
 			label   = registry.exhibits.get(ex.id, ex.id)
@@ -859,6 +862,7 @@ Write directly (heading added separately):"""
 		candidates = [self._llm_text(prompt) for _ in range(_SELF_CONSISTENCY_N)]
 		best_raw   = max(candidates, key=lambda t: len(t.split()))
 		best_raw   = self._enforce_word_count(best_raw, spec, prompt)
+		best_raw   = re.sub(r'^#{1,6}\s+[^\n]*\n?', '', best_raw.strip(), count=1).strip()
 
 		# Re-attach any exhibits from the original exec summary section
 		exhibit_blocks: list[str] = []
