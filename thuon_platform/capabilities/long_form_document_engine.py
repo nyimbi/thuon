@@ -56,7 +56,8 @@ _DEFAULT_WORD_TARGET   = 50_000
 _WORD_COUNT_MIN_RATIO  = 0.50     # retry if actual < 50% of target
 _MAX_EXPAND_RETRIES    = 2
 _INDEX_TERMS_TARGET    = 40
-_OUTPUT_DIR            = Path(__file__).parent.parent / 'data' / 'long_documents'
+from core.bundle import writable_data_dir as _wdd, app_root as _app_root
+_OUTPUT_DIR            = _wdd() / 'long_documents'
 
 _DOCUMENT_TYPE_GUIDES: dict[str, str] = {
 	'report': (
@@ -635,28 +636,34 @@ Return ONLY valid JSON:
 
 	def _generate_table_exhibit(self, exhibit: ExhibitSpec, section_title: str, doc_topic: str = '') -> str:
 		"""Two-step: LLM → structured JSON → validated + pipe-escaped GFM table."""
-		topic_line = f'Document topic: {doc_topic}\n' if doc_topic else ''
+		domain = doc_topic or section_title
 		prompt = f"""/no_think
-Generate structured data for a table exhibit. The data MUST be specific to the document topic.
+Generate data for the following table. ALL rows MUST be about: {domain}
 
-{topic_line}Section: {section_title}
 Exhibit title: {exhibit.title}
+Section: {section_title}
 Description: {exhibit.description}
 
-Return ONLY valid JSON:
+CRITICAL: Every row must contain data specifically about "{domain}".
+Do NOT include data about unrelated industries (e.g. consumer electronics, automotive, energy, smart home).
+
+Return ONLY valid JSON matching this exact structure:
 {{
-  "headers": ["Column 1", "Column 2", "Column 3"],
+  "headers": ["[column relevant to {domain}]", "[metric 1]", "[metric 2]"],
   "rows": [
-    ["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"]
+    ["[{domain} segment or item]", "[value]", "[value]"],
+    ["[{domain} segment or item]", "[value]", "[value]"],
+    ["[{domain} segment or item]", "[value]", "[value]"],
+    ["[{domain} segment or item]", "[value]", "[value]"],
+    ["[{domain} segment or item]", "[value]", "[value]"]
   ],
-  "source": "Source attribution (Year)"
+  "source": "[Source relevant to {domain} (Year)]"
 }}
 
 Rules:
-- Data MUST be relevant to "{doc_topic or section_title}" — no generic placeholder data
-- 5–10 data rows with realistic, specific values
+- 5–8 data rows with realistic, specific values
 - Consistent financial units (all $M or all $B, not mixed)
-- Include CAGR or growth rate column where relevant"""
+- Replace the bracketed placeholders with real data about "{domain}" """
 
 		data = self._llm_json(prompt, {})
 		if not data or 'headers' not in data or not isinstance(data.get('rows'), list):
@@ -782,16 +789,27 @@ Section content (do not repeat the heading):"""
 
 		raw_text = self._enforce_word_count(raw_text, spec, prompt)
 
-		# Strip any leading heading or bare "Section N" label the model prepended
-		raw_text = re.sub(r'^#{1,6}\s+[^\n]*\n?', '', raw_text.strip(), count=1).strip()
-		raw_text = re.sub(r'^Section\s+\d[\d\.]*\s*\n?', '', raw_text, flags=re.IGNORECASE, count=1).strip()
+		# Strip artefacts the model prepends. Loop until stable — model sometimes
+		# emits multiple heading lines, a [[SEC:]] token, or a bare "Section N"
+		# before any real content. Each pass removes one offending line; we stop
+		# once the first line is genuine prose.
+		_PREAMBLE = re.compile(
+			r'^(?:#{1,6}\s+[^\n]*|\[\[SEC:[\w\-]+\]\]|Section\s+\d[\d\.]*)\s*\n?',
+			re.IGNORECASE,
+		)
+		raw_text = raw_text.strip()
+		prev = None
+		while prev != raw_text:
+			prev = raw_text
+			raw_text = _PREAMBLE.sub('', raw_text, count=1).strip()
 
 		exhibit_blocks: list[str] = []
 		for ex in spec.exhibits:
-			label   = registry.exhibits.get(ex.id, ex.id)
 			content = pre_exhibits.get(ex.id, '')
 			if content:
-				exhibit_blocks.append(f'\n\n**{label}: {ex.title}**\n\n{content}')
+				# Use token so audit() only catches genuine model bypasses, not our
+				# own label. resolve() converts [[EX:id]] → "Exhibit N" in the final pass.
+				exhibit_blocks.append(f'\n\n**[[EX:{ex.id}]]: {ex.title}**\n\n{content}')
 
 		full_raw = f'{heading_mark} {spec.title}\n\n{raw_text.strip()}{"".join(exhibit_blocks)}'
 		issues   = registry.audit(full_raw)
@@ -1100,7 +1118,7 @@ Return JSON: {{"entries": [{{"term": "...", "sections": ["1", "2.3"], "see_also"
 
 	def _render_docx(self, md_path: str) -> str | None:
 		out_path = md_path.replace('.md', '.docx')
-		template = Path(__file__).parent.parent / 'data' / 'templates' / 'corporate-template.docx'
+		template = _app_root() / 'data' / 'templates' / 'corporate-template.docx'
 		extra    = ['--reference-doc', str(template)] if template.exists() else []
 		try:
 			r = subprocess.run(

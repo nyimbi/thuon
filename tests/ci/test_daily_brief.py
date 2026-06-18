@@ -23,67 +23,66 @@ def _make_brief(ai_response='- Key insight 1\n- Key insight 2', search_results=N
 class TestDailyBriefGenerate:
 	def test_returns_dict_with_status_ok(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate(topics=['AI', 'business'])
+		result = brief.generate(include_sections=['news'])
 		assert result['status'] == 'ok'
 
 	def test_sections_populated(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate()
+		result = brief.generate(include_sections=['news'])
 		assert 'sections' in result
-		assert 'news_summary' in result['sections']
+		assert 'news' in result['sections']
 
 	def test_date_present(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate()
+		result = brief.generate(include_sections=['news'])
 		assert 'date' in result
 		assert len(result['date']) > 5
 
 	def test_generated_at_present(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate()
+		result = brief.generate(include_sections=['news'])
 		assert 'generated_at' in result
 
 	def test_formatted_text_is_string(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate()
+		result = brief.generate(include_sections=['news'])
 		assert isinstance(result['formatted_text'], str)
 		assert len(result['formatted_text']) > 10
 
 	def test_word_count_positive(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate()
+		result = brief.generate(include_sections=['news'])
 		assert result['word_count'] > 0
 
 	def test_include_sections_filter(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate(include_sections=['news_summary'])
-		assert 'news_summary' in result['sections']
-		assert 'market_pulse' not in result['sections']
+		result = brief.generate(include_sections=['news'])
+		assert 'news' in result['sections']
+		assert 'fx' not in result['sections']
 
 	def test_no_search_engine_graceful(self):
 		mock_ai = MagicMock()
 		mock_ai.generate_text.return_value = '- Point 1'
 		from capabilities.daily_brief import DailyBrief
 		brief = DailyBrief(mock_ai, search_engine=None)
-		result = brief.generate()
+		result = brief.generate(include_sections=['news'])
 		assert result['status'] == 'ok'
 
 
-class TestNewsSummary:
+class TestNewsDigest:
 	def test_articles_collected(self):
 		brief, mock_ai, mock_search = _make_brief()
 		mock_ai.generate_text.return_value = '- AI is growing fast\n- Business expanding'
-		result = brief._news_summary(['AI', 'business'])
+		result = brief._news_digest('2026-06-13')
 		assert 'items' in result
 		assert 'summary' in result
-		assert result['article_count'] >= 0
 
-	def test_no_search_engine_returns_empty(self):
+	def test_no_search_engine_returns_summary_note(self):
 		mock_ai = MagicMock()
 		from capabilities.daily_brief import DailyBrief
 		brief = DailyBrief(mock_ai, search_engine=None)
-		result = brief._news_summary(['AI'])
-		assert result['article_count'] == 0
+		result = brief._news_digest('2026-06-13')
+		assert 'summary' in result
 
 	def test_search_exception_handled(self):
 		mock_ai = MagicMock()
@@ -92,78 +91,48 @@ class TestNewsSummary:
 		mock_search.search.side_effect = Exception('network error')
 		from capabilities.daily_brief import DailyBrief
 		brief = DailyBrief(mock_ai, search_engine=mock_search)
-		result = brief._news_summary(['tech'])
-		assert result['article_count'] == 0
+		result = brief._news_digest('2026-06-13')
+		assert 'summary' in result  # graceful — returns note, not exception
 
 
-class TestKnowledgeHighlights:
-	def test_no_kb_pipeline_returns_note(self):
-		mock_ai = MagicMock()
-		from capabilities.daily_brief import DailyBrief
-		brief = DailyBrief(mock_ai, knowledge_pipeline=None)
-		result = brief._knowledge_highlights(['AI'])
-		assert 'note' in result
-
-	def test_empty_kb_returns_note(self):
-		mock_ai = MagicMock()
-		mock_kb = MagicMock()
-		mock_kb.chunk_count = 0
-		from capabilities.daily_brief import DailyBrief
-		brief = DailyBrief(mock_ai, knowledge_pipeline=mock_kb)
-		result = brief._knowledge_highlights(['AI'])
-		assert 'note' in result
-
-	def test_kb_with_content_returns_highlights(self):
-		mock_ai = MagicMock()
-		mock_kb = MagicMock()
-		mock_kb.chunk_count = 10
-		mock_kb.source_count = 2
-		mock_kb.search.return_value = [
-			{'score': 0.8, 'source': 'report.pdf', 'text': 'AI regulation overview...'},
-		]
-		from capabilities.daily_brief import DailyBrief
-		brief = DailyBrief(mock_ai, knowledge_pipeline=mock_kb)
-		result = brief._knowledge_highlights(['AI regulation'])
-		assert len(result['highlights']) > 0
-
-
-class TestActionItems:
-	def test_action_items_from_news(self):
-		brief, mock_ai, _ = _make_brief(ai_response='["Review AI policy", "Contact client"]')
-		mock_ai.generate_text.return_value = '["Review AI policy", "Contact client"]'
-		sections = {
-			'news_summary': {'summary': 'AI is growing. Businesses should adapt.'}
-		}
-		result = brief._action_items(sections)
-		assert 'items' in result
-		assert isinstance(result['items'], list)
-
-	def test_empty_news_returns_note(self):
+class TestSynthesize:
+	def test_empty_sections_returns_empty_lists(self):
 		brief, _, _ = _make_brief()
-		result = brief._action_items({'news_summary': {'summary': ''}})
-		assert 'note' in result
+		result = brief._synthesize({}, '2026-06-13')
+		assert 'priorities' in result or 'raw' in result
 
-	def test_no_news_section_returns_note(self):
-		brief, _, _ = _make_brief()
-		result = brief._action_items({})
-		assert 'note' in result
-
-	def test_items_capped_at_five(self):
+	def test_sections_with_news_calls_llm(self):
 		brief, mock_ai, _ = _make_brief()
-		mock_ai.generate_text.return_value = json.dumps([f'action {i}' for i in range(10)])
-		sections = {'news_summary': {'summary': 'There is lots of news today.'}}
-		result = brief._action_items(sections)
-		assert len(result['items']) <= 5
+		mock_ai.generate_text.return_value = '**Top 3 Priorities**\n1. Review AI policy\n2. Client call\n3. Budget'
+		sections = {'news': {'summary': 'AI is growing. Businesses should adapt.'}}
+		result = brief._synthesize(sections, '2026-06-13')
+		assert 'raw' in result
+		mock_ai.generate_text.assert_called_once()
+
+	def test_no_news_section_skips_llm(self):
+		brief, mock_ai, _ = _make_brief()
+		result = brief._synthesize({}, '2026-06-13')
+		mock_ai.generate_text.assert_not_called()
+
+	def test_sections_used_count(self):
+		brief, mock_ai, _ = _make_brief()
+		mock_ai.generate_text.return_value = 'Priorities...'
+		sections = {
+			'news': {'summary': 'Important news today.'},
+			'todos': {'count': 3, 'items': [{'text': 'Do X', 'due': None, 'source': 'local'}], 'overdue_count': 0},
+		}
+		result = brief._synthesize(sections, '2026-06-13')
+		assert result.get('sections_used', 0) >= 2
 
 
 class TestFormat:
 	def test_formatted_text_has_heading(self):
 		brief, _, _ = _make_brief()
-		result = brief.generate(topics=['tech'])
+		result = brief.generate(include_sections=['news'])
 		assert '# Daily Brief' in result['formatted_text']
 
 	def test_formatted_text_has_news_section(self):
 		brief, mock_ai, _ = _make_brief()
 		mock_ai.generate_text.return_value = '- AI insight\n- Business update'
-		result = brief.generate(topics=['tech'])
-		assert '## News Summary' in result['formatted_text']
+		result = brief.generate(include_sections=['news'])
+		assert '## News' in result['formatted_text']

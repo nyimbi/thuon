@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ record.title }} — Thuon{% endblock %}
 
+
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <a href="/rfps" class="tb-bc-link">RFPs</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">{{ record.title }}</span>
+{% endblock %}
 {% block extra_styles %}
 .rfp-detail-header { margin-bottom:28px; }
 .rfp-detail-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 6px; letter-spacing:-0.3px; }

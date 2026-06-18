@@ -5,16 +5,23 @@ database:
   dbname: 'thuon_db'
   user: 'thuon_user'
   password: 'thuon_password'
-api_keys:
-  tavily: 'YOUR_TAVILY_API_KEY'
-  google_serper: 'YOUR_GOOGLE_SERPER_API_KEY'
+api_keys: {}
+
+search:
+  searxng_url: 'https://search.lindela.io'
+  searxng_categories: 'general'
+  searxng_language: 'en'
+  searxng_time_range: ''          # default: no filter; override per-call with time_range='day'
+  firecrawl_url: 'http://84.247.181.100:3002'
 ollama:
   endpoint: 'http://localhost:11434'
   model: 'qwen3.5:4b'
   chat_model: 'qwen3.5:4b'
   vision_model: 'minicpm-v:4.5'
-weaviate:
-  url: 'http://localhost:8080'
+vector_store:
+  backend: 'chroma'           # chroma | weaviate | none
+  chroma_path: 'thuon_platform/data/chroma'
+  weaviate_url: ''            # set to http://host:8080 if using Weaviate
 
 company:
   profile_dir: thuon_platform/data/company
@@ -47,3 +54,33 @@ scheduler:
 
 notifications:
   retention_count: 50
+
+# ── MCP (Model Context Protocol) ─────────────────────────────────────────────
+# Thuon exposes all capabilities as MCP tools at POST /mcp (streamable-HTTP).
+# Tools are named  thuon__<capability_name>  (double-underscore namespace).
+#
+# To wire Thuon into Claude Desktop add this to
+# ~/Library/Application Support/Claude/claude_desktop_config.json:
+#
+#   "mcpServers": {
+#     "thuon": {
+#       "command": "uv",
+#       "args": ["run", "python", "thuon_platform/thuon.py", "mcp"],
+#       "env": {}
+#     }
+#   }
+#
+# Or, if running Thuon as a web server, use the SSE/HTTP transport:
+#
+#   "mcpServers": {
+#     "thuon": {
+#       "type": "http",
+#       "url": "http://localhost:5000/mcp"
+#     }
+#   }
+mcp:
+  enabled: true
+  endpoint: '/mcp'
+  # stdio: run a lightweight stdio-transport wrapper instead of HTTP
+  # Used by:  uv run python thuon_platform/thuon.py mcp
+  stdio_enabled: false

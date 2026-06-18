@@ -14,7 +14,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-_DB_PATH = Path(__file__).parent.parent / 'data' / 'calendar.db'
+from core.bundle import writable_data_dir as _wdd
+_DB_PATH = _wdd() / 'calendar.db'
 
 # Event types with display metadata
 EVENT_TYPES: dict[str, dict[str, str]] = {

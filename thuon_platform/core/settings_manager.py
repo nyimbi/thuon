@@ -3,8 +3,9 @@
 import yaml
 import os
 from pathlib import Path
+from core.bundle import config_dir
 
-_CONFIG_PATH = Path(__file__).parent.parent / 'config' / 'config.yaml'
+_CONFIG_PATH = config_dir() / 'config.yaml'
 
 
 class SettingsManager:

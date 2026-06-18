@@ -219,8 +219,8 @@ Write the complete {doc_type} markdown document now. Start directly with the mar
 		if self._profile is not None and hasattr(self._profile, '_dir'):
 			return Path(self._profile._dir)
 		# fallback: relative to this file
-		here = Path(__file__).parent.parent
-		return here / 'data' / 'company'
+		from core.bundle import writable_data_dir
+		return writable_data_dir() / 'company'
 
 	@staticmethod
 	def _format_context(answers: dict[str, Any]) -> str:

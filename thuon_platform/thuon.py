@@ -196,6 +196,13 @@ _REGISTRY: dict[str, dict] = {
 	},
 }
 
+# Augment SkillRegistry with CLI-only capabilities (keywords, examples, CLI-only caps)
+try:
+	from core.skill_registry import SkillRegistry as _SkillRegistry
+	_SkillRegistry.get_instance().augment_cli(_REGISTRY)
+except Exception:
+	pass  # SkillRegistry is additive; CLI still works without it
+
 
 # ── Dependency factories ───────────────────────────────────────────────────
 
@@ -429,7 +436,7 @@ class Thuon:
 
 	# ── #7 Pipeline-as-YAML ─────────────────────────────────────────────────
 
-	def run_pipeline(self, pipeline: str | dict, **params) -> ThuonResult:
+	def run_pipeline(self, pipeline: str | dict, hooks=None, **params) -> ThuonResult:
 		"""
 		Run a named pipeline or inline pipeline dict.
 
@@ -437,7 +444,7 @@ class Thuon:
 		  t.run_pipeline("research_brief", topic="AI regulation")
 		"""
 		from core.pipeline_runner import PipelineRunner
-		return PipelineRunner(self).run(pipeline, params)
+		return PipelineRunner(self, hooks=hooks).run(pipeline, params)
 
 	# ── #8 Hot-reload config ─────────────────────────────────────────────────
 
@@ -542,61 +549,8 @@ class Thuon:
 	# ── #1 Routing ───────────────────────────────────────────────────────────
 
 	def _route(self, instruction: str) -> tuple[str, dict]:
-		"""Use the LLM to classify instruction → (capability_name, params)."""
-		cap_list = '\n'.join(
-			f'- {k}: {v["description"]}'
-			for k, v in _REGISTRY.items()
-		)
-		prompt = (
-			'You are a routing assistant. Given a user instruction, identify which capability to call '
-			'and extract the parameters from the instruction text.\n\n'
-			f'Available capabilities:\n{cap_list}\n\n'
-			f'Instruction: "{instruction}"\n\n'
-			'Return ONLY valid JSON: {"capability": "<name from list>", "params": {<key: value>}}\n'
-			'JSON:'
-		)
-		ai = self._get_dep('ai_engine')
-		raw = ai.generate_text(prompt)
-
-		# Parse JSON from LLM response
-		try:
-			m = re.search(r'\{.*\}', raw, re.DOTALL)
-			if m:
-				parsed = json.loads(m.group())
-				cap  = parsed.get('capability', '')
-				params = parsed.get('params', {})
-				if cap in _REGISTRY:
-					return cap, params
-		except (json.JSONDecodeError, KeyError):
-			pass
-
-		# Keyword fallback: pick best capability by keyword overlap
-		instruction_lower = instruction.lower()
-		best, best_score = 'research_assistant', 0
-		for k, v in _REGISTRY.items():
-			score = sum(1 for kw in v.get('keywords', []) if kw in instruction_lower)
-			if score > best_score:
-				best, best_score = k, score
-
-		# Extract first quoted string or the instruction itself as the primary param
-		quoted = re.findall(r'"([^"]+)"', instruction)
-		primary_param = quoted[0] if quoted else instruction
-		meta = _REGISTRY[best]
-		sig = inspect.signature(
-			getattr(importlib.import_module(meta['module']), meta['class']).__init__
-		)
-		# Guess the first non-self kwarg of the method as the param name
-		try:
-			method_sig = inspect.signature(
-				getattr(
-					getattr(importlib.import_module(meta['module']), meta['class']),
-					meta['method'],
-				)
-			)
-			first_param = next(
-				(p for p in method_sig.parameters if p != 'self'), 'query'
-			)
-		except Exception:
-			first_param = 'query'
-
-		return best, {first_param: primary_param}
+		"""Route instruction to (capability_name, params) via SkillRouter."""
+		from core.skill_router import SkillRouter
+		router = SkillRouter(ai_engine=self._get_dep('ai_engine'))
+		allowed = set(_REGISTRY) | set(self._custom_caps)
+		return router.route_with_params(instruction, allowed_names=allowed)

@@ -13,8 +13,9 @@ from enum import Enum
 from pathlib import Path
 
 from uuid6 import uuid7
+from core.bundle import writable_data_dir
 
-_STORE_PATH = Path(__file__).parent.parent / 'data' / 'rfp_tracker.json'
+_STORE_PATH = writable_data_dir() / 'rfp_tracker.json'
 
 
 def _uuid7str() -> str:

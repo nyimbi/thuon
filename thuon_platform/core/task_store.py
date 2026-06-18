@@ -14,7 +14,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-_DB_PATH = Path(__file__).parent.parent / 'data' / 'tasks.db'
+from core.bundle import writable_data_dir as _wdd
+_DB_PATH = _wdd() / 'tasks.db'
 
 _DDL = """
 PRAGMA journal_mode=WAL;

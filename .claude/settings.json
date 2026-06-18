@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsc *)",
+      "Bash(pnpm lint *)",
+      "Bash(node_modules/.bin/next lint *)",
+      "Bash(node_modules/.bin/tsc *)",
+      "Bash(dig *)"
+    ]
+  }
+}

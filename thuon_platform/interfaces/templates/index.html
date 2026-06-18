@@ -1,942 +1,543 @@
 {% extends "base.html" %}
-{% block title %}Thuon — Capabilities{% endblock %}
+
+{% block breadcrumb %}<span class="tb-bc-current">Chat</span>{% endblock %}
 
 {% block extra_styles %}
-/* ── Index-specific styles ─────────────────────────────────────────── */
-
-/* ── Category accent colors (keyed to data-cat set by JS) ──────────── */
-.cap-card[data-cat="research"]  { --cat-color: #3ecfcf; }
-.cap-card[data-cat="content"]   { --cat-color: #fbbf24; }
-.cap-card[data-cat="analytics"] { --cat-color: #34d399; }
-.cap-card[data-cat="hr"]        { --cat-color: #c084fc; }
-.cap-card[data-cat="risk"]      { --cat-color: #f87171; }
-.cap-card[data-cat="strategy"]  { --cat-color: #fb923c; }
-.cap-card[data-cat="data"]      { --cat-color: #60a5fa; }
-.cap-card[data-cat="dev"]       { --cat-color: #a78bfa; }
-
-/* ── Ask Thuon bar ──────────────────────────────────────────────────── */
-.ask-bar-wrap {
-  margin-bottom: 28px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-mid);
-  border-radius: var(--r-lg);
+/* ── Chat shell ──────────────────────────────────────────────────────── */
+.chat-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.ask-bar-wrap:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-}
-.ask-bar-inner {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-.ask-bar-icon {
-  padding: 0 14px;
-  color: var(--accent);
-  font-size: 16px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-#askInput {
+
+/* ── Thread area ─────────────────────────────────────────────────────── */
+.chat-thread-area {
   flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 14px;
-  padding: 14px 0;
-  outline: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-mid) transparent;
+  position: relative;
 }
-#askInput::placeholder { color: var(--text-muted); }
-.ask-send-btn {
-  margin: 8px;
-  padding: 7px 18px;
-  border-radius: var(--r-sm);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--accent);
-  border: none;
-  cursor: pointer;
-  transition: background 0.13s, box-shadow 0.13s;
+.chat-thread-area::-webkit-scrollbar { width: 5px; }
+.chat-thread-area::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+
+/* Welcome state */
+.chat-welcome {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px 32px;
+  gap: 14px;
+  text-align: center;
+  min-height: 55vh;
+}
+.cw-mark {
+  width: 52px; height: 52px;
+  background: var(--accent);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--heading-font);
+  font-size: 24px; font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.cw-heading {
+  font-family: var(--heading-font);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -.02em;
+}
+.cw-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 380px;
+  line-height: 1.6;
+}
+.cw-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: center;
+  max-width: 560px;
+  margin-top: 8px;
+}
+.cw-pill {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  padding: 7px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-mid);
+  border-radius: 20px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background .1s, border-color .1s, color .1s;
 }
-.ask-send-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
-  box-shadow: 0 4px 14px rgba(124,106,247,0.4);
+.cw-pill:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-bright);
+  color: var(--text-primary);
 }
-.ask-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cw-pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
-/* Result drawer */
-.ask-result-drawer {
-  border-top: 1px solid var(--border);
-  display: none;
+/* Messages */
+.chat-messages {
+  padding: 12px 0;
 }
-.ask-result-drawer.open { display: block; }
-.ask-result-meta {
+
+.msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 24px;
+  max-width: 860px;
+  margin: 0 auto;
+  animation: msgIn .15s ease-out;
+}
+@keyframes msgIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+
+/* User message — right-aligned */
+.msg-user {
+  flex-direction: row-reverse;
+}
+.msg-user .msg-bubble {
+  background: #fde8dc;
+  border: 1px solid #f0c8b0;
+  color: var(--text-primary);
+  border-radius: 16px 4px 16px 16px;
+  max-width: 560px;
+  padding: 10px 15px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Assistant message — left-aligned */
+.msg-assistant { flex-direction: row; }
+.msg-avatar {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--heading-font);
+  font-size: 13px; font-weight: 700;
+  color: #fff;
+  margin-top: 2px;
+}
+.msg-assistant .msg-bubble {
+  flex: 1;
+  min-width: 0;
+  max-width: 680px;
+}
+
+/* Thinking indicator */
+.msg-thinking {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  font-size: 11.5px;
+  gap: 5px;
+  padding: 10px 15px;
   color: var(--text-muted);
-  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
 }
-.ask-routed-badge {
+.think-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: blink 1.2s ease-in-out infinite;
+}
+.think-dot:nth-child(2) { animation-delay: .2s; }
+.think-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+/* Response content */
+.msg-cap-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 10px;
-  border-radius: 12px;
+  padding: 2px 8px;
+  border-radius: 20px;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--teal);
-  background: var(--teal-dim);
-  border: 1px solid rgba(62,207,207,0.2);
+  font-weight: 600;
+  margin-bottom: 8px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(184,106,72,0.18);
 }
-.ask-result-body {
-  padding: 14px 16px;
-  max-height: 320px;
-  overflow-y: auto;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  line-height: 1.65;
+.msg-text {
+  font-size: 13.5px;
+  line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
 }
-.ask-result-loading {
-  padding: 18px 16px;
-  font-size: 12.5px;
-  color: var(--text-muted);
+.msg-text strong { color: var(--text-primary); font-weight: 600; }
+.msg-text code {
   font-family: 'JetBrains Mono', monospace;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 12px;
+  background: var(--bg-void);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
-.ask-spinner {
-  width: 12px; height: 12px;
-  border: 2px solid var(--border-bright);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── History / recents ──────────────────────────────────────────────── */
-.history-section {
-  margin-top: 40px;
-}
-.history-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.history-header::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-.history-empty {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 20px 0;
-  text-align: center;
+.msg-json {
   font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre;
+  margin-top: 8px;
 }
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.history-item {
+.msg-footer {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.msg-footer-link {
+  color: var(--accent);
+  font-weight: 500;
+  transition: opacity .1s;
+}
+.msg-footer-link:hover { opacity: .8; }
+
+.msg-error .msg-bubble {
+  background: #fdf0f0;
+  border: 1px solid #f0c8c8;
+  border-radius: 4px 16px 16px 16px;
   padding: 10px 14px;
+  color: var(--red);
+  font-size: 13px;
+}
+
+/* ── Input bar ───────────────────────────────────────────────────────── */
+.chat-input-bar {
+  flex-shrink: 0;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--border);
   background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  text-decoration: none;
-  transition: border-color 0.15s, background 0.15s;
-  cursor: pointer;
 }
-.history-item:hover {
-  border-color: var(--border-bright);
-  background: var(--bg-elevated);
-}
-.history-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.history-dot.success { background: var(--green); box-shadow: 0 0 4px var(--green); }
-.history-dot.error   { background: var(--red);   box-shadow: 0 0 4px var(--red); }
-.history-cap {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.history-elapsed {
-  font-size: 11px;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.history-ts {
-  font-size: 11px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-.history-run-btn {
-  font-size: 10.5px;
-  font-weight: 500;
-  color: var(--accent);
-  background: var(--accent-dim);
-  border: 1px solid rgba(124,106,247,0.25);
-  border-radius: 4px;
-  padding: 2px 8px;
-  text-decoration: none;
-  flex-shrink: 0;
-  transition: background 0.12s;
-}
-.history-run-btn:hover { background: rgba(124,106,247,0.22); color: var(--accent); }
-
-/* Hero header */
-.idx-header {
+.chat-input-wrap {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-}
-
-.idx-header-left h1 {
-  font-family: var(--heading-font);
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 4px;
-  color: var(--text-primary);
-  letter-spacing: -0.3px;
-}
-
-.idx-count {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-.idx-count strong {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-/* Search bar */
-.idx-search-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.idx-search-wrap svg {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-#searchCaps {
-  width: 240px;
-  padding-left: 32px;
-  padding-right: 52px;
-}
-
-.search-kbd {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-muted);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-mid);
-  border-radius: 4px;
-  padding: 2px 5px;
-  pointer-events: none;
-}
-
-/* Category filter rail */
-.cat-rail {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 22px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-.cat-rail::-webkit-scrollbar { display: none; }
-
-.cat-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 13px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-mid);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.13s ease;
-  user-select: none;
-  flex-shrink: 0;
-}
-.cat-pill:hover {
-  color: var(--text-primary);
-  border-color: var(--border-bright);
-  background: var(--bg-elevated);
-}
-.cat-pill.active {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.cat-pill.active .cat-count {
-  background: var(--accent);
-  color: #fff;
-}
-
-.cat-icon { font-size: 13px; line-height: 1; }
-
-.cat-count {
-  font-size: 10px;
-  font-weight: 600;
-  background: var(--bg-elevated);
-  border-radius: 10px;
-  padding: 1px 6px;
-  color: var(--text-muted);
-  transition: all 0.13s;
-}
-
-/* Capability grid */
-.cap-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
-}
-
-/* Capability card */
-.cap-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-top: 2px solid var(--cat-color, var(--border));
-  border-radius: var(--r-lg);
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-  position: relative;
-  overflow: hidden;
-  animation: cardReveal 0.3s ease both;
-}
-
-@keyframes cardReveal {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.cap-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--accent-dim), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.cap-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 8px 32px rgba(124,106,247,0.18), 0 2px 8px rgba(0,0,0,0.3);
-  transform: translateY(-1px);
-}
-
-.cap-card:hover::before { opacity: 1; }
-
-.cap-card.hidden { display: none; }
-
-.cap-card-top {
-  padding: 16px 16px 12px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: flex-end;
   gap: 10px;
-}
-
-.cap-card-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-  flex-shrink: 0;
+  max-width: 812px;
+  margin: 0 auto;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  padding: 10px 12px 10px 16px;
+  transition: border-color .15s, box-shadow .15s;
 }
-
-.cap-method-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--text-muted);
-  background: var(--bg-void);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 2px 6px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.chat-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
-
-.cap-card-body {
-  padding: 0 16px 16px;
+.chat-textarea {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.cap-name {
-  font-size: 13.5px;
-  font-weight: 600;
+  background: none;
+  border: none;
+  outline: none;
+  resize: none;
   color: var(--text-primary);
-  margin: 0 0 6px;
-  letter-spacing: -0.1px;
-  line-height: 1.3;
-}
-
-.cap-desc {
-  font-size: 12.5px;
-  color: var(--text-secondary);
+  font-size: 14px;
   line-height: 1.55;
-  flex: 1;
-  margin: 0 0 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  max-height: 180px;
+  overflow-y: auto;
+  caret-color: var(--accent);
+  scrollbar-width: thin;
 }
-
-.cap-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cap-use-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
+.chat-textarea::placeholder { color: var(--text-muted); }
+.chat-send {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
   background: var(--accent);
-  border: 1px solid var(--accent);
-  text-decoration: none;
-  transition: all 0.13s ease;
-  letter-spacing: 0.01em;
-}
-.cap-use-btn:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  border: none;
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .12s, opacity .12s;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(124,106,247,0.4);
 }
-
-.cap-docs-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border-mid);
-  text-decoration: none;
-  transition: all 0.13s ease;
-}
-.cap-docs-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--border-bright);
-  background: var(--bg-elevated);
-}
-
-/* Category section label (visible only in "All" view) */
-.cat-section-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 28px 0 12px;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.cat-section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-/* Empty state */
-.cap-empty {
-  grid-column: 1/-1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 64px 24px;
-  color: var(--text-muted);
-  gap: 10px;
+.chat-send:hover { background: var(--accent-hover); }
+.chat-send:disabled { opacity: .4; cursor: default; }
+.chat-hint {
   text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 7px;
+  letter-spacing: .01em;
 }
-
-.cap-empty-icon { font-size: 36px; opacity: 0.5; }
-.cap-empty-text { font-size: 14px; }
-
-/* Stagger the card animation delays */
-.cap-card:nth-child(1)  { animation-delay: 0.02s; }
-.cap-card:nth-child(2)  { animation-delay: 0.04s; }
-.cap-card:nth-child(3)  { animation-delay: 0.06s; }
-.cap-card:nth-child(4)  { animation-delay: 0.08s; }
-.cap-card:nth-child(5)  { animation-delay: 0.10s; }
-.cap-card:nth-child(6)  { animation-delay: 0.12s; }
-.cap-card:nth-child(7)  { animation-delay: 0.14s; }
-.cap-card:nth-child(8)  { animation-delay: 0.16s; }
-.cap-card:nth-child(9)  { animation-delay: 0.18s; }
-.cap-card:nth-child(10) { animation-delay: 0.20s; }
-.cap-card:nth-child(n+11) { animation-delay: 0.22s; }
-
-@media (max-width: 640px) {
-  .cap-grid { grid-template-columns: 1fr; }
-  #searchCaps { width: 180px; }
-  .idx-header { flex-direction: column; }
+.chat-hint kbd {
+  padding: 1px 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-mid);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
 }
 {% endblock %}
 
 {% block content %}
-<!-- Ask Thuon bar -->
-<div class="ask-bar-wrap" id="askBarWrap">
-  <div class="ask-bar-inner">
-    <span class="ask-bar-icon">✦</span>
-    <input
-      type="text"
-      id="askInput"
-      placeholder="Ask Thuon anything — 'Research competitors in East African fintech' or 'Draft a supplier renewal email for AWS'…"
-      autocomplete="off"
-      spellcheck="false"
-      aria-label="Natural language instruction"
-    >
-    <button class="ask-send-btn" id="askSendBtn" aria-label="Submit instruction">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-      </svg>
-      Ask
-    </button>
-  </div>
-  <!-- Result drawer (shown after submit) -->
-  <div class="ask-result-drawer" id="askDrawer">
-    <div class="ask-result-loading" id="askLoading">
-      <div class="ask-spinner"></div>
-      Routing and running…
-    </div>
-    <div id="askResultInner" style="display:none">
-      <div class="ask-result-meta" id="askMeta"></div>
-      <div class="ask-result-body" id="askBody"></div>
-    </div>
-  </div>
-</div>
+<div class="chat-shell">
 
-<!-- Header -->
-<div class="idx-header">
-  <div class="idx-header-left">
-    <h1>Capabilities</h1>
-    <p class="idx-count"><strong>{{ capabilities|length }}</strong> AI-powered business capabilities</p>
-  </div>
-  <div class="idx-search-wrap">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-    </svg>
-    <input
-      type="text"
-      id="searchCaps"
-      class="t-input"
-      placeholder="Search capabilities..."
-      autocomplete="off"
-      spellcheck="false"
-      aria-label="Search capabilities"
-    >
-    <span class="search-kbd">⌘K</span>
-  </div>
-</div>
+  <!-- Thread area -->
+  <div class="chat-thread-area" id="threadArea">
 
-<!-- Category filter rail -->
-<div class="cat-rail" role="tablist" aria-label="Filter by category">
-  <button class="cat-pill active" data-cat="all" role="tab" aria-selected="true">
-    <span class="cat-icon">⚡</span>
-    All
-    <span class="cat-count" id="count-all">{{ capabilities|length }}</span>
-  </button>
-  <button class="cat-pill" data-cat="research" role="tab" aria-selected="false">
-    <span class="cat-icon">🔍</span>
-    Research &amp; Intelligence
-    <span class="cat-count" id="count-research">5</span>
-  </button>
-  <button class="cat-pill" data-cat="content" role="tab" aria-selected="false">
-    <span class="cat-icon">✍️</span>
-    Content &amp; Comms
-    <span class="cat-count" id="count-content">7</span>
-  </button>
-  <button class="cat-pill" data-cat="analytics" role="tab" aria-selected="false">
-    <span class="cat-icon">📊</span>
-    Analytics &amp; Finance
-    <span class="cat-count" id="count-analytics">4</span>
-  </button>
-  <button class="cat-pill" data-cat="hr" role="tab" aria-selected="false">
-    <span class="cat-icon">👥</span>
-    HR &amp; Organization
-    <span class="cat-count" id="count-hr">4</span>
-  </button>
-  <button class="cat-pill" data-cat="risk" role="tab" aria-selected="false">
-    <span class="cat-icon">🛡️</span>
-    Risk &amp; Compliance
-    <span class="cat-count" id="count-risk">6</span>
-  </button>
-  <button class="cat-pill" data-cat="strategy" role="tab" aria-selected="false">
-    <span class="cat-icon">🚀</span>
-    Strategy &amp; Growth
-    <span class="cat-count" id="count-strategy">6</span>
-  </button>
-  <button class="cat-pill" data-cat="data" role="tab" aria-selected="false">
-    <span class="cat-icon">🔗</span>
-    Data &amp; Integration
-    <span class="cat-count" id="count-data">2</span>
-  </button>
-  <button class="cat-pill" data-cat="dev" role="tab" aria-selected="false">
-    <span class="cat-icon">💻</span>
-    Dev &amp; Research
-    <span class="cat-count" id="count-dev">3</span>
-  </button>
-</div>
-
-<!-- Capability grid -->
-<div class="cap-grid" id="capGrid" role="list">
-{% for name, cap in capabilities.items() %}
-<div class="cap-card"
-     data-name="{{ name }}"
-     data-cat="{{ name | categorize }}"
-     role="listitem">
-  <div class="cap-card-top">
-    <div class="cap-card-icon" style="{{ name | cap_icon_style }}">
-      {{ name | cap_icon }}
+    <!-- Welcome (hidden once messages exist) -->
+    <div class="chat-welcome" id="chatWelcome">
+      <div class="cw-mark">T</div>
+      <div class="cw-heading">What can I help you with today?</div>
+      <div class="cw-sub">Research, write, analyze, or run any capability — just ask.</div>
+      <div class="cw-pills">
+        <span class="cw-pill" onclick="prefill('Research the competitive landscape for AI coding assistants')">
+          <span class="cw-pill-dot" style="background:#5c4db0"></span>Research a topic
+        </span>
+        <span class="cw-pill" onclick="prefill('Get my daily brief')">
+          <span class="cw-pill-dot" style="background:#1e6845"></span>Daily brief
+        </span>
+        <span class="cw-pill" onclick="prefill('Help me evaluate and respond to an RFP')">
+          <span class="cw-pill-dot" style="background:#7a5a10"></span>RFP pipeline
+        </span>
+        <span class="cw-pill" onclick="prefill('Write a blog post about AI in professional services')">
+          <span class="cw-pill-dot" style="background:#9a3e1e"></span>Write a blog post
+        </span>
+        <span class="cw-pill" onclick="prefill('Analyze market opportunities in healthcare AI')">
+          <span class="cw-pill-dot" style="background:#1a4e88"></span>Market analysis
+        </span>
+        <span class="cw-pill" onclick="prefill('Generate a weekly business review')">
+          <span class="cw-pill-dot" style="background:#1e6845"></span>Weekly review
+        </span>
+      </div>
     </div>
-    <span class="cap-method-badge">{{ cap.method }}</span>
+
+    <!-- Messages -->
+    <div id="chatMessages"></div>
+
   </div>
-  <div class="cap-card-body">
-    <h3 class="cap-name">{{ name | replace('_', ' ') | title }}</h3>
-    <p class="cap-desc">{{ cap.description }}</p>
-    <div class="cap-card-footer">
-      <a href="/capability/{{ name }}" class="cap-use-btn">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3"/>
+
+  <!-- Input bar -->
+  <div class="chat-input-bar">
+    <div class="chat-input-wrap">
+      <textarea class="chat-textarea" id="chatInput"
+        placeholder="Ask Thuon anything…"
+        rows="1"
+        autocomplete="off"
+        spellcheck="false"></textarea>
+      <button class="chat-send" id="chatSend" onclick="sendMessage()" disabled title="Send">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>
-        Run
-      </a>
-      <a href="/api/capabilities#{{ name }}" class="cap-docs-btn" target="_blank">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-        </svg>
-        Docs
-      </a>
+      </button>
     </div>
+    <p class="chat-hint"><kbd>↵</kbd> to send &nbsp;·&nbsp; <kbd>⇧↵</kbd> for new line &nbsp;·&nbsp; <kbd>⌘K</kbd> to focus</p>
   </div>
-</div>
-{% endfor %}
 
-  <!-- Empty state (hidden by default) -->
-  <div class="cap-empty" id="emptyState" style="display:none">
-    <div class="cap-empty-icon">⊘</div>
-    <div class="cap-empty-text">No capabilities match your search</div>
-  </div>
-</div>
-
-<!-- Recent runs -->
-<div class="history-section" id="historySection" style="display:none">
-  <div class="history-header">Recent runs</div>
-  <div class="history-list" id="historyList"></div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-/* ── Category map (server-injected — single source of truth) ──────────── */
-const CAT_MAP = {{ category_map | tojson }};
-
-/* ── Icon map ─────────────────────────────────────────────────────────── */
-const ICON_MAP = {
-  research_assistant:                    {e:'🔬', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  competitive_intelligence_operative:    {e:'🎯', bg:'rgba(251,191,36,0.10)',  bc:'rgba(251,191,36,0.20)'},
-  ma_target_profiler:                    {e:'🏢', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  market_sales_research:                 {e:'📈', bg:'rgba(52,211,153,0.10)', bc:'rgba(52,211,153,0.20)'},
-  psychographic_profile_generator_analyzer:{e:'🧠', bg:'rgba(248,113,113,0.10)', bc:'rgba(248,113,113,0.20)'},
-  ai_report_writer:                      {e:'📄', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  proposal_compositor:                   {e:'📝', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  internal_communications_automator:     {e:'📡', bg:'rgba(251,191,36,0.10)', bc:'rgba(251,191,36,0.20)'},
-  website_creator:                       {e:'🌐', bg:'rgba(52,211,153,0.10)', bc:'rgba(52,211,153,0.20)'},
-  course_creator:                        {e:'🎓', bg:'rgba(248,113,113,0.10)', bc:'rgba(248,113,113,0.20)'},
-  customer_support_chatbot_builder:      {e:'💬', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  financial_forecasting_analyst:         {e:'💹', bg:'rgba(52,211,153,0.10)', bc:'rgba(52,211,153,0.20)'},
-  financial_accountant:                  {e:'🧾', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  process_optimization_analyst:          {e:'⚙️', bg:'rgba(251,191,36,0.10)', bc:'rgba(251,191,36,0.20)'},
-  sustainability_impact_simulator:       {e:'🌱', bg:'rgba(52,211,153,0.10)', bc:'rgba(52,211,153,0.20)'},
-  human_resource_manager:                {e:'👤', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  talent_analytics_succession_forecaster:{e:'🏆', bg:'rgba(251,191,36,0.10)', bc:'rgba(251,191,36,0.20)'},
-  cultural_transformation_designer:      {e:'🎨', bg:'rgba(248,113,113,0.10)', bc:'rgba(248,113,113,0.20)'},
-  project_task_manager:                  {e:'📋', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  ethical_ai_governance_engine:          {e:'⚖️', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  regulatory_change_manager:             {e:'📜', bg:'rgba(251,191,36,0.10)', bc:'rgba(251,191,36,0.20)'},
-  cybersecurity_guardian:                {e:'🔒', bg:'rgba(248,113,113,0.10)', bc:'rgba(248,113,113,0.20)'},
-  legal_compliance_officer:              {e:'⚖️', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  accessibility_compliance_verifier:     {e:'♿', bg:'rgba(52,211,153,0.10)', bc:'rgba(52,211,153,0.20)'},
-  crisis_simulation_response_architect:  {e:'🚨', bg:'rgba(248,113,113,0.10)', bc:'rgba(248,113,113,0.20)'},
-  negotiation_strategy_builder:          {e:'🤝', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  brand_sentiment_orchestrator:          {e:'💡', bg:'rgba(251,191,36,0.10)', bc:'rgba(251,191,36,0.20)'},
-  intellectual_property_strategist:      {e:'💎', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  supply_chain_resilience_planner:       {e:'🔗', bg:'rgba(52,211,153,0.10)', bc:'rgba(52,211,153,0.20)'},
-  social_media_manager:                  {e:'📱', bg:'rgba(248,113,113,0.10)', bc:'rgba(248,113,113,0.20)'},
-  workflow_automator:                    {e:'⚡', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  customer_relationship_manager:         {e:'🤖', bg:'rgba(62,207,207,0.10)', bc:'rgba(62,207,207,0.20)'},
-  data_integrator:                       {e:'🔀', bg:'rgba(251,191,36,0.10)', bc:'rgba(251,191,36,0.20)'},
-  code_writer:                           {e:'💻', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)'},
-  deep_researcher:                       {e:'🔭', bg:'rgba(62,207,207,0.10)',  bc:'rgba(62,207,207,0.20)'},
-  niche_finder:                          {e:'🎯', bg:'rgba(52,211,153,0.10)',  bc:'rgba(52,211,153,0.20)'},
+/* ── Capability index for routing ────────────────────────────────────── */
+const _CAP_IDX = {
+{% for name, info in capabilities.items() %}
+  {{ name | tojson }}: { cat: {{ (category_map.get(name,'other')) | tojson }}, desc: {{ (info.description or '') | tojson }} },
+{% endfor %}
+};
+const _CAT_CLR = {
+  research:'#5c4db0', content:'#9a3e1e', strategy:'#7a5a10',
+  analytics:'#7a5a10', hr:'#1e6845', risk:'#922828',
+  data:'#1a4e88', dev:'#4a4440', other:'#7a7068'
 };
 
-/* ── Assign icons & categories from JS (Jinja filters may not exist) ── */
-document.querySelectorAll('.cap-card').forEach(card => {
-  const name = card.dataset.name;
-  const cat  = CAT_MAP[name] || 'data';
-  const icon = ICON_MAP[name] || { e:'⚡', bg:'rgba(124,106,247,0.10)', bc:'rgba(124,106,247,0.20)' };
+/* ── DOM refs ────────────────────────────────────────────────────────── */
+const _thread  = document.getElementById('chatMessages');
+const _area    = document.getElementById('threadArea');
+const _welcome = document.getElementById('chatWelcome');
+const _input   = document.getElementById('chatInput');
+const _send    = document.getElementById('chatSend');
 
-  // Set category
-  card.dataset.cat = cat;
-
-  // Apply icon style
-  const iconEl = card.querySelector('.cap-card-icon');
-  if (iconEl) {
-    iconEl.style.background    = icon.bg;
-    iconEl.style.borderColor   = icon.bc;
-    iconEl.textContent         = icon.e;
-  }
+/* ── Textarea: auto-resize, enable send when non-empty ──────────────── */
+_input.addEventListener('input', () => {
+  _input.style.height = 'auto';
+  _input.style.height = Math.min(_input.scrollHeight, 180) + 'px';
+  _send.disabled = !_input.value.trim();
+});
+_input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); _input.focus(); }
 });
 
-/* ── Count per category ───────────────────────────────────────────────── */
-const cats = {};
-document.querySelectorAll('.cap-card').forEach(c => {
-  const cat = c.dataset.cat;
-  cats[cat] = (cats[cat] || 0) + 1;
-});
-Object.entries(cats).forEach(([cat, n]) => {
-  const el = document.getElementById('count-' + cat);
-  if (el) el.textContent = n;
-});
-document.getElementById('count-all').textContent =
-  document.querySelectorAll('.cap-card').length;
-
-/* ── Ask Thuon bar ────────────────────────────────────────────────────── */
-const askInput   = document.getElementById('askInput');
-const askSendBtn = document.getElementById('askSendBtn');
-const askDrawer  = document.getElementById('askDrawer');
-const askLoading = document.getElementById('askLoading');
-const askResultInner = document.getElementById('askResultInner');
-const askMeta    = document.getElementById('askMeta');
-const askBody    = document.getElementById('askBody');
-
-function syntaxHighlightJSON(json) {
-  const esc = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return esc.replace(
-    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],:])/g,
-    m => {
-      if (/^"/.test(m)) {
-        if (/:$/.test(m)) return `<span style="color:#7dd3fc">${m.slice(0,-1)}</span><span style="color:var(--border-bright)">:</span>`;
-        return `<span style="color:#86efac">${m}</span>`;
-      }
-      if (/true|false/.test(m)) return `<span style="color:var(--teal)">${m}</span>`;
-      if (/null/.test(m))       return `<span style="color:var(--text-muted);font-style:italic">${m}</span>`;
-      if (/^-?\d/.test(m))      return `<span style="color:#fca5a5">${m}</span>`;
-      return `<span style="color:var(--border-bright)">${m}</span>`;
-    }
-  );
+function prefill(text) {
+  _input.value = text;
+  _input.style.height = 'auto';
+  _input.style.height = Math.min(_input.scrollHeight, 180) + 'px';
+  _send.disabled = false;
+  _input.focus();
 }
 
-async function submitAsk() {
-  const instruction = askInput.value.trim();
-  if (!instruction) return;
+/* ── Message rendering ───────────────────────────────────────────────── */
+let _msgCount = 0;
 
-  askSendBtn.disabled = true;
-  askDrawer.classList.add('open');
-  askLoading.style.display = 'flex';
-  askResultInner.style.display = 'none';
+function addUserMsg(text) {
+  hideWelcome();
+  const id = 'msg-' + (++_msgCount);
+  const div = document.createElement('div');
+  div.className = 'msg msg-user';
+  div.id = id;
+  div.innerHTML = `<div class="msg-bubble">${_esc(text)}</div>`;
+  _thread.appendChild(div);
+  scrollToBottom();
+  return id;
+}
+
+function addThinkingMsg() {
+  const id = 'msg-' + (++_msgCount);
+  const div = document.createElement('div');
+  div.className = 'msg msg-assistant';
+  div.id = id;
+  div.innerHTML = `
+    <div class="msg-avatar">T</div>
+    <div class="msg-bubble msg-thinking">
+      <div class="think-dot"></div>
+      <div class="think-dot"></div>
+      <div class="think-dot"></div>
+    </div>`;
+  _thread.appendChild(div);
+  scrollToBottom();
+  return id;
+}
+
+function resolveMsg(id, cap, result, elapsed) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const cat = (_CAP_IDX[cap] || {}).cat || 'other';
+  const clr = _CAT_CLR[cat] || '#6e6762';
+  const capLabel = cap.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  const elapsed_s = elapsed != null ? (elapsed >= 60 ? (elapsed/60).toFixed(1)+'m' : elapsed.toFixed(1)+'s') : '';
+  const text = extractText(result);
+
+  let body = `<div class="msg-cap-badge">✦ ${_esc(capLabel)}</div>`;
+  if (text) {
+    body += `<div class="msg-text">${renderMd(text)}</div>`;
+  } else {
+    body += `<div class="msg-json">${_esc(JSON.stringify(result, null, 2))}</div>`;
+  }
+  body += `<div class="msg-footer">
+    ${elapsed_s ? `<span>${elapsed_s}</span>` : ''}
+    <a class="msg-footer-link" href="/capability/${_esc(cap)}">Full result →</a>
+  </div>`;
+
+  el.querySelector('.msg-bubble').className = 'msg-bubble';
+  el.querySelector('.msg-bubble').innerHTML = body;
+  scrollToBottom();
+}
+
+function errorMsg(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('msg-error');
+  el.querySelector('.msg-bubble').innerHTML = `<div>${_esc(text)}</div>`;
+}
+
+function hideWelcome() {
+  if (_welcome.style.display !== 'none') _welcome.style.display = 'none';
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => { _area.scrollTop = _area.scrollHeight; });
+}
+
+/* ── Text extraction from structured results ─────────────────────────── */
+const _TEXT_KEYS = ['summary','content','text','output','brief','analysis',
+                    'response','message','description','report','result',
+                    'blog_content','optimized_content','document_content',
+                    'post_text','strategy','plan','overview'];
+
+function extractText(result) {
+  if (typeof result === 'string') return result.length > 5 ? result : null;
+  if (!result || typeof result !== 'object') return null;
+  for (const k of _TEXT_KEYS) {
+    const v = result[k];
+    if (typeof v === 'string' && v.length > 20) return v;
+  }
+  // Try first string value > 50 chars
+  for (const v of Object.values(result)) {
+    if (typeof v === 'string' && v.length > 50) return v;
+  }
+  return null;
+}
+
+/* ── Minimal markdown renderer ───────────────────────────────────────── */
+function renderMd(raw) {
+  let s = raw
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^#{3} (.+)$/gm,'<strong>$1</strong>')
+    .replace(/^#{2} (.+)$/gm,'<strong style="font-size:1.05em">$1</strong>')
+    .replace(/^#{1} (.+)$/gm,'<strong style="font-size:1.1em;display:block;margin-top:.4em">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\n/g,'<br>');
+  // Truncate very long responses
+  if (s.length > 4000) {
+    s = s.slice(0,4000) + '<br><span style="color:var(--text-muted);font-size:12px">… truncated — click Full result for complete output</span>';
+  }
+  return s;
+}
+
+function _esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Send ────────────────────────────────────────────────────────────── */
+async function sendMessage() {
+  const text = _input.value.trim();
+  if (!text) return;
+  _input.value = '';
+  _input.style.height = 'auto';
+  _send.disabled = true;
+
+  addUserMsg(text);
+  const thinkId = addThinkingMsg();
 
   try {
-    const resp = await fetch('/api/do', {
+    const r = await fetch('/api/do', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ instruction }),
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({instruction: text}),
     });
-    const data = await resp.json();
-
-    askLoading.style.display = 'none';
-    askResultInner.style.display = 'block';
-
-    if (!resp.ok) {
-      askMeta.innerHTML = `<span style="color:var(--red)">✗ Error</span>`;
-      askBody.textContent = data.error || JSON.stringify(data, null, 2);
-    } else {
-      const capName = data.capability || 'unknown';
-      const elapsed = data.elapsed || '';
-      askMeta.innerHTML = `
-        <span class="ask-routed-badge">→ ${capName.replace(/_/g,' ')}</span>
-        <span>${elapsed}s</span>
-        <a href="/capability/${capName}" style="margin-left:auto;color:var(--accent);font-size:11px;text-decoration:none">Open full page →</a>
-      `;
-      const result = data.result || data;
-      askBody.innerHTML = syntaxHighlightJSON(JSON.stringify(result, null, 2));
+    if (!r.ok) {
+      const err = await r.text();
+      errorMsg(thinkId, 'Server error: ' + r.status);
+      return;
     }
-    loadHistory();
-  } catch (err) {
-    askLoading.style.display = 'none';
-    askResultInner.style.display = 'block';
-    askMeta.innerHTML = `<span style="color:var(--red)">✗ Network error</span>`;
-    askBody.textContent = err.message;
-  } finally {
-    askSendBtn.disabled = false;
+    const d = await r.json();
+    if (d.error) { errorMsg(thinkId, d.error); return; }
+    if (d.capability) {
+      resolveMsg(thinkId, d.capability, d.result, d.elapsed);
+    } else {
+      errorMsg(thinkId, 'No capability matched. Try rephrasing or pick one from the sidebar.');
+    }
+  } catch(e) {
+    errorMsg(thinkId, 'Request failed: ' + e.message);
   }
 }
-
-askSendBtn.addEventListener('click', submitAsk);
-askInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAsk(); }
-});
-
-/* ── History ──────────────────────────────────────────────────────────── */
-function relativeTime(ts) {
-  const s = Math.round((Date.now()/1000) - ts);
-  if (s < 60)   return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s/60)}m ago`;
-  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
-  return `${Math.floor(s/86400)}d ago`;
-}
-
-async function loadHistory() {
-  try {
-    const resp = await fetch('/api/history');
-    const items = await resp.json();
-    const section = document.getElementById('historySection');
-    const list    = document.getElementById('historyList');
-    if (!items || items.length === 0) { section.style.display = 'none'; return; }
-    section.style.display = 'block';
-    list.innerHTML = items.map(item => {
-      const capDisplay = (item.cap_name || '').replace(/_/g,' ');
-      const dot  = item.status === 'success' ? 'success' : 'error';
-      const href = `/capability/${item.cap_name}`;
-      return `
-        <div class="history-item" onclick="location.href='${href}'">
-          <span class="history-dot ${dot}"></span>
-          <span class="history-cap">${capDisplay}</span>
-          <span class="history-elapsed">${item.elapsed}s</span>
-          <span class="history-ts">${relativeTime(item.ts)}</span>
-          <a href="${href}" class="history-run-btn" onclick="event.stopPropagation()">Run again</a>
-        </div>`;
-    }).join('');
-  } catch (_) {}
-}
-
-loadHistory();
-setInterval(loadHistory, 15000);
-
-/* ── Filter logic ─────────────────────────────────────────────────────── */
-let activeCat  = 'all';
-let searchTerm = '';
-
-function applyFilters() {
-  let visible = 0;
-  document.querySelectorAll('.cap-card').forEach(card => {
-    const nameMatch = searchTerm === '' ||
-      card.dataset.name.includes(searchTerm) ||
-      card.querySelector('.cap-name').textContent.toLowerCase().includes(searchTerm) ||
-      card.querySelector('.cap-desc').textContent.toLowerCase().includes(searchTerm);
-    const catMatch = activeCat === 'all' || card.dataset.cat === activeCat;
-    const show = nameMatch && catMatch;
-    card.classList.toggle('hidden', !show);
-    if (show) visible++;
-  });
-  document.getElementById('emptyState').style.display = visible === 0 ? 'flex' : 'none';
-}
-
-/* Category pills */
-document.querySelectorAll('.cat-pill').forEach(pill => {
-  pill.addEventListener('click', () => {
-    document.querySelectorAll('.cat-pill').forEach(p => {
-      p.classList.remove('active');
-      p.setAttribute('aria-selected', 'false');
-    });
-    pill.classList.add('active');
-    pill.setAttribute('aria-selected', 'true');
-    activeCat = pill.dataset.cat;
-    applyFilters();
-  });
-});
-
-/* Search input */
-document.getElementById('searchCaps').addEventListener('input', function () {
-  searchTerm = this.value.toLowerCase().trim();
-  applyFilters();
-});
 </script>
 {% endblock %}

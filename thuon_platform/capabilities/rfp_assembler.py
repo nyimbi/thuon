@@ -10,7 +10,8 @@ import time
 from pathlib import Path
 from core.ai_engine import AIModel
 
-_OUTPUT_DIR = Path(__file__).parent.parent / 'data' / 'rfp_responses'
+from core.bundle import writable_data_dir as _wdd
+_OUTPUT_DIR = _wdd() / 'rfp_responses'
 
 _SECTION_ORDER = [
 	'executive_summary',

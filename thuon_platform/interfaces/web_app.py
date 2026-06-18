@@ -851,6 +851,256 @@ CAPABILITY_REGISTRY = {
 		'module': 'capabilities.long_form_document_engine',
 		'class': 'LongFormDocumentEngine',
 	},
+	'web_fetcher': {
+		'description': 'Fetch a URL and return clean extracted text, page title, word count, and outbound links. Supports CSS selector targeting for focused extraction.',
+		'method': 'fetch',
+		'params': [
+			{'name': 'url', 'type': 'str', 'required': True, 'description': 'URL to fetch'},
+			{'name': 'extract_text', 'type': 'bool', 'required': False, 'default': True, 'description': 'Use trafilatura to extract clean article text (ignored when selector is set)'},
+			{'name': 'selector', 'type': 'str', 'required': False, 'default': '', 'description': 'CSS selector; if provided, extract only matching elements instead of full-page text'},
+		],
+		'deps': [],
+		'module': 'tools.web_fetch',
+		'class': 'WebFetcher',
+	},
+	'web_crawler': {
+		'description': 'BFS web crawler that fetches pages starting from a seed URL, extracts title and text content, and follows links up to a configurable page limit.',
+		'method': 'crawl',
+		'params': [
+			{'name': 'seed_url', 'type': 'str', 'required': True, 'description': 'Starting URL for the crawl'},
+			{'name': 'max_pages', 'type': 'int', 'required': False, 'default': 5, 'description': 'Maximum number of pages to fetch'},
+			{'name': 'same_domain', 'type': 'bool', 'required': False, 'default': True, 'description': 'Restrict crawl to the same domain as seed_url'},
+		],
+		'deps': [],
+		'module': 'tools.web_crawler',
+		'class': 'WebCrawler',
+	},
+	'news_searcher': {
+		'description': 'Search recent news articles via DuckDuckGo, filtered to a rolling time window.',
+		'method': 'search',
+		'params': [
+			{'name': 'query', 'type': 'str', 'required': True, 'description': 'News search query string'},
+			{'name': 'max_results', 'type': 'int', 'required': False, 'default': 10, 'description': 'Maximum number of raw results to fetch from DuckDuckGo'},
+			{'name': 'days_back', 'type': 'int', 'required': False, 'default': 7, 'description': 'Only return articles published within this many days'},
+		],
+		'deps': [],
+		'module': 'tools.news_search',
+		'class': 'NewsSearcher',
+	},
+	'arxiv_searcher': {
+		'description': 'Search arXiv for academic papers by query string, with optional category filtering and sort order.',
+		'method': 'search',
+		'params': [
+			{'name': 'query', 'type': 'str', 'required': True, 'description': 'Search terms to look up on arXiv'},
+			{'name': 'max_results', 'type': 'int', 'required': False, 'default': 10, 'description': 'Maximum number of papers to return'},
+			{'name': 'sort_by', 'type': 'str', 'required': False, 'default': 'relevance', 'description': "Sort order: 'relevance', 'date', or 'citations'"},
+			{'name': 'categories', 'type': 'list', 'required': False, 'default': [], 'description': "arXiv category filters, e.g. ['cs.LG', 'stat.ML']"},
+		],
+		'deps': [],
+		'module': 'tools.arxiv_search',
+		'class': 'ArxivSearcher',
+	},
+	'sec_edgar_tool': {
+		'description': 'Search SEC EDGAR for company filings (10-K, 10-Q, 8-K, etc.) and retrieve structured XBRL company facts including recent financials.',
+		'method': 'search_filings',
+		'params': [
+			{'name': 'company', 'type': 'str', 'required': True, 'description': 'Company name to search for in SEC EDGAR'},
+			{'name': 'form_type', 'type': 'str', 'required': False, 'default': '10-K', 'description': 'SEC form type (e.g. 10-K, 10-Q, 8-K)'},
+			{'name': 'max_results', 'type': 'int', 'required': False, 'default': 5, 'description': 'Maximum number of filings to return'},
+		],
+		'deps': [],
+		'module': 'tools.sec_edgar',
+		'class': 'SECEdgarTool',
+	},
+	'pdf_extractor': {
+		'description': 'Extract text and metadata from a PDF given a local file path or URL. Supports page range and max_pages limits.',
+		'method': 'extract',
+		'params': [
+			{'name': 'source', 'type': 'str', 'required': True, 'description': 'Local file path or HTTP/HTTPS URL to a PDF file'},
+			{'name': 'max_pages', 'type': 'int', 'required': False, 'default': 0, 'description': 'Maximum pages to extract; 0 means all pages'},
+			{'name': 'page_range', 'type': 'str', 'required': False, 'default': '', 'description': 'Page range to extract, e.g. "1-5" or "3" (1-indexed); overrides max_pages'},
+		],
+		'deps': [],
+		'module': 'tools.pdf_extractor',
+		'class': 'PDFExtractor',
+	},
+	'excel_reader': {
+		'description': 'Read .xlsx and .csv files, returning headers and row data per sheet with optional sheet filtering and row limit.',
+		'method': 'read',
+		'params': [
+			{'name': 'file_path', 'type': 'str', 'required': True, 'description': 'Absolute or relative path to the .xlsx or .csv file.'},
+			{'name': 'sheet_name', 'type': 'str', 'required': False, 'default': '', 'description': 'Sheet name to read (xlsx only). Empty string reads all sheets.'},
+			{'name': 'max_rows', 'type': 'int', 'required': False, 'default': 500, 'description': 'Maximum rows to return per sheet.'},
+		],
+		'deps': [],
+		'module': 'tools.excel_reader',
+		'class': 'ExcelReader',
+	},
+	'file_writer': {
+		'description': 'Read, write, list, and delete files on the local filesystem using stdlib pathlib only.',
+		'method': 'write',
+		'params': [
+			{'name': 'file_path', 'type': 'str', 'required': True, 'description': 'Destination file path to write.'},
+			{'name': 'content', 'type': 'str', 'required': True, 'description': 'Text content to write to the file.'},
+			{'name': 'mode', 'type': 'str', 'required': False, 'default': 'w', 'description': "File open mode: 'w' (overwrite) or 'a' (append)."},
+			{'name': 'create_dirs', 'type': 'bool', 'required': False, 'default': True, 'description': 'Create parent directories if they do not exist.'},
+		],
+		'deps': [],
+		'module': 'tools.file_writer',
+		'class': 'FileWriter',
+	},
+	'whisper_transcriber': {
+		'description': 'Transcribe audio/video files to text using OpenAI Whisper, returning full transcript, detected language, timestamped segments, and duration.',
+		'method': 'transcribe',
+		'params': [
+			{'name': 'file_path', 'type': 'str', 'required': True, 'description': 'Path to the audio or video file to transcribe'},
+			{'name': 'language', 'type': 'str', 'required': False, 'default': '', 'description': 'BCP-47 language code to force (e.g. "en", "fr"). Empty string lets Whisper auto-detect.'},
+			{'name': 'model_size', 'type': 'str', 'required': False, 'default': 'base', 'description': 'Whisper model size: tiny, base, small, medium, large'},
+		],
+		'deps': [],
+		'module': 'tools.whisper_transcribe',
+		'class': 'WhisperTranscriber',
+	},
+	'python_executor': {
+		'description': 'Execute arbitrary Python code in an isolated subprocess and return stdout, stderr, returncode, and timing.',
+		'method': 'execute',
+		'params': [
+			{'name': 'code', 'type': 'str', 'required': True, 'description': 'Python source code to execute'},
+			{'name': 'timeout', 'type': 'int', 'required': False, 'default': 30, 'description': 'Max execution time in seconds before killing the subprocess'},
+		],
+		'deps': [],
+		'module': 'tools.python_executor',
+		'class': 'PythonExecutor',
+	},
+	'calculator': {
+		'description': 'Safe AST-based expression evaluator with math builtins and financial helpers (npv, irr, compound interest, loan payment). Accepts optional variable substitution. Rejects all unsafe AST nodes, attribute access, comprehensions, and unknown names.',
+		'method': 'calculate',
+		'params': [
+			{'name': 'expression', 'type': 'str', 'required': True, 'description': 'Mathematical or financial expression to evaluate, e.g. "sqrt(16) + pi" or "npv(0.1, [100, 200, 300])"'},
+			{'name': 'variables', 'type': 'dict', 'required': False, 'default': {}, 'description': 'Optional mapping of variable names to numeric values, e.g. {"x": 3, "y": 7}'},
+		],
+		'deps': [],
+		'module': 'tools.calculator',
+		'class': 'Calculator',
+	},
+	'chart_generator': {
+		'description': 'Generate charts (line, bar, pie, scatter, histogram) from data using matplotlib. Returns the image as a file path and base64-encoded PNG.',
+		'method': 'generate',
+		'params': [
+			{'name': 'chart_type', 'type': 'str', 'required': True, 'description': "Chart type: 'line', 'bar', 'pie', 'scatter', or 'histogram'"},
+			{'name': 'data', 'type': 'dict', 'required': True, 'description': "Data dict. line/bar: {'labels': list, 'datasets': [{'label': str, 'data': list}]}. pie: {'labels': list, 'values': list}. scatter: {'points': [{'x': float, 'y': float}]} or {'x': list, 'y': list}. histogram: {'values': list, 'bins': int}"},
+			{'name': 'title', 'type': 'str', 'required': False, 'default': '', 'description': 'Chart title'},
+			{'name': 'xlabel', 'type': 'str', 'required': False, 'default': '', 'description': 'X-axis label'},
+			{'name': 'ylabel', 'type': 'str', 'required': False, 'default': '', 'description': 'Y-axis label'},
+			{'name': 'output_path', 'type': 'str', 'required': False, 'default': '', 'description': 'Output file path. Defaults to /tmp/thuon_chart_{uuid}.png'},
+		],
+		'deps': [],
+		'module': 'tools.chart_generator',
+		'class': 'ChartGenerator',
+	},
+	'email_reader': {
+		'description': 'Read emails from an IMAP mailbox. Returns messages with from, to, subject, date, body (plain text preferred, HTML stripped as fallback), and attachment flag.',
+		'method': 'read_inbox',
+		'params': [
+			{'name': 'folder', 'type': 'str', 'required': False, 'default': 'INBOX', 'description': 'IMAP folder to read from'},
+			{'name': 'max_messages', 'type': 'int', 'required': False, 'default': 20, 'description': 'Maximum number of messages to fetch (latest N matching the filter)'},
+			{'name': 'search_filter', 'type': 'str', 'required': False, 'default': 'UNSEEN', 'description': 'IMAP search filter (e.g. UNSEEN, ALL, FROM "user@example.com")'},
+			{'name': 'mark_read', 'type': 'bool', 'required': False, 'default': False, 'description': 'Mark fetched messages as read (\\Seen flag)'},
+		],
+		'deps': [],
+		'module': 'tools.email_reader',
+		'class': 'EmailReader',
+	},
+	'email_sender': {
+		'description': 'Send email via SMTP with optional HTML body, CC recipients, and file attachments.',
+		'method': 'send',
+		'params': [
+			{'name': 'to', 'type': 'str', 'required': True, 'description': 'Recipient email address'},
+			{'name': 'subject', 'type': 'str', 'required': True, 'description': 'Email subject line'},
+			{'name': 'body', 'type': 'str', 'required': True, 'description': 'Plain text email body'},
+			{'name': 'attachments', 'type': 'list', 'required': False, 'default': [], 'description': 'List of file paths to attach'},
+			{'name': 'cc', 'type': 'str', 'required': False, 'default': '', 'description': 'CC recipient email address'},
+			{'name': 'html_body', 'type': 'str', 'required': False, 'default': '', 'description': 'Optional HTML version of the email body'},
+		],
+		'deps': [],
+		'module': 'tools.email_sender',
+		'class': 'EmailSender',
+	},
+	'calendar_tool': {
+		'description': 'Read and create calendar events from/to .ics files. get_events returns upcoming events within a configurable window; create_event appends a new VEVENT to an existing or new .ics file.',
+		'method': 'get_events',
+		'params': [
+			{'name': 'days_ahead', 'type': 'int', 'required': False, 'default': 7, 'description': 'Number of days ahead from now to include events'},
+			{'name': 'calendar_path', 'type': 'str', 'required': False, 'default': '', 'description': 'Path to .ics file; falls back to tools.calendar.ics_path config setting'},
+		],
+		'deps': [],
+		'module': 'tools.calendar_tool',
+		'class': 'CalendarTool',
+	},
+	'slack_tool': {
+		'description': 'Send a message to a Slack channel via an incoming webhook URL.',
+		'method': 'send_message',
+		'params': [
+			{'name': 'channel', 'type': 'str', 'required': True, 'description': 'Slack channel to post to (e.g. #general)'},
+			{'name': 'message', 'type': 'str', 'required': True, 'description': 'Message text to send'},
+			{'name': 'webhook_url', 'type': 'str', 'required': False, 'default': '', 'description': 'Incoming webhook URL; overrides tools.slack.webhook_url from config'},
+			{'name': 'username', 'type': 'str', 'required': False, 'default': 'Thuon', 'description': 'Display name for the bot message'},
+			{'name': 'icon_emoji', 'type': 'str', 'required': False, 'default': ':robot_face:', 'description': 'Emoji icon for the bot message'},
+		],
+		'deps': [],
+		'module': 'tools.slack_tool',
+		'class': 'SlackTool',
+	},
+	'vector_search': {
+		'description': 'Semantic vector search and document indexing via chromadb or injected rag_engine',
+		'method': 'search',
+		'params': [
+			{'name': 'query', 'type': 'str', 'required': True, 'description': 'Search query text'},
+			{'name': 'collection', 'type': 'str', 'required': False, 'default': 'default', 'description': 'Collection name to search within'},
+			{'name': 'max_results', 'type': 'int', 'required': False, 'default': 10, 'description': 'Maximum number of results to return'},
+		],
+		'deps': ['rag_engine'],
+		'module': 'tools.vector_search',
+		'class': 'VectorSearchTool',
+	},
+	'sql_executor': {
+		'description': 'Execute SQL queries against the configured database, with readonly mode enforcement and row-count limiting.',
+		'method': 'query',
+		'params': [
+			{'name': 'sql', 'type': 'str', 'required': True, 'description': 'SQL query to execute'},
+			{'name': 'params', 'type': 'dict', 'required': False, 'default': {}, 'description': 'Query parameters for parameterised execution'},
+			{'name': 'readonly', 'type': 'bool', 'required': False, 'default': True, 'description': 'If True, reject any query not starting with SELECT, WITH, or EXPLAIN'},
+			{'name': 'max_rows', 'type': 'int', 'required': False, 'default': 1000, 'description': 'Maximum number of rows to return; excess rows set truncated=True'},
+		],
+		'deps': ['db_handler'],
+		'module': 'tools.sql_executor',
+		'class': 'SQLExecutor',
+	},
+	'browser_agent': {
+		'description': 'Headless Chromium browser agent — navigate to a URL, perform actions (click, fill, scroll, press, wait), extract page title and body text, optionally capture a base64-encoded PNG screenshot.',
+		'method': 'navigate',
+		'params': [
+			{'name': 'url', 'type': 'str', 'required': True, 'description': 'URL to navigate to'},
+			{'name': 'actions', 'type': 'list', 'required': False, 'default': [], 'description': 'Ordered list of action dicts; each has "type" (click/fill/wait/scroll/press) plus type-specific keys'},
+			{'name': 'screenshot', 'type': 'bool', 'required': False, 'default': False, 'description': 'If True, capture a PNG screenshot and return it as base64'},
+			{'name': 'timeout', 'type': 'int', 'required': False, 'default': 30, 'description': 'Page load timeout in seconds'},
+		],
+		'deps': [],
+		'module': 'tools.browser_agent',
+		'class': 'BrowserAgent',
+	},
+	'fx_rates_tool': {
+		'description': 'Fetch live foreign exchange rates from the ECB XML feed (free, no key) with automatic fallback to exchangerate-api. Supports arbitrary base currency via cross-rate calculation and optional currency filtering.',
+		'method': 'get_rates',
+		'params': [
+			{'name': 'base', 'type': 'str', 'required': False, 'default': 'USD', 'description': 'Base currency code (e.g. USD, EUR, GBP). Cross-rates are computed from the EUR-denominated ECB feed.'},
+			{'name': 'currencies', 'type': 'list', 'required': False, 'default': [], 'description': 'Optional list of currency codes to return. Empty list returns all available currencies.'},
+			{'name': 'include_metals', 'type': 'bool', 'required': False, 'default': False, 'description': 'If True, adds a note that ECB does not provide metals and points to an alternative source.'},
+		],
+		'deps': [],
+		'module': 'tools.fx_rates',
+		'class': 'FXRatesTool',
+	},
 }
 
 
@@ -930,6 +1180,27 @@ _CATEGORY_MAP = {
 	# Consulting research engine
 	'consulting_research_engine':   'research',
 	'long_form_document_engine':    'content',
+	# Tools
+	'web_fetcher':        'research',
+	'web_crawler':        'research',
+	'news_searcher':      'research',
+	'arxiv_searcher':     'research',
+	'sec_edgar_tool':     'research',
+	'pdf_extractor':      'data',
+	'excel_reader':       'data',
+	'file_writer':        'data',
+	'whisper_transcriber': 'data',
+	'python_executor':    'dev',
+	'calculator':         'analytics',
+	'chart_generator':    'analytics',
+	'email_reader':       'data',
+	'email_sender':       'data',
+	'calendar_tool':      'data',
+	'slack_tool':         'data',
+	'vector_search':      'research',
+	'sql_executor':       'data',
+	'browser_agent':      'dev',
+	'fx_rates_tool':      'analytics',
 }
 
 
@@ -938,6 +1209,10 @@ def create_app() -> Flask:
 	app = Flask(__name__, template_folder='templates')
 	app.secret_key = settings.get_setting('flask.secret_key', 'thuon-dev-secret-key')
 	CORS(app)
+
+	# Bootstrap unified skill registry from both hardcoded dicts + SKILL.md discovery
+	from core.skill_registry import SkillRegistry
+	SkillRegistry.get_instance().bootstrap(CAPABILITY_REGISTRY, _CATEGORY_MAP)
 
 	# Start background scheduler (idempotent)
 	from core.scheduler import start as _start_scheduler
@@ -953,6 +1228,25 @@ def create_app() -> Flask:
 		'data': ('🔗', 'rgba(96,165,250,0.12)', '#60a5fa'),
 		'other': ('⚙️', 'rgba(100,116,139,0.12)', '#64748b'),
 	}
+
+	@app.context_processor
+	def _inject_sidebar():
+		from collections import defaultdict
+		cats: dict[str, list[str]] = defaultdict(list)
+		for name in CAPABILITY_REGISTRY:
+			cat = _CATEGORY_MAP.get(name, 'other')
+			cats[cat].append(name)
+		_CAT_ORDER = ['research', 'content', 'strategy', 'analytics', 'hr', 'risk', 'data', 'dev', 'other']
+		sidebar_groups = [
+			(cat, sorted(cats[cat]))
+			for cat in _CAT_ORDER
+			if cat in cats
+		]
+		return dict(
+			sidebar_groups=sidebar_groups,
+			current_path=request.path,
+			icon_map=_ICON_MAP,
+		)
 
 	@app.template_filter('categorize')
 	def categorize_filter(cap_name: str) -> str:
@@ -993,6 +1287,26 @@ def create_app() -> Flask:
 			_services['company_profile'] = get_company_profile()
 		except Exception:
 			_services['company_profile'] = None
+		try:
+			from core.memory_store import get_memory_store
+			_services['memory_store'] = get_memory_store()
+		except Exception:
+			_services['memory_store'] = None
+		try:
+			from core.calendar_store import CalendarStore
+			_services['calendar_store'] = CalendarStore()
+		except Exception:
+			_services['calendar_store'] = None
+		try:
+			from core.notification_bus import get_notification_bus
+			_services['notification_bus'] = get_notification_bus()
+		except Exception:
+			_services['notification_bus'] = None
+		try:
+			from core.session_store import SessionStore
+			_services['session_store'] = SessionStore(data_handler=_services.get('db_handler'))
+		except Exception:
+			_services['session_store'] = None
 		return _services
 
 	def _build_instance(cap_name: str):
@@ -1016,6 +1330,12 @@ def create_app() -> Flask:
 		param_rename = {'db_handler': 'data_handler'}
 		kwargs = {param_rename.get(k, k): v for k, v in needed.items()}
 		return cls(**kwargs)
+
+	# Register MCP blueprint — exposes all capabilities as MCP tools at POST /mcp
+	from core.mcp_server import build_mcp_blueprint
+	app.register_blueprint(build_mcp_blueprint(_build_instance))
+	# Expose factory so the stdio MCP transport (main.py mcp) can reuse it
+	app.instance_factory = _build_instance  # type: ignore[attr-defined]
 
 	# ---------------------------------------------------------------------------
 	# Routes
@@ -1114,40 +1434,74 @@ def create_app() -> Flask:
 
 	@app.route('/api/do', methods=['POST'])
 	def nl_dispatch():
+		import inspect
+		from core.skill_context import build_context
+		from core.skill_router import SkillRouter
+
 		body = request.get_json(force=True, silent=True) or {}
 		instruction = (body.get('instruction') or '').strip()
 		if not instruction:
 			return jsonify({'error': 'instruction is required'}), 400
 
-		try:
-			cap_name, params = _get_router()._route(instruction)
-		except Exception:
-			cap_name, params = 'research_assistant', {'research_query': instruction}
+		svc = _get_services()
+		router = SkillRouter(ai_engine=svc.get('ai_engine'))
+
+		# Single call returns both name and params atomically — avoids the split-brain
+		# where route() and route_with_params() could independently resolve different caps.
+		cap_name, params = router.route_with_params(
+			instruction,
+			allowed_names=set(CAPABILITY_REGISTRY),
+		)
 
 		if cap_name not in CAPABILITY_REGISTRY:
-			return jsonify({'error': f'Could not route instruction to a known capability', 'instruction': instruction}), 422
+			return jsonify({
+				'error': 'Could not route instruction to a known capability',
+				'instruction': instruction,
+			}), 422
 
 		cfg = CAPABILITY_REGISTRY[cap_name]
-		# Merge any default params
 		for p in cfg['params']:
-			if p['name'] not in params and not p['required'] and 'default' in p:
+			if p['name'] not in params and not p.get('required') and 'default' in p:
 				params[p['name']] = p['default']
+
+		# Render SKILL.md body — substitute $ARGUMENTS with the original instruction
+		# and inject into any 'prompt' param the capability accepts.
+		from core.skill_registry import SkillRegistry
+		manifest   = SkillRegistry.get_instance().get(cap_name)
+		skill_prompt: str | None = None
+		if manifest and manifest.body:
+			skill_prompt = manifest.body.replace('$ARGUMENTS', instruction)
 
 		t0 = time.time()
 		try:
 			instance = _build_instance(cap_name)
 			method   = getattr(instance, cfg['method'])
-			import inspect
-			sig        = inspect.signature(method)
+			sig      = inspect.signature(method)
+
+			# Inject SkillContext if the method declares a `context` parameter
 			call_kwargs = {k: v for k, v in params.items() if k in sig.parameters}
-			result     = method(**call_kwargs)
-			elapsed    = round(time.time() - t0, 2)
+			# Inject rendered SKILL.md body as 'prompt' without polluting params
+			if skill_prompt and 'prompt' in sig.parameters and 'prompt' not in call_kwargs:
+				call_kwargs['prompt'] = skill_prompt
+			if 'context' in sig.parameters:
+				session_id = request.headers.get('X-Session-Id', '')
+				call_kwargs['context'] = build_context(svc, session_id=session_id)
+
+			result  = method(**call_kwargs)
+			elapsed = round(time.time() - t0, 2)
 			_run_history.appendleft({
 				'cap_name': cap_name, 'params': params,
 				'status': 'success', 'elapsed': elapsed,
 				'ts': time.time(),
 			})
-			return jsonify({'capability': cap_name, 'params': params, 'result': result, 'elapsed': elapsed})
+			return jsonify({
+				'capability':   cap_name,
+				'params':       params,
+				'result':       result,
+				'elapsed':      elapsed,
+				'routed_by':    'skill_router',
+				'skill_prompt': skill_prompt,
+			})
 		except Exception as exc:
 			elapsed = round(time.time() - t0, 2)
 			_run_history.appendleft({
@@ -1428,26 +1782,23 @@ def create_app() -> Flask:
 
 	@app.route('/content')
 	def content_hub():
-		from pathlib import Path as _Path
-		blog_posts = sorted(
-			(_Path(__file__).parent.parent / 'data' / 'blog').glob('*.md'),
-			reverse=True,
-		)[:10]
+		from core.bundle import writable_data_dir as _wdd
+		blog_posts = sorted((_wdd() / 'blog').glob('*.md'), reverse=True)[:10]
 		posts = [{'name': p.stem, 'path': str(p)} for p in blog_posts]
 		return render_template('content_hub.html', posts=posts)
 
 	@app.route('/content/blog')
 	def content_blog():
-		from pathlib import Path as _Path
-		blog_dir = _Path(__file__).parent.parent / 'data' / 'blog'
+		from core.bundle import writable_data_dir as _wdd
+		blog_dir = _wdd() / 'blog'
 		posts    = sorted(blog_dir.glob('*.md'), reverse=True)
 		post_list = [{'name': p.stem, 'size': p.stat().st_size} for p in posts]
 		return render_template('content_blog.html', posts=post_list)
 
 	@app.route('/content/social')
 	def content_social():
-		from pathlib import Path as _Path
-		ideas_dir = _Path(__file__).parent.parent / 'data' / 'ideas'
+		from core.bundle import writable_data_dir as _wdd
+		ideas_dir = _wdd() / 'ideas'
 		ideas     = []
 		if ideas_dir.is_dir():
 			ideas = [
@@ -1462,8 +1813,8 @@ def create_app() -> Flask:
 		s     = _gs()
 		url   = s.get_setting('website.url', '')
 		pages = s.get_setting('website.pages_to_refresh', [])
-		from pathlib import Path as _Path
-		out_dir  = _Path(__file__).parent.parent / 'data' / 'website_output'
+		from core.bundle import writable_data_dir as _wdd
+		out_dir  = _wdd() / 'website_output'
 		outfiles = list(out_dir.glob('*.md')) if out_dir.is_dir() else []
 		return render_template('content_website.html', url=url, pages=pages,
 		                       outfiles=[f.name for f in outfiles])
@@ -1471,12 +1822,12 @@ def create_app() -> Flask:
 	@app.route('/api/ideas', methods=['POST'])
 	def save_idea():
 		import time as _time
-		from pathlib import Path as _Path
+		from core.bundle import writable_data_dir as _wdd
 		body  = request.get_json(force=True, silent=True) or {}
 		text  = (body.get('text') or '').strip()
 		if not text:
 			return jsonify({'error': 'text required'}), 400
-		ideas_dir = _Path(__file__).parent.parent / 'data' / 'ideas'
+		ideas_dir = _wdd() / 'ideas'
 		ideas_dir.mkdir(parents=True, exist_ok=True)
 		fname = ideas_dir / f'{_time.strftime("%Y%m%d-%H%M%S")}.md'
 		fname.write_text(text, encoding='utf-8')
@@ -1546,8 +1897,21 @@ def create_app() -> Flask:
 
 	@app.route('/api/neditor/webhook', methods=['POST'])
 	def neditor_webhook():
+		import hashlib, hmac as _hmac
 		from core.notification_bus import get_notification_bus
-		body  = request.get_json(force=True, silent=True) or {}
+		from core.settings_manager import get_settings
+
+		secret = (get_settings().get('neditor', {}).get('webhook_secret') or '').encode()
+		if secret:
+			sig   = request.headers.get('X-Neditor-Signature', '')
+			body_bytes = request.get_data(cache=True)
+			expected = 'sha256=' + _hmac.new(secret, body_bytes, hashlib.sha256).hexdigest()
+			if not _hmac.compare_digest(sig, expected):
+				return jsonify({'error': 'invalid signature'}), 401
+			body = (request.get_json(force=True, silent=True) or {})
+		else:
+			body = request.get_json(force=True, silent=True) or {}
+
 		event = body.get('event', '')
 		path  = body.get('path', '')
 		bus   = get_notification_bus()

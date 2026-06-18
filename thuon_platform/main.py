@@ -9,7 +9,7 @@ def parse_arguments():
         argparse.Namespace: Parsed arguments object.
     """
     parser = argparse.ArgumentParser(description='Thuon DeepResearch Platform')
-    parser.add_argument('interface', choices=['cli', 'web', 'desktop', 'mobile'], help='Interface to start (cli, web, desktop, mobile)')
+    parser.add_argument('interface', choices=['cli', 'web', 'desktop', 'mobile', 'mcp'], help='Interface to start (cli, web, desktop, mobile, mcp)')
     return parser.parse_args()
 
 def main():
@@ -24,6 +24,14 @@ def main():
         desktop_app.run_desktop_app()
     elif args.interface == 'mobile':
         mobile_app.run_mobile_app()
+    elif args.interface == 'mcp':
+        import sys
+        sys.path.insert(0, __file__.replace('/main.py', ''))
+        from core.mcp_server import run_mcp_stdio
+        from interfaces.web_app import create_app
+        app = create_app()
+        with app.app_context():
+            run_mcp_stdio(app.instance_factory)
     else:
         print('Invalid interface specified.')
 

@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Company Profile Setup — Thuon{% endblock %}
 
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <a href="/settings/company" class="tb-bc-link">Company KB</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">Setup Wizard</span>
+{% endblock %}
+
 {% block extra_styles %}
 .wiz-shell { max-width:760px; margin:0 auto; }
 .wiz-header { text-align:center; margin-bottom:36px; }

@@ -9,17 +9,19 @@ import threading
 from pathlib import Path
 from core.knowledge_ingestion import KnowledgeIngestionPipeline
 from core.settings_manager import get_settings
+from core.bundle import writable_data_dir, app_root
 
-_DEFAULT_DIR = Path(__file__).parent.parent / 'data' / 'company'
+
+def _default_company_dir() -> Path:
+	return writable_data_dir() / 'company'
 
 
 class CompanyProfile:
 	def __init__(self, profile_dir: Path | str | None = None):
 		settings = get_settings()
-		resolved = Path(
-			profile_dir
-			or settings.get_setting('company.profile_dir', str(_DEFAULT_DIR))
-		)
+		default = str(_default_company_dir())
+		raw = Path(profile_dir or settings.get_setting('company.profile_dir', default))
+		resolved = raw if raw.is_absolute() else (app_root().parent / raw)
 		self._dir = resolved
 		store_path = str(resolved.parent / '_company_kb.json')
 		self._kb = KnowledgeIngestionPipeline(store_path=store_path)

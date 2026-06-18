@@ -7,7 +7,6 @@ requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.12.0",
     "blinker>=1.9.0",
-    "duckduckgo-search>=6.0.0",
     "feedparser>=6.0.0",
     "flask>=3.0.0",
     "flask-cors>=4.0.0",
@@ -33,8 +32,25 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "trafilatura>=1.9.0",
     "uuid6>=2024.1.12",
+    "icalendar>=5.0.0",
+    "ddgs>=9.14.4",
+    "pywebview>=5.0.0",
+    "pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'",
+    "pyobjc-framework-ApplicationServices>=10.0; sys_platform == 'darwin'",
+    "pyobjc-framework-cocoa>=10.0",
+    "pyobjc-framework-applicationservices>=10.0",
+    # Optional tools dependencies
+    "openai-whisper",
+    "matplotlib",
+    "chromadb",
+    "playwright",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["thuon_platform"]
 testpaths  = ["thuon_platform/tests/ci"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.21.0",
+]

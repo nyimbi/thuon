@@ -19,7 +19,8 @@ from typing import Any
 
 # ── constants ─────────────────────────────────────────────────────────────────
 
-_MEM_DIR   = Path(__file__).parent.parent / 'data' / 'memory'
+from core.bundle import writable_data_dir as _wdd
+_MEM_DIR   = _wdd() / 'memory'
 _USER_FILE = _MEM_DIR / 'USER.md'
 _MEM_FILE  = _MEM_DIR / 'MEMORY.md'
 _DB_PATH   = _MEM_DIR / 'sessions.db'

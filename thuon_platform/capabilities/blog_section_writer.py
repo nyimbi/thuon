@@ -11,7 +11,8 @@ from pathlib import Path
 from core.ai_engine import AIModel
 from core.llm_utils import extract_json, extract_json_array
 
-_OUTPUT_DIR = Path(__file__).parent.parent / 'data' / 'blog'
+from core.bundle import writable_data_dir as _wdd
+_OUTPUT_DIR = _wdd() / 'blog'
 
 
 class BlogSectionWriter:

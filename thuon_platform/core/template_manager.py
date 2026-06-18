@@ -7,7 +7,8 @@ from jinja2 import Environment, BaseLoader
 
 logger = logging.getLogger('thuon.template_manager')
 
-_DEFAULT_TEMPLATE_PATH = Path(__file__).parent.parent / 'data' / 'templates.yaml'
+from core.bundle import app_root as _app_root
+_DEFAULT_TEMPLATE_PATH = _app_root() / 'data' / 'templates.yaml'
 
 
 class TemplateManager:

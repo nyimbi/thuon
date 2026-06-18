@@ -28,16 +28,22 @@ Example YAML (thuon_platform/data/pipelines/competitive_report.yaml):
 """
 
 from __future__ import annotations
+import logging
 import os
 import re
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+	from core.pipeline_hooks import PipelineHooks
 	from thuon import Thuon
 
+logger = logging.getLogger('thuon.pipeline_runner')
 
-_PIPELINES_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'pipelines')
+
+from core.bundle import pipelines_dir as _pd
+_PIPELINES_DIR = str(_pd())
 
 
 def _resolve_template(value: Any, inputs: dict, step_results: dict) -> Any:
@@ -73,8 +79,9 @@ def _resolve_params(params: dict, inputs: dict, step_results: dict) -> dict:
 
 
 class PipelineRunner:
-	def __init__(self, platform: 'Thuon'):
+	def __init__(self, platform: 'Thuon', hooks: 'PipelineHooks | None' = None):
 		self._platform = platform
+		self._hooks = hooks
 
 	def run(self, pipeline: str | dict, inputs: dict | None = None) -> Any:
 		"""
@@ -86,29 +93,76 @@ class PipelineRunner:
 		"""
 		inputs = inputs or {}
 		spec = self._load(pipeline)
+		pipeline_name = spec.get('name', '')
 		step_results: dict[str, dict] = {}
 		last_result = None
+		hooks = self._hooks
+		_hooks_active = hooks and not hooks.is_empty()
+		if _hooks_active:
+			from core.pipeline_hooks import StepEvent
 
 		for step in spec.get('steps', []):
-			step_name   = step.get('name') or step.get('capability', f'step_{len(step_results)}')
-			cap_name    = step['capability']
-			raw_params  = step.get('params', {})
-			params      = _resolve_params(raw_params, inputs, step_results)
+			step_name  = step.get('name') or step.get('capability', f'step_{len(step_results)}')
+			cap_name   = step['capability']
+			raw_params = step.get('params', {})
+			params     = _resolve_params(raw_params, inputs, step_results)
 
-			proxy = getattr(self._platform, cap_name)
-			result = proxy(**params)
+			if _hooks_active:
+				hooks.fire_before(StepEvent(
+					pipeline_name=pipeline_name,
+					step_name=step_name,
+					cap_name=cap_name,
+					params=params,
+				))
 
-			# ThuonResult or dict — normalize to dict for step_results
+			t0 = time.monotonic()
+			try:
+				proxy  = getattr(self._platform, cap_name)
+				result = proxy(**params)
+				elapsed = time.monotonic() - t0
+			except Exception as exc:
+				elapsed = time.monotonic() - t0
+				logger.error('Pipeline %s step %s failed: %s', pipeline_name, step_name, exc)
+				if _hooks_active:
+					hooks.fire_error(StepEvent(
+						pipeline_name=pipeline_name,
+						step_name=step_name,
+						cap_name=cap_name,
+						params=params,
+						elapsed=elapsed,
+						error=exc,
+					))
+				raise
+
+			# Normalize result for step_results template resolution
 			if hasattr(result, 'to_dict'):
 				step_results[step_name] = result.to_dict()
 			else:
 				step_results[step_name] = result if isinstance(result, dict) else {'result': result}
 			last_result = result
 
+			if _hooks_active:
+				hooks.fire_after(StepEvent(
+					pipeline_name=pipeline_name,
+					step_name=step_name,
+					cap_name=cap_name,
+					params=params,
+					result=step_results[step_name],
+					elapsed=elapsed,
+				))
+
+		if _hooks_active:
+			hooks.fire_complete(StepEvent(
+				pipeline_name=pipeline_name,
+				step_name='__complete__',
+				cap_name='',
+				params={},
+			))
+
 		from core.result import ThuonResult
 		return ThuonResult(
-			{'pipeline': spec.get('name', ''), 'steps': step_results},
-			capability_name=f'pipeline:{spec.get("name", "")}',
+			{'pipeline': pipeline_name, 'steps': step_results},
+			capability_name=f'pipeline:{pipeline_name}',
 		) if last_result is None else last_result
 
 	def _load(self, pipeline: str | dict) -> dict:

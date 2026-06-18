@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Pipelines — Thuon{% endblock %}
 
+
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">Pipelines</span>
+{% endblock %}
 {% block extra_styles %}
 .pipe-header {
   display: flex;

@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Content Hub — Thuon{% endblock %}
 
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">Content</span>
+{% endblock %}
+
 {% block extra_styles %}
 .hub-header { margin-bottom:28px; }
 .hub-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }

@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Calendar — Thuon{% endblock %}
 
+
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">Calendar</span>
+{% endblock %}
 {% block extra_styles %}
 .cal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:28px; flex-wrap:wrap; }
 .cal-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }

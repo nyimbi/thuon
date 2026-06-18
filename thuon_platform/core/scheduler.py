@@ -59,7 +59,8 @@ def _job_social_daily() -> None:
 	ideas = bridge.read_ideas() if bridge.enabled else []
 	# Also collect in-app ideas
 	from pathlib import Path
-	ideas_dir = Path(__file__).parent.parent / 'data' / 'ideas'
+	from core.bundle import writable_data_dir as _wdd
+	ideas_dir = _wdd() / 'ideas'
 	if ideas_dir.is_dir():
 		for f in ideas_dir.glob('*.md'):
 			try:

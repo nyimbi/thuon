@@ -7,552 +7,798 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 
   <style>
-    /* ── Minimal normalize ────────────────────────────────────────── */
-    h1,h2,h3,h4,h5,h6,p,ul,ol,dl,figure,blockquote,pre { margin: 0; padding: 0; }
-    ul,ol { list-style: none; }
-    a { color: inherit; }
-    img,svg { display: block; }
-    button,input,select,textarea { font-family: inherit; font-size: inherit; }
-    table { border-collapse: collapse; }
+    /* ── Reset ──────────────────────────────────────────────────────── */
+    h1,h2,h3,h4,h5,h6,p,ul,ol,dl,figure,blockquote,pre { margin:0; padding:0; }
+    ul,ol { list-style:none; }
+    a { color:inherit; text-decoration:none; }
+    img,svg { display:block; }
+    button,input,select,textarea { font-family:inherit; font-size:inherit; }
+    table { border-collapse:collapse; }
+    details summary { list-style:none; }
+    details summary::-webkit-details-marker { display:none; }
 
-    /* ── Design tokens ─────────────────────────────────────────────── */
+    /* ── Tokens ──────────────────────────────────────────────────────── */
     :root {
-      --bg-void:        #0a0b10;
-      --bg-surface:     #111318;
-      --bg-elevated:    #181b24;
-      --bg-hover:       #1c2030;
-      --border:         #1c1f2e;
-      --border-mid:     #252a3d;
-      --border-bright:  #2e3450;
-      --accent:         #7c6af7;
-      --accent-hover:   #6a58e5;
-      --accent-dim:     rgba(124,106,247,0.12);
-      --accent-glow:    rgba(124,106,247,0.30);
-      --teal:           #3ecfcf;
-      --teal-dim:       rgba(62,207,207,0.10);
-      --text-primary:   #e4e6f0;
-      --text-secondary: #7e859e;
-      --text-muted:     #525878;
-      --green:          #34d399;
-      --red:            #f87171;
-      --amber:          #fbbf24;
-      --r-sm: 6px;
-      --r-md: 10px;
-      --r-lg: 14px;
-      --heading-font:   'Syne', system-ui, sans-serif;
+      /* Light airy backgrounds */
+      --bg-void:        #f7f6f3;
+      --bg-surface:     #ffffff;
+      --bg-elevated:    #f1efe9;
+      --bg-hover:       #ede9e2;
+      --bg-active:      #e6e1d8;
+      --border:         #e4e0d8;
+      --border-mid:     #d2cdc4;
+      --border-bright:  #b5b0a7;
+      /* Warm clay accent */
+      --accent:         #b86a48;
+      --accent-hover:   #a05a3a;
+      --accent-dim:     rgba(184,106,72,0.10);
+      --accent-glow:    rgba(184,106,72,0.18);
+      --teal:           #b86a48;
+      --teal-dim:       rgba(184,106,72,0.08);
+      /* Text */
+      --text-primary:   #1c1814;
+      --text-secondary: #5e5850;
+      --text-muted:     #9b9590;
+      /* Status */
+      --green:          #2e7d52;
+      --red:            #b94040;
+      --amber:          #8a6418;
+      --sb-width:       220px;
+      --tb-height:      48px;
+      --r-sm:           5px;
+      --r-md:           8px;
+      --r-lg:           12px;
+      --heading-font:   'Inter', system-ui, sans-serif;
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
-    html { height: 100%; }
+    *, *::before, *::after { box-sizing:border-box; }
+    html,body { height:100%; margin:0; }
 
     body {
-      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg-void);
       color: var(--text-primary);
-      font-size: 14px;
-      line-height: 1.6;
+      font-size: 13.5px;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      min-height: 100vh;
-      margin: 0;
+      overflow: hidden;
     }
 
-    /* Subtle dot-grid texture */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: radial-gradient(circle, rgba(124,106,247,0.06) 1px, transparent 1px);
-      background-size: 32px 32px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ── Navbar ────────────────────────────────────────────────────── */
-    .t-nav {
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      height: 54px;
+    /* ── App shell ───────────────────────────────────────────────────── */
+    .app {
       display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 16px;
-      background: rgba(10,11,16,0.88);
-      backdrop-filter: blur(24px) saturate(160%);
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-      border-bottom: 1px solid var(--border);
+      height: 100vh;
+      overflow: hidden;
     }
 
-    .t-logo {
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sb-width);
+      flex-shrink: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      z-index: 100;
+    }
+
+    .sb-header {
       display: flex;
       align-items: center;
       gap: 9px;
-      text-decoration: none;
+      padding: 0 14px;
+      height: var(--tb-height);
+      border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+    .sb-logo-mark {
+      width: 26px; height: 26px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--heading-font);
+      font-size: 14px; font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .sb-logo-name {
+      font-family: var(--heading-font);
+      font-size: 15px; font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -.01em;
+    }
 
-    .t-logo-mark {
-      width: 26px;
-      height: 26px;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
-      border-radius: 7px;
+    .sb-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px 0 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-mid) transparent;
+    }
+    .sb-scroll::-webkit-scrollbar { width: 4px; }
+    .sb-scroll::-webkit-scrollbar-track { background: transparent; }
+    .sb-scroll::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 2px; }
+
+    .sb-section {
+      margin-top: 16px;
+    }
+    .sb-section:first-child { margin-top: 4px; }
+
+    .sb-section-label {
+      padding: 0 14px 5px;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .sb-item {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 800;
-      color: #fff;
-      box-shadow: 0 0 14px var(--accent-glow);
-      flex-shrink: 0;
-      letter-spacing: -0.5px;
-    }
-
-    .t-logo-name {
-      font-family: var(--heading-font);
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-primary);
-    }
-
-    .t-nav-sep {
-      width: 1px;
-      height: 18px;
-      background: var(--border-mid);
-      flex-shrink: 0;
-    }
-
-    .t-nav-tagline {
-      font-size: 11.5px;
-      color: var(--text-muted);
+      gap: 8px;
+      padding: 6px 12px;
+      margin: 1px 6px;
+      border-radius: var(--r-sm);
+      color: var(--text-secondary);
+      font-size: 13px;
       font-weight: 400;
-      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: background .1s, color .1s;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .sb-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .sb-item.active { background: var(--bg-active); color: var(--text-primary); }
+    .sb-item.active .sb-item-icon { color: var(--accent); }
+    .sb-item-icon {
+      flex-shrink: 0;
+      width: 15px; height: 15px;
+      color: var(--text-muted);
+    }
+    .sb-item-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Capability groups (collapsible) */
+    .sb-group { border: none; }
+    .sb-group-summary {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      margin: 1px 6px;
+      border-radius: var(--r-sm);
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: background .1s, color .1s;
+    }
+    .sb-group-summary:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .sb-group-cat-icon { font-size: 13px; flex-shrink: 0; }
+    .sb-group-label { flex: 1; min-width: 0; }
+    .sb-group-count {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 10px;
+    }
+    .sb-group-chevron {
+      flex-shrink: 0;
+      width: 12px; height: 12px;
+      color: var(--text-muted);
+      transition: transform .15s;
+    }
+    details[open] .sb-group-chevron { transform: rotate(90deg); }
+
+    .sb-subitem {
+      display: block;
+      padding: 4px 12px 4px 34px;
+      margin: 1px 6px;
+      border-radius: var(--r-sm);
+      color: var(--text-muted);
+      font-size: 12px;
+      transition: background .1s, color .1s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sb-subitem:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .sb-subitem.active { background: var(--accent-dim); color: var(--accent); }
+    .sb-more {
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: .02em;
+    }
+    .sb-more:hover { color: var(--accent); }
+
+    .sb-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 12px;
+    }
+
+    /* Sidebar footer */
+    .sb-footer {
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      padding: 6px 0;
+    }
+
+    /* ── Main area ───────────────────────────────────────────────────── */
+    .app-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Topbar ──────────────────────────────────────────────────────── */
+    .topbar {
+      height: var(--tb-height);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(247,246,243,0.92);
+      backdrop-filter: blur(16px);
+      z-index: 50;
+    }
+    .tb-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+      overflow: hidden;
       white-space: nowrap;
     }
-
-    .t-nav-right {
-      margin-left: auto;
+    .tb-bc-sep { color: var(--text-muted); font-size: 12px; }
+    .tb-bc-current { color: var(--text-primary); font-weight: 500; }
+    .tb-bc-link { color: var(--text-secondary); }
+    .tb-bc-link:hover { color: var(--text-primary); }
+    .tb-spacer { flex: 1; }
+    .tb-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     /* Health pill */
     .health-pill {
       display: flex;
       align-items: center;
-      gap: 10px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-mid);
+      gap: 6px;
+      padding: 4px 10px;
       border-radius: 20px;
-      padding: 4px 12px;
-    }
-
-    .health-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-mid);
+      font-size: 11.5px;
       color: var(--text-secondary);
+      cursor: default;
     }
-
-    .health-item + .health-item {
-      padding-left: 10px;
-      border-left: 1px solid var(--border-mid);
-    }
-
-    .s-dot {
-      width: 6px;
-      height: 6px;
+    .health-dot {
+      width: 6px; height: 6px;
       border-radius: 50%;
+      background: var(--text-muted);
       flex-shrink: 0;
-      transition: background 0.4s, box-shadow 0.4s;
     }
+    .health-dot.ok { background: var(--green); box-shadow: 0 0 6px rgba(46,125,82,.4); }
+    .health-dot.err { background: var(--red); }
 
-    .s-ok  { background: var(--green); box-shadow: 0 0 5px var(--green); }
-    .s-err { background: var(--red);   box-shadow: 0 0 5px var(--red); }
-    .s-unk { background: var(--amber); animation: blink 2s ease infinite; }
-
-    @keyframes blink {
-      0%,100% { opacity:1; }
-      50%      { opacity:0.35; }
-    }
-
-    .t-nav-link {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      text-decoration: none;
-      padding: 5px 11px;
+    /* Bell button */
+    .tb-bell {
+      position: relative;
+      width: 32px; height: 32px;
       border-radius: var(--r-sm);
       border: 1px solid transparent;
-      transition: color 0.12s, background 0.12s, border-color 0.12s;
-    }
-    .t-nav-link:hover, .t-nav-link.active {
-      color: var(--text-primary);
-      background: var(--bg-elevated);
-      border-color: var(--border-mid);
-    }
-
-    /* ── Page wrapper ──────────────────────────────────────────────── */
-    .t-page {
-      position: relative;
-      z-index: 1;
-      padding: 28px 24px 64px;
-      max-width: 1480px;
-      margin: 0 auto;
-    }
-
-    /* ── Flash / alerts ────────────────────────────────────────────── */
-    .t-flash-wrap {
-      position: relative;
-      z-index: 1;
-      padding: 10px 24px 0;
-    }
-
-    .t-alert {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: var(--r-md);
-      border: 1px solid;
-      margin-bottom: 10px;
-      font-size: 13px;
-      animation: fadeSlideIn 0.18s ease;
-    }
-
-    @keyframes fadeSlideIn {
-      from { opacity:0; transform:translateY(-5px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-
-    .t-alert.alert-danger,
-    .t-alert.alert-error  { background:rgba(248,113,113,.07); border-color:rgba(248,113,113,.22); color:#fca5a5; }
-    .t-alert.alert-success { background:rgba(52,211,153,.07);  border-color:rgba(52,211,153,.22);  color:#6ee7b7; }
-    .t-alert.alert-warning { background:rgba(251,191,36,.07);  border-color:rgba(251,191,36,.22);  color:#fcd34d; }
-    .t-alert.alert-info    { background:rgba(124,106,247,.07); border-color:rgba(124,106,247,.22); color:#a78bfa; }
-
-    .t-alert-close {
-      margin-left: auto;
-      background: none;
-      border: none;
-      color: inherit;
-      opacity: 0.45;
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
-      padding: 0;
-      flex-shrink: 0;
+      color: var(--text-secondary);
+      transition: background .1s, color .1s, border-color .1s;
     }
-    .t-alert-close:hover { opacity: 1; }
-
-    /* ── Toast ─────────────────────────────────────────────────────── */
-    #t-toasts {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .tb-bell:hover { background: var(--bg-elevated); border-color: var(--border-mid); color: var(--text-primary); }
+    .bell-badge {
+      position: absolute;
+      top: 4px; right: 4px;
+      min-width: 14px; height: 14px;
+      background: var(--accent);
+      border-radius: 7px;
+      font-size: 9px;
+      font-weight: 700;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px;
       pointer-events: none;
     }
 
-    .t-toast {
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-bright);
-      border-radius: var(--r-md);
-      padding: 9px 14px;
-      font-size: 12.5px;
-      color: var(--text-primary);
+    /* ── Notification strip ──────────────────────────────────────────── */
+    .notif-strip {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 7px;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(124,106,247,0.08);
-      animation: toastIn 0.18s ease;
-      pointer-events: auto;
+      gap: 10px;
+      padding: 8px 18px;
+      background: #fef9f0;
+      border-bottom: 1px solid #f0dfc0;
+      font-size: 12.5px;
+      animation: slideDown .18s ease-out;
     }
+    @keyframes slideDown { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    .notif-strip-icon { flex-shrink:0; font-size:13px; }
+    .notif-strip-body { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .notif-strip-title { font-weight:500; color:var(--text-primary); }
+    .notif-strip-sub { color:var(--text-secondary); margin-left:8px; }
+    .notif-strip-time { flex-shrink:0; color:var(--text-muted); font-size:11.5px; font-variant-numeric:tabular-nums; }
+    .notif-strip-dismiss {
+      flex-shrink:0; background:none; border:none; cursor:pointer;
+      color:var(--text-muted); font-size:16px; line-height:1; padding:0 2px;
+      border-radius:3px; transition:color .1s, background .1s;
+    }
+    .notif-strip-dismiss:hover { color:var(--text-primary); background:var(--bg-hover); }
 
-    .t-toast.out { animation: toastOut 0.18s ease forwards; }
-
-    @keyframes toastIn  { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:none} }
-    @keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(10px)} }
-
-    /* ── Scrollbar ─────────────────────────────────────────────────── */
-    ::-webkit-scrollbar       { width:5px; height:5px; }
-    ::-webkit-scrollbar-track { background:transparent; }
-    ::-webkit-scrollbar-thumb { background:var(--border-bright); border-radius:3px; }
-    ::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
-
-    /* ── Shared component tokens used by child pages ───────────────── */
-    .t-card {
+    /* ── Notification panel ──────────────────────────────────────────── */
+    .bell-panel {
+      position: absolute;
+      top: calc(var(--tb-height) + 4px);
+      right: 14px;
+      width: 320px;
       background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-    }
-
-    .t-card-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .t-card-body {
-      padding: 18px;
-    }
-
-    .t-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 16px;
-      border-radius: var(--r-sm);
-      font-size: 13px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      border: 1px solid transparent;
-      text-decoration: none;
-      transition: all 0.14s ease;
-      white-space: nowrap;
-    }
-
-    .t-btn-primary {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-      box-shadow: 0 2px 12px rgba(124,106,247,0.28);
-    }
-    .t-btn-primary:hover:not(:disabled) {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
-      box-shadow: 0 4px 20px rgba(124,106,247,0.4);
-      color: #fff;
-    }
-    .t-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .t-btn-ghost {
-      background: transparent;
-      color: var(--text-secondary);
-      border-color: var(--border-mid);
-    }
-    .t-btn-ghost:hover {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      border-color: var(--border-bright);
-    }
-
-    .t-input {
-      width: 100%;
-      background: var(--bg-void);
       border: 1px solid var(--border-mid);
-      border-radius: var(--r-sm);
-      color: var(--text-primary);
-      font-family: inherit;
-      font-size: 13.5px;
-      padding: 8px 12px;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      border-radius: var(--r-lg);
+      box-shadow: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+      z-index: 500;
+      overflow: hidden;
+      animation: fadeUp .14s ease-out;
     }
-    .t-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-dim);
-    }
-    .t-input::placeholder { color: var(--text-muted); }
-
-    .t-textarea {
-      resize: vertical;
-      min-height: 70px;
-      font-family: 'JetBrains Mono', monospace;
+    @keyframes fadeUp { from { transform:translateY(4px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    .bell-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--border);
       font-size: 12.5px;
-      line-height: 1.55;
     }
+    .bell-panel-header span { font-weight:600; color:var(--text-primary); }
+    .bell-panel-markread {
+      background:none; border:none; cursor:pointer;
+      color:var(--accent); font-size:11.5px; padding:0;
+    }
+    .bell-panel-markread:hover { color:var(--accent-hover); }
+    .bell-list { max-height:320px; overflow-y:auto; }
+    .bell-notif {
+      display:block; padding:9px 14px;
+      border-bottom:1px solid var(--border);
+      transition:background .1s;
+    }
+    .bell-notif:hover { background:var(--bg-hover); }
+    .bell-notif-title { font-size:12.5px; font-weight:500; color:var(--text-primary); margin-bottom:2px; }
+    .bell-notif-body { font-size:11.5px; color:var(--text-secondary); }
+
+    /* ── Flash messages ──────────────────────────────────────────────── */
+    .flash-zone { flex-shrink:0; padding:8px 18px 0; }
+    .flash {
+      padding:9px 14px; border-radius:var(--r-md);
+      font-size:12.5px; font-weight:500; margin-bottom:6px;
+    }
+    .flash-error { background:#fdf0f0; border:1px solid #f0c8c8; color:var(--red); }
+    .flash-success { background:#edf8f2; border:1px solid #b8e0cb; color:var(--green); }
+    .flash-info { background:#fef6ee; border:1px solid #f0dfc0; color:var(--accent); }
+
+    /* ── Main content ────────────────────────────────────────────────── */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-mid) transparent;
+    }
+    .main-content::-webkit-scrollbar { width:5px; }
+    .main-content::-webkit-scrollbar-track { background:transparent; }
+    .main-content::-webkit-scrollbar-thumb { background:var(--border-mid); border-radius:3px; }
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
+    #toastShelf {
+      position: fixed; bottom:24px; right:24px; z-index:9999;
+      display:flex; flex-direction:column; gap:8px; pointer-events:none;
+    }
+    .toast {
+      min-width:260px; max-width:360px;
+      background:var(--bg-surface);
+      border:1px solid var(--border-mid);
+      border-radius:var(--r-md);
+      box-shadow:0 4px 20px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+      padding:10px 14px;
+      display:flex; align-items:flex-start; gap:10px;
+      animation:slideIn .18s ease-out;
+      pointer-events:all;
+    }
+    @keyframes slideIn { from { transform:translateX(20px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+    .toast-icon { flex-shrink:0; font-size:15px; margin-top:1px; }
+    .toast-body { flex:1; }
+    .toast-title { font-weight:500; font-size:13px; color:var(--text-primary); }
+    .toast-sub { font-size:11.5px; color:var(--text-secondary); margin-top:2px; }
+
+    /* ── Shared utilities ────────────────────────────────────────────── */
+    .mono { font-family:'JetBrains Mono', monospace; }
+    .badge {
+      display:inline-flex; align-items:center;
+      padding:2px 7px; border-radius:20px;
+      font-size:10.5px; font-weight:600; letter-spacing:.03em;
+    }
+    .badge-research { background:#ece9f8; color:#5c4db0; }
+    .badge-content  { background:#fde8dc; color:#9a3e1e; }
+    .badge-strategy { background:#fef4d8; color:#7a5a10; }
+    .badge-analytics{ background:#fef4d8; color:#7a5a10; }
+    .badge-hr       { background:#ddf2ea; color:#1e6845; }
+    .badge-risk     { background:#fce8e8; color:#922828; }
+    .badge-data     { background:#deedfb; color:#1a4e88; }
+    .badge-dev      { background:#eceae6; color:#4a4440; }
+    .badge-other    { background:var(--bg-elevated);     color:var(--text-muted); }
 
     {% block extra_styles %}{% endblock %}
   </style>
 </head>
 <body>
 
-<nav class="t-nav" role="navigation" aria-label="Main navigation">
-  <a class="t-logo" href="/">
-    <div class="t-logo-mark">T</div>
-    <span class="t-logo-name">Thuon</span>
-  </a>
-  <div class="t-nav-sep"></div>
-  <span class="t-nav-tagline">AI Business Capability Platform</span>
+{% set _cat_labels = {
+  'research': 'Research', 'content': 'Content', 'strategy': 'Strategy',
+  'analytics': 'Analytics', 'hr': 'People', 'risk': 'Risk',
+  'data': 'Data', 'dev': 'Dev', 'other': 'Other'
+} %}
+{% set _nav_workflows = [
+  ('RFPs', '/rfps', 'clip'),
+  ('Content', '/content', 'edit'),
+  ('Pipelines', '/pipelines', 'flow'),
+] %}
+{% set _nav_workspace = [
+  ('Tasks', '/tasks', 'check'),
+  ('Calendar', '/calendar', 'cal'),
+  ('Memory', '/memory', 'mem'),
+  ('Company KB', '/settings/company', 'book'),
+] %}
 
-  <div class="t-nav-right">
-    <div class="health-pill" id="health-pill" title="Service health">
-      <div class="health-item">
-        <span class="s-dot s-unk" id="dot-ollama"></span>
-        <span>Ollama</span>
+<div class="app">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-header">
+      <a href="/" class="sb-logo-mark">T</a>
+      <span class="sb-logo-name">Thuon</span>
+    </div>
+
+    <div class="sb-scroll">
+      <!-- Workspace home -->
+      <div class="sb-section">
+        <a href="/" class="sb-item {% if current_path == '/' %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span class="sb-item-text">Workspace</span>
+        </a>
       </div>
-      <div class="health-item">
-        <span class="s-dot s-unk" id="dot-db"></span>
-        <span>DB</span>
+
+      <!-- Workflows -->
+      <div class="sb-section">
+        <div class="sb-section-label">Workflows</div>
+        <a href="/rfps" class="sb-item {% if current_path.startswith('/rfp') %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
+          <span class="sb-item-text">RFPs</span>
+        </a>
+        <a href="/content" class="sb-item {% if current_path.startswith('/content') %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span class="sb-item-text">Content</span>
+        </a>
+        <a href="/pipelines" class="sb-item {% if current_path.startswith('/pipeline') %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="13 2 13 9 19 9"/><path d="M13 2L3 12h7v10l11-10h-8V2z"/>
+          </svg>
+          <span class="sb-item-text">Pipelines</span>
+        </a>
+      </div>
+
+      <!-- Capabilities — grouped by category -->
+      <div class="sb-section">
+        <div class="sb-section-label">Capabilities</div>
+        {% for cat, caps in sidebar_groups %}
+        <details class="sb-group" id="sg-{{ cat }}">
+          <summary class="sb-group-summary">
+            <span class="sb-group-cat-icon">{{ icon_map[cat][0] if cat in icon_map else '⚙' }}</span>
+            <span class="sb-group-label">{{ _cat_labels.get(cat, cat | title) }}</span>
+            <span class="sb-group-count">{{ caps | length }}</span>
+            <svg class="sb-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </summary>
+          {% for cap in caps[:9] %}
+          <a href="/capability/{{ cap }}" class="sb-subitem{% if current_path == '/capability/' ~ cap %} active{% endif %}">
+            {{ cap | replace('_', ' ') | title }}
+          </a>
+          {% endfor %}
+          {% if caps | length > 9 %}
+          <a href="/?cat={{ cat }}" class="sb-subitem sb-more">{{ caps | length - 9 }} more&nbsp;&rsaquo;</a>
+          {% endif %}
+        </details>
+        {% endfor %}
+      </div>
+
+      <div class="sb-divider"></div>
+
+      <!-- Workspace -->
+      <div class="sb-section">
+        <div class="sb-section-label">Workspace</div>
+        <a href="/tasks" class="sb-item {% if current_path == '/tasks' %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+          <span class="sb-item-text">Tasks</span>
+        </a>
+        <a href="/calendar" class="sb-item {% if current_path == '/calendar' %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="sb-item-text">Calendar</span>
+        </a>
+        <a href="/memory" class="sb-item {% if current_path == '/memory' %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          <span class="sb-item-text">Memory</span>
+        </a>
+        <a href="/settings/company" class="sb-item {% if current_path.startswith('/settings') %}active{% endif %}">
+          <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+          </svg>
+          <span class="sb-item-text">Company KB</span>
+        </a>
       </div>
     </div>
-    <a href="/rfps" class="t-nav-link{% if request.path.startswith('/rfp') %} active{% endif %}">RFPs</a>
-    <a href="/content" class="t-nav-link{% if request.path.startswith('/content') %} active{% endif %}">Content</a>
-    <a href="/pipelines" class="t-nav-link{% if request.path.startswith('/pipeline') %} active{% endif %}">Pipelines</a>
-    <a href="/settings/company" class="t-nav-link{% if request.path.startswith('/settings') %} active{% endif %}">Settings</a>
-    <a href="/health" class="t-nav-link{% if request.path == '/health' %} active{% endif %}">Health</a>
 
-    <!-- Notification bell -->
-    <div style="position:relative">
-      <button class="t-nav-link" id="bell-btn" onclick="toggleBell()" title="Notifications" style="padding:5px 9px;font-size:15px;line-height:1">
-        🔔
-        <span id="bell-badge" style="display:none;position:absolute;top:2px;right:2px;min-width:14px;height:14px;background:var(--accent);border-radius:7px;font-size:9px;font-weight:700;line-height:14px;text-align:center;padding:0 3px;color:#fff"></span>
-      </button>
-      <div id="bell-panel" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:320px;background:var(--bg-elevated);border:1px solid var(--border-bright);border-radius:var(--r-lg);box-shadow:0 12px 40px rgba(0,0,0,0.5);z-index:500;overflow:hidden">
-        <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:12px;font-weight:600;color:var(--text-secondary)">NOTIFICATIONS</span>
-          <button onclick="markAllRead()" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer">Mark all read</button>
+    <!-- Sidebar footer -->
+    <div class="sb-footer">
+      <a href="/health" class="sb-item {% if current_path == '/health' %}active{% endif %}">
+        <svg class="sb-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span class="sb-item-text">Health</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN AREA ─────────────────────────────────────────────────── -->
+  <div class="app-main" id="appMain">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="tb-breadcrumb">
+        {% block breadcrumb %}
+          <a href="/" class="tb-bc-link">Workspace</a>
+        {% endblock %}
+      </div>
+
+      <div class="tb-spacer"></div>
+
+      <div class="tb-right">
+        <!-- Health indicator -->
+        <div class="health-pill" id="healthPill" title="Ollama status">
+          <span class="health-dot" id="healthDot"></span>
+          <span id="healthText" style="font-size:11.5px">Ollama</span>
         </div>
-        <div id="bell-list" style="max-height:320px;overflow-y:auto;padding:6px 0"></div>
+
+        <!-- Bell -->
+        <button class="tb-bell" id="bellBtn" onclick="toggleBellPanel(event)" aria-label="Notifications">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="bell-badge" id="bellBadge" style="display:none">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Notification strip (hidden until SSE fires) -->
+    <div class="notif-strip" id="notifStrip" style="display:none">
+      <span class="notif-strip-icon">&#11044;</span>
+      <div class="notif-strip-body">
+        <span class="notif-strip-title" id="notifStripTitle"></span>
+        <span class="notif-strip-sub" id="notifStripSub"></span>
+      </div>
+      <span class="notif-strip-time" id="notifStripTime"></span>
+      <button class="notif-strip-dismiss" onclick="dismissNotifStrip()" title="Dismiss">&#x2715;</button>
+    </div>
+
+    <!-- Notification dropdown panel -->
+    <div class="bell-panel" id="bellPanel" style="display:none">
+      <div class="bell-panel-header">
+        <span>Notifications</span>
+        <button class="bell-panel-markread" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div class="bell-list" id="bellList">
+        <div style="padding:20px 14px;text-align:center;color:var(--text-muted);font-size:12px">Loading&hellip;</div>
       </div>
     </div>
-  </div>
-</nav>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="t-flash-wrap">
-  {% for category, message in messages %}
-  <div class="t-alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">
-    <span>{{ message }}</span>
-    <button class="t-alert-close" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-zone">
+      {% for category, message in messages %}
+      <div class="flash flash-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
 
-<main class="t-page">
-  {% block content %}{% endblock %}
-</main>
+    <!-- Page content -->
+    <main class="main-content" id="mainContent">
+      {% block content %}{% endblock %}
+    </main>
 
-<div id="t-toasts" aria-live="polite"></div>
+  </div><!-- /.app-main -->
+</div><!-- /.app -->
+
+<!-- Toast shelf -->
+<div id="toastShelf"></div>
 
 <script>
 /* ── Toast ──────────────────────────────────────────────────────────── */
-function showToast(msg, icon = '✓', ms = 2600) {
-  const ct = document.getElementById('t-toasts');
-  const el = document.createElement('div');
-  el.className = 't-toast';
-  el.innerHTML = `<span style="font-size:13px">${icon}</span><span>${msg}</span>`;
-  ct.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('out');
-    el.addEventListener('animationend', () => el.remove(), { once: true });
-  }, ms);
+function showToast(title, icon, duration, sub) {
+  const shelf = document.getElementById('toastShelf');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span class="toast-icon">${icon || '●'}</span><div class="toast-body"><div class="toast-title">${_esc(title)}</div>${sub ? `<div class="toast-sub">${_esc(sub)}</div>` : ''}</div>`;
+  shelf.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(10px)'; t.style.transition='.2s'; setTimeout(()=>t.remove(), 200); }, duration || 3500);
 }
-
-/* ── Health check ───────────────────────────────────────────────────── */
-(async function checkHealth() {
-  try {
-    const r = await fetch('/health', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json().catch(() => ({}));
-    const set = (id, ok) => {
-      const el = document.getElementById(id);
-      if (el) el.className = 's-dot ' + (ok ? 's-ok' : 's-err');
-    };
-    set('dot-ollama', d.ollama !== false);
-    set('dot-db',     d.db !== false);
-  } catch (_) {
-    ['dot-ollama', 'dot-db'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.className = 's-dot s-err';
-    });
-  }
-})();
-
-/* ── Cmd/Ctrl+K → search focus ──────────────────────────────────────── */
-document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    const s = document.getElementById('searchCaps');
-    if (s) { e.preventDefault(); s.focus(); s.select(); }
-  }
-});
-</script>
-
-{% block scripts %}{% endblock %}
-
-<script>
-/* ── Notification bell ──────────────────────────────────────────────── */
-let _bellOpen = false;
-
-function toggleBell() {
-  _bellOpen = !_bellOpen;
-  document.getElementById('bell-panel').style.display = _bellOpen ? 'block' : 'none';
-  if (_bellOpen) { loadNotifications(); markAllRead(); }
-}
-
-document.addEventListener('click', e => {
-  if (_bellOpen && !document.getElementById('bell-btn').contains(e.target) &&
-      !document.getElementById('bell-panel').contains(e.target)) {
-    _bellOpen = false;
-    document.getElementById('bell-panel').style.display = 'none';
-  }
-});
-
 function _esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+/* ── Ollama health check ─────────────────────────────────────────────── */
+async function checkHealth() {
+  const dot = document.getElementById('healthDot');
+  const txt = document.getElementById('healthText');
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    const ok = d.ollama && (d.ollama.status === 'ok' || d.ollama.status === 'connected');
+    dot.className = 'health-dot ' + (ok ? 'ok' : 'err');
+    txt.textContent = ok ? 'Ollama' : 'Offline';
+    if (ok && d.ollama.model) txt.textContent = d.ollama.model.split(':')[0];
+  } catch(_) {
+    dot.className = 'health-dot err';
+    txt.textContent = 'Offline';
+  }
+}
+checkHealth();
+setInterval(checkHealth, 60000);
+
+/* ── Notification strip ─────────────────────────────────────────────── */
+let _stripTimer = null;
+function showNotifStrip(title, sub, time) {
+  document.getElementById('notifStripTitle').textContent = title;
+  document.getElementById('notifStripSub').textContent = sub || '';
+  document.getElementById('notifStripTime').textContent = time || _relTime(Date.now());
+  const s = document.getElementById('notifStrip');
+  s.style.display = 'flex';
+  if (_stripTimer) clearTimeout(_stripTimer);
+  _stripTimer = setTimeout(dismissNotifStrip, 9000);
+}
+function dismissNotifStrip() {
+  document.getElementById('notifStrip').style.display = 'none';
+  if (_stripTimer) clearTimeout(_stripTimer);
+}
+function _relTime(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'just now';
+  if (d < 3600000) return Math.floor(d/60000) + 'm ago';
+  return Math.floor(d/3600000) + 'h ago';
+}
+
+/* ── Bell panel ──────────────────────────────────────────────────────── */
+function toggleBellPanel(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('bellPanel');
+  const open = panel.style.display !== 'none';
+  if (open) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  loadNotifications();
+}
+document.addEventListener('click', e => {
+  const panel = document.getElementById('bellPanel');
+  if (panel && !panel.contains(e.target) && e.target.id !== 'bellBtn') {
+    panel.style.display = 'none';
+  }
+});
+
 async function loadNotifications() {
+  const list = document.getElementById('bellList');
   try {
     const r = await fetch('/api/notifications?limit=15');
     const d = await r.json();
-    const list = document.getElementById('bell-list');
-    if (!d.notifications || d.notifications.length === 0) {
-      list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px">No notifications</div>';
+    if (!d.notifications || !d.notifications.length) {
+      list.innerHTML = '<div style="padding:20px 14px;text-align:center;color:var(--text-muted);font-size:12px">No notifications</div>';
       return;
     }
     list.innerHTML = d.notifications.map(n => `
-      <a href="${_esc(n.url || '#')}" style="display:block;padding:9px 14px;text-decoration:none;border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
-        <div style="font-size:12.5px;font-weight:500;color:var(--text-primary);margin-bottom:2px">${_esc(n.title)}</div>
-        ${n.body ? `<div style="font-size:11.5px;color:var(--text-muted)">${_esc(n.body)}</div>` : ''}
+      <a class="bell-notif" href="${_esc(n.url||'#')}">
+        <div class="bell-notif-title">${_esc(n.title)}</div>
+        ${n.body ? `<div class="bell-notif-body">${_esc(n.body)}</div>` : ''}
       </a>`).join('');
-  } catch (_) {}
+  } catch(_) {
+    list.innerHTML = '<div style="padding:20px 14px;text-align:center;color:var(--text-muted);font-size:12px">Failed to load</div>';
+  }
 }
 
 async function markAllRead() {
-  await fetch('/api/notifications/read', { method: 'POST' });
-  const badge = document.getElementById('bell-badge');
-  badge.style.display = 'none';
+  await fetch('/api/notifications/read', { method:'POST' }).catch(()=>{});
+  document.getElementById('bellBadge').style.display = 'none';
+  document.getElementById('bellPanel').style.display = 'none';
+  dismissNotifStrip();
 }
 
-/* ── SSE: live notification badge ───────────────────────────────────── */
-(function connectNotifStream() {
+/* ── SSE live notification feed ──────────────────────────────────────── */
+(function connectNotifSSE() {
   if (!window.EventSource) return;
   const es = new EventSource('/api/notifications/stream');
-  es.onmessage = () => {};
-  ['rfp_found','rfp_checkpoint','blog_ready','social_ready','website_ready',
-   'rfp_discovery_started','neditor_exported','neditor_approved'].forEach(evt => {
+  const evts = ['rfp_found','rfp_checkpoint','blog_ready','social_ready','website_ready',
+                 'rfp_discovery_started','neditor_exported','neditor_approved'];
+  evts.forEach(evt => {
     es.addEventListener(evt, e => {
       try {
         const d = JSON.parse(e.data);
-        const badge = document.getElementById('bell-badge');
-        const cur = parseInt(badge.textContent || '0', 10);
-        badge.textContent = cur + 1;
-        badge.style.display = 'block';
-        showToast(d.title || evt, '🔔', 4000);
-      } catch (_) {}
+        const badge = document.getElementById('bellBadge');
+        badge.textContent = (parseInt(badge.textContent||'0',10)+1);
+        badge.style.display = 'flex';
+        showNotifStrip(d.title || evt, d.body || '', _relTime(Date.now()));
+      } catch(_) {}
     });
   });
-  es.onerror = () => { es.close(); setTimeout(connectNotifStream, 15000); };
+  es.onerror = () => { es.close(); setTimeout(connectNotifSSE, 15000); };
 })();
 </script>
+
+<script>
+/* ── Auto-open active capability group ───────────────────────────────── */
+(function() {
+  const active = document.querySelector('.sb-subitem.active');
+  if (!active) return;
+  const details = active.closest('details');
+  if (!details) return;
+  details.open = true;
+  setTimeout(() => {
+    const scroll = document.querySelector('.sb-scroll');
+    if (!scroll) return;
+    const aRect = active.getBoundingClientRect();
+    const sRect = scroll.getBoundingClientRect();
+    if (aRect.top < sRect.top || aRect.bottom > sRect.bottom) {
+      active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, 60);
+})();
+</script>
+
+{% block scripts %}{% endblock %}
 </body>
 </html>

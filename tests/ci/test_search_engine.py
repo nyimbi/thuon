@@ -16,7 +16,7 @@ def _ddg_results():
 
 
 def _patch_ddgs(results):
-	return patch('duckduckgo_search.DDGS', return_value=MagicMock(text=MagicMock(return_value=results)))
+	return patch('ddgs.DDGS', return_value=MagicMock(text=MagicMock(return_value=results)))
 
 
 def test_duckduckgo_search_returns_list():
