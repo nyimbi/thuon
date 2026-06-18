@@ -50,6 +50,7 @@ class SkillParam(BaseModel):
 	default: Any = None
 	choices: list[str] = Field(default_factory=list)
 	options: list[str] = Field(default_factory=list)
+	description: str = ''
 
 
 class SkillManifest(BaseModel):
@@ -70,6 +71,7 @@ class SkillManifest(BaseModel):
 	body: str = ''              # SKILL.md text below frontmatter
 	source: str = 'registry'    # 'registry_web' | 'registry_cli' | 'skill_md'
 	capability_alias: str = ''  # thuon.capability — maps this skill to an existing cap name
+	model_tier: str = 'standard'  # 'fast' | 'standard' | 'frontier'
 
 	# ── Backward-compat serialisation ────────────────────────────────────────
 
@@ -369,4 +371,5 @@ def _parse_skill_md(path: Path) -> SkillManifest:
 		body=body,
 		source='skill_md',
 		capability_alias=str(thuon_ns.get('capability') or ''),
+		model_tier=str(thuon_ns.get('model_tier') or fm.get('model_tier') or 'standard'),
 	)

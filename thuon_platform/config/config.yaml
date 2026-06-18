@@ -78,6 +78,18 @@ notifications:
 #       "url": "http://localhost:5000/mcp"
 #     }
 #   }
+# ── LiteLLM proxy (ml server at 62.169.25.77) ────────────────────────────────
+# Set api_base to the LiteLLM proxy URL to enable cloud model routing.
+# Leave api_base empty to disable (all requests fall back to local Ollama).
+litellm:
+  api_base: ''                           # e.g. http://62.169.25.77:4000
+  model: 'openai/gpt-4o-mini'           # default model for 'fast' tier
+  fast_model: 'openai/gpt-4o-mini'
+  strong_model: 'openai/gpt-4o'
+  api_key: ''                            # proxy API key if required
+  timeout: 120
+  max_retries: 2
+
 mcp:
   enabled: true
   endpoint: '/mcp'

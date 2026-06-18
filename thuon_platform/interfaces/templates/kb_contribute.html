@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Contribute to Knowledge Base — Thuon{% endblock %}
+
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <a href="/settings/company" class="tb-bc-link">Company KB</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">Contribute</span>
+{% endblock %}
+
+{% block extra_styles %}
+.contrib-header { margin-bottom:24px; }
+.contrib-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0 0 4px; letter-spacing:-0.3px; }
+.contrib-header p  { font-size:12.5px; color:var(--text-muted); }
+.contrib-form { max-width:760px; }
+.form-row { margin-bottom:18px; }
+.form-row label { display:block; font-size:12px; color:var(--text-muted); margin-bottom:5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+.form-row input, .form-row select { width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--surface); color:var(--text); box-sizing:border-box; }
+.form-row textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:var(--mono-font,'monospace'); background:var(--surface); color:var(--text); box-sizing:border-box; min-height:320px; resize:vertical; }
+.submit-btn { background:var(--accent); color:#fff; border:none; border-radius:6px; padding:10px 22px; font-size:13.5px; cursor:pointer; font-weight:600; }
+.submit-btn:hover { opacity:.88; }
+.submit-btn:disabled { opacity:.5; cursor:not-allowed; }
+.verdict { margin-top:24px; padding:20px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:none; }
+.verdict.approved   { border-color:#22c55e; background:#f0fdf4; }
+.verdict.rejected   { border-color:#ef4444; background:#fef2f2; }
+.verdict.revision   { border-color:#f59e0b; background:#fffbeb; }
+.verdict h3 { font-size:15px; font-weight:700; margin:0 0 10px; }
+.verdict .score { font-size:24px; font-weight:800; margin-bottom:8px; }
+.verdict ul { font-size:13px; margin:0; padding-left:18px; }
+.verdict .note { font-size:13px; color:var(--text-muted); margin-top:10px; font-style:italic; }
+{% endblock %}
+
+{% block content %}
+<div class="contrib-header">
+  <h1>Contribute to Knowledge Base</h1>
+  <p>Submit an update to a company KB file. An AI reviewer will check for consistency before merging.</p>
+</div>
+
+<div class="contrib-form">
+  <div class="form-row">
+    <label>Target File</label>
+    <select id="fileName">
+      {% for f in files %}
+        <option value="{{ f }}">{{ f }}</option>
+      {% endfor %}
+      <option value="__new__">+ New file…</option>
+    </select>
+  </div>
+  <div class="form-row" id="newFileRow" style="display:none">
+    <label>New Filename (e.g. services.md)</label>
+    <input id="newFileName" type="text" placeholder="filename.md">
+  </div>
+  <div class="form-row">
+    <label>Your Name</label>
+    <input id="contributor" type="text" placeholder="Jane Smith">
+  </div>
+  <div class="form-row">
+    <label>Proposed Content (Markdown)</label>
+    <textarea id="content" placeholder="## Section heading&#10;&#10;Your content here…"></textarea>
+  </div>
+  <button class="submit-btn" id="submitBtn" onclick="submitContribution()">Submit for Review</button>
+
+  <div class="verdict" id="verdictBox">
+    <div class="score" id="verdictScore"></div>
+    <h3 id="verdictTitle"></h3>
+    <div id="verdictIssues"></div>
+    <div id="verdictSuggestions"></div>
+    <div class="note" id="verdictNote"></div>
+  </div>
+</div>
+
+<script>
+document.getElementById('fileName').addEventListener('change', function() {
+  document.getElementById('newFileRow').style.display = this.value === '__new__' ? '' : 'none';
+});
+
+async function submitContribution() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Reviewing…';
+
+  const fileSelect = document.getElementById('fileName').value;
+  const fileName   = fileSelect === '__new__'
+    ? document.getElementById('newFileName').value.trim()
+    : fileSelect;
+  const content     = document.getElementById('content').value;
+  const contributor = document.getElementById('contributor').value || 'anonymous';
+
+  if (!fileName || !content) {
+    alert('File name and content are required.');
+    btn.disabled = false; btn.textContent = 'Submit for Review';
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/kb/contribute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_name: fileName, proposed_content: content, contributor }),
+    });
+    const data = await r.json();
+    showVerdict(data);
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit for Review';
+  }
+}
+
+function showVerdict(d) {
+  const box = document.getElementById('verdictBox');
+  box.style.display = '';
+  box.className = 'verdict ' + (d.verdict === 'approved' || d.verdict === 'approved_with_edits' ? 'approved' : d.verdict === 'rejected' ? 'rejected' : 'revision');
+  document.getElementById('verdictScore').textContent = (d.score || 0) + ' / 100';
+  document.getElementById('verdictTitle').textContent = {
+    approved: '✓ Approved — merged into KB',
+    approved_with_edits: '✓ Approved with edits — merged',
+    needs_revision: '⚠ Needs revision',
+    rejected: '✗ Rejected',
+  }[d.verdict] || d.verdict;
+
+  if (d.issues && d.issues.length) {
+    document.getElementById('verdictIssues').innerHTML = '<strong>Issues:</strong><ul>' + d.issues.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+  }
+  if (d.suggestions && d.suggestions.length) {
+    document.getElementById('verdictSuggestions').innerHTML = '<strong>Suggestions:</strong><ul>' + d.suggestions.map(s => '<li>' + s + '</li>').join('') + '</ul>';
+  }
+  document.getElementById('verdictNote').textContent = d.reviewer_notes || '';
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

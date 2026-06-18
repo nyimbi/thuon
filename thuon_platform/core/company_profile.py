@@ -75,8 +75,9 @@ class CompanyProfile:
 		for md_file in sorted(self._dir.glob('*.md')):
 			try:
 				self._kb.ingest_file(str(md_file))
-			except Exception:
-				pass
+			except Exception as exc:
+				import logging
+				logging.getLogger('thuon.company_profile').warning('Failed to ingest %s: %s', md_file.name, exc)
 
 
 # Module-level singleton (created lazily)

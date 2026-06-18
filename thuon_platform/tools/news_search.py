@@ -11,12 +11,14 @@ from core.settings_manager import get_settings
 
 class NewsSearcher:
 
-	def search(self, query: str, max_results: int = 10, days_back: int = 7) -> dict:
+	def search(self, query: str, max_results: int | None = None, days_back: int | None = None) -> dict:
 		try:
 			if DDGS is None:
 				return {'status': 'error', 'error': 'Package ddgs not installed. Run: uv add ddgs'}
 
 			settings = get_settings()
+			max_results = max_results if max_results is not None else settings.get_setting('news.max_results', 10)
+			days_back = days_back if days_back is not None else settings.get_setting('news.days_back', 7)
 			cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days_back)
 
 			raw = list(DDGS().news(query, max_results=max_results))

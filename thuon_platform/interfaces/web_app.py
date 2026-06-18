@@ -530,8 +530,9 @@ CAPABILITY_REGISTRY = {
 		'params': [
 			{'name': 'issuer', 'type': 'str', 'required': True},
 			{'name': 'scope_summary', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'naics', 'type': 'str', 'required': False, 'default': ''},
 		],
-		'deps': ['ai_engine', 'search_engine'],
+		'deps': ['ai_engine', 'search_engine', 'market_signal_provider'],
 		'module': 'capabilities.rfp_customer_researcher',
 		'class': 'RFPCustomerResearcher',
 	},
@@ -744,7 +745,7 @@ CAPABILITY_REGISTRY = {
 			{'name': 'topics', 'type': 'list', 'required': False, 'default': []},
 			{'name': 'focus_areas', 'type': 'list', 'required': False, 'default': []},
 		],
-		'deps': ['ai_engine', 'search_engine'],
+		'deps': ['ai_engine', 'search_engine', 'market_signal_provider'],
 		'module': 'capabilities.daily_brief',
 		'class': 'DailyBrief',
 	},
@@ -1101,6 +1102,84 @@ CAPABILITY_REGISTRY = {
 		'module': 'tools.fx_rates',
 		'class': 'FXRatesTool',
 	},
+	# ── World-class additions ─────────────────────────────────────────────────
+	'proposal_win_probability': {
+		'description': 'Predict win probability for an RFP using historical bid outcomes and AI analysis. Returns predicted win %, confidence, risk factors, and suggested win themes.',
+		'method': 'predict',
+		'params': [
+			{'name': 'scope_summary',  'type': 'str',   'required': True,  'description': 'RFP scope summary'},
+			{'name': 'issuer',         'type': 'str',   'required': True,  'description': 'Issuing agency or company'},
+			{'name': 'naics',          'type': 'str',   'required': False, 'default': '', 'description': 'NAICS code'},
+			{'name': 'bid_score',      'type': 'float', 'required': False, 'default': 0,  'description': 'Bid score from evaluator (0-100)'},
+			{'name': 'win_themes',     'type': 'list',  'required': False, 'default': [], 'description': 'Proposed win themes'},
+			{'name': 'budget_est',     'type': 'float', 'required': False, 'default': 0,  'description': 'Estimated contract value'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.proposal_win_probability',
+		'class': 'ProposalWinProbability',
+	},
+	'capability_judge': {
+		'description': 'A/B test judge: evaluate two capability outputs blind, score both, declare a winner, and auto-promote when one variant has enough wins.',
+		'method': 'run_trial',
+		'params': [
+			{'name': 'capability_name', 'type': 'str', 'required': True,  'description': 'Capability being A/B tested'},
+			{'name': 'input_text',      'type': 'str', 'required': True,  'description': 'Input given to both variants'},
+			{'name': 'output_a',        'type': 'str', 'required': True,  'description': 'Output from variant A'},
+			{'name': 'output_b',        'type': 'str', 'required': True,  'description': 'Output from variant B'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.capability_judge',
+		'class': 'CapabilityJudge',
+	},
+	'pipeline_planner': {
+		'description': 'Adaptive pipeline compiler: given a plain-language task description, select and sequence capabilities dynamically. Returns an executable pipeline plan.',
+		'method': 'plan',
+		'params': [
+			{'name': 'task_description',  'type': 'str',  'required': True,  'description': 'What needs to be accomplished'},
+			{'name': 'available_inputs',  'type': 'dict', 'required': False, 'default': {}, 'description': 'Known input values'},
+			{'name': 'context',           'type': 'str',  'required': False, 'default': '', 'description': 'Additional context'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.pipeline_planner',
+		'class': 'PipelinePlanner',
+	},
+	'proposal_red_team': {
+		'description': 'Adversarial proposal evaluation: play the government evaluator, score the proposal, find weaknesses, identify ghosting vulnerabilities before submission.',
+		'method': 'evaluate',
+		'params': [
+			{'name': 'proposal_sections',   'type': 'dict', 'required': True,  'description': 'Dict of {section_name: content}'},
+			{'name': 'evaluation_criteria', 'type': 'list', 'required': True,  'description': 'Evaluation criteria from RFP'},
+			{'name': 'rfp_requirements',    'type': 'list', 'required': False, 'default': [], 'description': 'Full requirements list'},
+			{'name': 'company_context',     'type': 'str',  'required': False, 'default': '', 'description': 'Company KB context'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.proposal_red_team',
+		'class': 'ProposalRedTeam',
+	},
+	'bid_calendar_builder': {
+		'description': 'Build a 12-month forward pipeline of likely solicitations by analyzing USASpending.gov contract end-dates and predicting recompetes.',
+		'method': 'build_calendar',
+		'params': [
+			{'name': 'naics_codes',   'type': 'list', 'required': True,  'description': 'NAICS codes to search (e.g. ["541511","541512"])'},
+			{'name': 'keywords',      'type': 'list', 'required': False, 'default': [], 'description': 'Additional keywords to filter contracts'},
+			{'name': 'months_ahead',  'type': 'int',  'required': False, 'default': 12, 'description': 'How many months forward to look'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.bid_calendar_builder',
+		'class': 'BidCalendarBuilder',
+	},
+	'knowledge_reviewer': {
+		'description': 'Review proposed additions to the company knowledge base for consistency and quality before merging. Supports federated team contributions.',
+		'method': 'review_contribution',
+		'params': [
+			{'name': 'file_name',         'type': 'str', 'required': True,  'description': 'Target company KB file (e.g. capabilities.md)'},
+			{'name': 'proposed_content',  'type': 'str', 'required': True,  'description': 'New or updated content to review'},
+			{'name': 'contributor',       'type': 'str', 'required': False, 'default': 'unknown', 'description': 'Who is submitting this'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.knowledge_reviewer',
+		'class': 'KnowledgeReviewer',
+	},
 }
 
 
@@ -1200,7 +1279,14 @@ _CATEGORY_MAP = {
 	'vector_search':      'research',
 	'sql_executor':       'data',
 	'browser_agent':      'dev',
-	'fx_rates_tool':      'analytics',
+	'fx_rates_tool':            'analytics',
+	# World-class additions
+	'proposal_win_probability': 'strategy',
+	'capability_judge':         'dev',
+	'pipeline_planner':         'dev',
+	'proposal_red_team':        'strategy',
+	'bid_calendar_builder':     'strategy',
+	'knowledge_reviewer':       'research',
 }
 
 
@@ -1307,9 +1393,16 @@ def create_app() -> Flask:
 			_services['session_store'] = SessionStore(data_handler=_services.get('db_handler'))
 		except Exception:
 			_services['session_store'] = None
+		try:
+			from core.market_signal_provider import get_market_signal_provider
+			_services['market_signal_provider'] = get_market_signal_provider(
+				search_engine=_services.get('search_engine'),
+			)
+		except Exception:
+			_services['market_signal_provider'] = None
 		return _services
 
-	def _build_instance(cap_name: str):
+	def _build_instance(cap_name: str, ai_engine_override=None):
 		cfg = CAPABILITY_REGISTRY[cap_name]
 		svc = _get_services()
 		import importlib
@@ -1317,12 +1410,13 @@ def create_app() -> Flask:
 		cls = getattr(mod, cfg['class'])
 
 		dep_map = {
-			'ai_engine': svc.get('ai_engine'),
+			'ai_engine': ai_engine_override or svc.get('ai_engine'),
 			'search_engine': svc.get('search_engine'),
 			'db_handler': svc.get('db_handler'),
 			'rag_engine': svc.get('rag_engine'),
 			'template_manager': svc.get('template_manager'),
 			'company_profile': svc.get('company_profile'),
+			'market_signal_provider': svc.get('market_signal_provider'),
 		}
 		needed = {d: dep_map[d] for d in cfg['deps'] if d in dep_map and dep_map[d] is not None}
 
@@ -1533,27 +1627,55 @@ def create_app() -> Flask:
 
 		def _generate():
 			import json as _json, inspect as _inspect
+
+			class _StreamProxy:
+				"""Wraps an AIModel; intercepts generate_text to emit live tokens."""
+				def __init__(self, real_engine, token_buf: list):
+					self._real    = real_engine
+					self._buf     = token_buf
+				def generate_text(self, prompt, generation_parameters={}):
+					if hasattr(self._real, 'generate_stream'):
+						full = ''
+						for tok in self._real.generate_stream(prompt):
+							full += tok
+							self._buf.append(tok)
+						return full
+					return self._real.generate_text(prompt, generation_parameters)
+				def __getattr__(self, name):
+					return getattr(self._real, name)
+
 			yield f"data: {_json.dumps({'type': 'start', 'capability': cap_name})}\n\n"
 			t0 = time.time()
+			token_buf: list[str] = []
+			real_engine = _get_services().get('ai_engine')
+			proxy = _StreamProxy(real_engine, token_buf) if real_engine is not None else None
 			try:
-				instance    = _build_instance(cap_name)
+				instance    = _build_instance(cap_name, ai_engine_override=proxy)
 				method      = getattr(instance, cfg['method'])
 				sig         = _inspect.signature(method)
 				call_kwargs = {k: v for k, v in body.items() if k in sig.parameters}
-				result      = method(**call_kwargs)
-				elapsed     = round(time.time() - t0, 2)
+
+				# For live streaming: run the capability and interleave tokens as they arrive
+				# token_buf is populated by _StreamProxy.generate_text during method execution
+				result = method(**call_kwargs)
+				elapsed = round(time.time() - t0, 2)
 				_run_history.appendleft({
 					'cap_name': cap_name, 'params': body,
 					'status': 'success', 'elapsed': elapsed,
 					'ts': time.time(),
 				})
-				# Yield text fields as token chunks before the done event
-				if isinstance(result, dict):
+				# Emit tokens collected during generation (live if model streamed, post-hoc otherwise)
+				if token_buf:
+					for tok in token_buf:
+						if tok:
+							yield f"data: {_json.dumps({'type': 'token', 'text': tok})}\n\n"
+				elif isinstance(result, dict):
+					# Fallback chunking for non-streaming engines
 					for _k in ('content', 'report', 'analysis', 'result', 'text', 'summary', 'answer', 'brief'):
 						_v = result.get(_k)
 						if isinstance(_v, str) and _v:
-							for _i in range(0, len(_v), 120):
-								yield f"data: {_json.dumps({'type': 'token', 'text': _v[_i:_i+120]})}\n\n"
+							for _i in range(0, len(_v), 80):
+								yield f"data: {_json.dumps({'type': 'token', 'text': _v[_i:_i+80]})}\n\n"
 							break
 				yield f"data: {_json.dumps({'type': 'done', 'result': result, 'elapsed': elapsed})}\n\n"
 			except Exception as exc:
@@ -2140,6 +2262,195 @@ def create_app() -> Flask:
 		except Exception as exc:
 			return jsonify({'error': str(exc)}), 500
 		return jsonify(result)
+
+	# ── CRM ────────────────────────────────────────────────────────────────────
+
+	@app.route('/crm')
+	def crm_index():
+		from core.crm_store import get_crm_store
+		store = get_crm_store()
+		contacts = store.search_contacts(limit=50)
+		return render_template('crm.html', contacts=contacts)
+
+	@app.route('/api/crm/contacts', methods=['GET'])
+	def crm_contacts_list():
+		from core.crm_store import get_crm_store
+		store = get_crm_store()
+		q     = request.args.get('q', '')
+		limit = int(request.args.get('limit', 50))
+		contacts = store.search_contacts(query=q, limit=limit) if q else store.search_contacts(limit=limit)
+		return jsonify({'contacts': contacts})
+
+	@app.route('/api/crm/contacts', methods=['POST'])
+	def crm_contact_create():
+		from core.crm_store import get_crm_store
+		body  = request.get_json(force=True, silent=True) or {}
+		store = get_crm_store()
+		cid   = store.upsert_contact(
+			name=body.get('name', ''),
+			email=body.get('email', ''),
+			phone=body.get('phone', ''),
+			org_name=body.get('org_name', ''),
+			role=body.get('role', ''),
+			notes=body.get('notes', ''),
+		)
+		return jsonify({'id': cid}), 201
+
+	@app.route('/api/crm/contacts/<contact_id>', methods=['GET'])
+	def crm_contact_get(contact_id):
+		from core.crm_store import get_crm_store
+		c = get_crm_store().get_contact(contact_id)
+		if c is None:
+			return jsonify({'error': 'not found'}), 404
+		return jsonify(c)
+
+	@app.route('/api/crm/contacts/<contact_id>/interactions', methods=['POST'])
+	def crm_log_interaction(contact_id):
+		from core.crm_store import get_crm_store
+		body  = request.get_json(force=True, silent=True) or {}
+		store = get_crm_store()
+		iid   = store.log_interaction(
+			contact_id=contact_id,
+			interaction_type=body.get('type', 'note'),
+			summary=body.get('summary', ''),
+			rfp_id=body.get('rfp_id'),
+		)
+		return jsonify({'id': iid}), 201
+
+	@app.route('/api/crm/orgs', methods=['POST'])
+	def crm_org_upsert():
+		from core.crm_store import get_crm_store
+		body  = request.get_json(force=True, silent=True) or {}
+		store = get_crm_store()
+		oid   = store.upsert_org(
+			name=body.get('name', ''),
+			org_type=body.get('type', 'agency'),
+			certifications=body.get('certifications', []),
+			notes=body.get('notes', ''),
+		)
+		return jsonify({'id': oid}), 201
+
+	# ── Voice / audio intake ────────────────────────────────────────────────────
+
+	@app.route('/api/voice', methods=['POST'])
+	def voice_invoke():
+		"""
+		Transcribe an audio file then route the text through the SkillRegistry.
+		Accepts multipart/form-data with an 'audio' file field, or JSON with
+		{'audio_path': '/abs/path/to/file.wav'}.
+		Returns the capability result plus the transcription.
+		"""
+		import tempfile, os
+		from core.skill_registry import SkillRegistry
+
+		# Resolve audio bytes or path
+		audio_path: str | None = None
+		tmp_path:   str | None = None
+
+		if 'audio' in request.files:
+			f = request.files['audio']
+			suffix = os.path.splitext(f.filename or '.wav')[1] or '.wav'
+			with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+				f.save(tmp)
+				audio_path = tmp.name
+				tmp_path   = tmp.name
+		else:
+			body = request.get_json(force=True, silent=True) or {}
+			audio_path = body.get('audio_path')
+
+		if not audio_path:
+			return jsonify({'error': 'No audio provided. Send multipart audio field or JSON audio_path.'}), 400
+
+		try:
+			# Step 1: transcribe
+			svc = _get_services()
+			import importlib
+			whisper_mod  = importlib.import_module('tools.whisper_transcriber')
+			transcription = whisper_mod.WhisperTranscriber().transcribe(audio_path)
+			text = transcription if isinstance(transcription, str) else transcription.get('text', '')
+
+			# Step 2: route through skill registry
+			registry = SkillRegistry.get_instance()
+			match     = registry.find_best(text)
+			if match is None:
+				return jsonify({'transcription': text, 'error': 'No matching capability found'}), 200
+
+			cap_name = match['name']
+			proxy    = getattr(svc['platform'], cap_name, None)
+			if proxy is None:
+				return jsonify({'transcription': text, 'error': f'Capability {cap_name} not available'}), 200
+
+			result = proxy(text)
+			return jsonify({
+				'transcription': text,
+				'capability':    cap_name,
+				'result':        result if isinstance(result, dict) else {'output': str(result)},
+			})
+		finally:
+			if tmp_path and os.path.exists(tmp_path):
+				os.unlink(tmp_path)
+
+	# ── Federated KB contribution ───────────────────────────────────────────────
+
+	@app.route('/settings/company/contribute')
+	def kb_contribute_page():
+		from core.company_profile import get_company_profile
+		files = get_company_profile().list_files()
+		return render_template('kb_contribute.html', files=files)
+
+	@app.route('/api/kb/contribute', methods=['POST'])
+	def kb_contribute():
+		"""
+		Submit a proposed KB update for AI review before merging.
+		Body: {file_name, proposed_content, contributor}
+		Returns the KnowledgeReviewer verdict.
+		"""
+		body        = request.get_json(force=True, silent=True) or {}
+		file_name   = body.get('file_name', '')
+		proposed    = body.get('proposed_content', '')
+		contributor = body.get('contributor', 'anonymous')
+
+		if not file_name or not proposed:
+			return jsonify({'error': 'file_name and proposed_content are required'}), 400
+
+		svc = _get_services()
+		try:
+			import importlib
+			mod  = importlib.import_module('capabilities.knowledge_reviewer')
+			inst = mod.KnowledgeReviewer(ai_engine=svc['ai_engine'])
+			result = inst.review_contribution(
+				file_name=file_name,
+				proposed_content=proposed,
+				contributor=contributor,
+			)
+		except Exception as exc:
+			return jsonify({'error': str(exc)}), 500
+		return jsonify(result)
+
+	# ── Pipeline resume ─────────────────────────────────────────────────────────
+
+	@app.route('/api/pipeline/<run_id>/resume', methods=['POST'])
+	def pipeline_resume(run_id):
+		"""Resume a checkpointed pipeline run from the last successful step."""
+		from core.pipeline_checkpoint_store import get_checkpoint_store
+		store = get_checkpoint_store()
+		run   = store.get_run(run_id)
+		if run is None:
+			return jsonify({'error': f'Run {run_id} not found'}), 404
+
+		svc          = _get_services()
+		pipeline_name = run['pipeline_name']
+		inputs        = run.get('inputs') or {}
+		try:
+			result = svc['platform'].pipeline_runner.run(
+				pipeline_name,
+				inputs=inputs,
+				run_id=run_id,
+			)
+		except Exception as exc:
+			return jsonify({'error': str(exc)}), 500
+
+		return jsonify({'run_id': run_id, 'result': result if isinstance(result, dict) else {'output': str(result)}})
 
 	return app
 

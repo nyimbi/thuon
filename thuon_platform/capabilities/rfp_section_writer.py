@@ -9,6 +9,21 @@ import re
 from core.ai_engine import AIModel
 from core.llm_utils import extract_json, extract_json_array
 
+_memory_store = None
+_memory_lock = __import__('threading').Lock()
+
+def _get_memory():
+	global _memory_store
+	if _memory_store is None:
+		with _memory_lock:
+			if _memory_store is None:
+				try:
+					from core.memory_store import get_memory_store
+					_memory_store = get_memory_store()
+				except Exception:
+					_memory_store = None
+	return _memory_store
+
 
 _SECTION_INSTRUCTIONS = {
 	'executive_summary': (
@@ -49,8 +64,33 @@ _SECTION_INSTRUCTIONS = {
 
 
 class RFPSectionWriter:
-	def __init__(self, ai_engine: AIModel):
+	def __init__(self, ai_engine: AIModel, memory_store=None):
 		self.ai_engine = ai_engine
+		self._memory = memory_store
+
+	def _get_past_section_context(self, section_name: str, requirements: list | str) -> str:
+		"""Retrieve relevant past proposal sections from memory store for context."""
+		if not self._memory:
+			try:
+				from core.memory_store import get_memory_store
+				self._memory = get_memory_store()
+			except Exception:
+				return ''
+		query = f'{section_name} {str(requirements)[:200]}'
+		episodes = self._memory.search_episodes(query, limit=3)
+		if not episodes:
+			return ''
+		parts = [f'[Past {e["type"]}]: {e["content"][:400]}' for e in episodes]
+		return '## Relevant Past Sections\n' + '\n---\n'.join(parts)
+
+	def _log_section_to_memory(self, section_name: str, result: dict) -> None:
+		if not self._memory:
+			return
+		try:
+			content = f'Proposal section {section_name}: {result.get("content","")[:500]}'
+			self._memory.log_episode('rfp_writer', 'tool_result', content, {'section': section_name, 'word_count': result.get('word_count', 0)})
+		except Exception:
+			pass
 
 	def write_section(
 		self,
@@ -84,6 +124,24 @@ class RFPSectionWriter:
 		)
 		page_note = f' Target length: {page_limit} pages.' if page_limit else ''
 
+		past_context = self._get_past_section_context(section_name, requirements)
+
+		# Augment company_context with the 3 most relevant past winning sections
+		episodic_context = ''
+		mem = _get_memory()
+		if mem is not None:
+			try:
+				query = f'{section_name} {sow_excerpt[:200]}'
+				episodes = mem.search_episodes(query, limit=3)
+				if episodes:
+					parts = [
+						f'[Past section — {e.get("event_type","?")}]\n{e.get("content","")[:500]}'
+						for e in episodes
+					]
+					episodic_context = '\n\n---\n\n'.join(parts)
+			except Exception:
+				pass
+
 		prompt = (
 			f'You are a proposal writer. Write the {section_name.replace("_", " ").title()} '
 			f'section for this RFP response.{page_note}\n\n'
@@ -91,7 +149,9 @@ class RFPSectionWriter:
 			f'Requirements to address:\n{reqs_text[:2000]}\n\n'
 			f'Win themes to incorporate:\n{themes_text[:1500]}\n\n'
 			f'Company context (past performance, capabilities, personnel):\n{company_context[:3000]}\n\n'
-			f'SOW excerpt:\n{sow_excerpt[:1500]}\n\n'
+			+ (f'Relevant past sections (for reference and consistency):\n{past_context[:1500]}\n\n' if past_context else '')
+			+ (f'Relevant past winning sections (for inspiration, not verbatim copy):\n{episodic_context}\n\n' if episodic_context else '')
+			+ f'SOW excerpt:\n{sow_excerpt[:1500]}\n\n'
 			'Return ONLY a valid JSON object with:\n'
 			'- section_name (str)\n'
 			'- content (str): the full written section in markdown\n'
@@ -104,6 +164,7 @@ class RFPSectionWriter:
 		response = self.ai_engine.generate_text(prompt)
 		result = extract_json(response)
 		if result is not None and 'content' in result:
+			self._log_section_to_memory(section_name, result)
 			return result
 
 		# Fallback: treat entire response as content

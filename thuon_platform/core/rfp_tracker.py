@@ -151,7 +151,7 @@ class RFPTracker:
 			self._save()
 		return record
 
-	def advance_status(self, rfp_id: str, to_status: str) -> RFPRecord | None:
+	def advance_status(self, rfp_id: str, to_status: str, notes: str = '') -> RFPRecord | None:
 		"""Advance status along the FSM; raises ValueError on invalid transition."""
 		with self._lock:
 			record = self._records.get(rfp_id)
@@ -167,7 +167,150 @@ class RFPTracker:
 			record.status = target
 			record.updated_at = str(time.time())
 			self._save()
+
+		# Record win/loss outcome for learning — done outside the lock
+		if target in (RFPStatus.WON, RFPStatus.LOST, RFPStatus.NO_BID):
+			self._record_outcome(record, target.value, notes)
+
 		return record
+
+	# ── Intelligent checkpoint auto-advance (feature 3) ─────────────────────
+
+	def suggest_checkpoint_action(
+		self,
+		rfp_id: str,
+		disqualifiers: list[str] | None = None,
+	) -> dict:
+		"""
+		Recommend an action for the bid/no-bid human checkpoint.
+
+		Returns::
+
+			{
+				'action':   'auto-go' | 'human-review' | 'auto-no-bid',
+				'reason':   str,
+				'bid_score': float,
+				'thresholds': {'auto_go': float, 'auto_no_bid': float},
+			}
+
+		Thresholds start at 87/40 and are nudged by historical win-rate data
+		from FeedbackStore so they tighten as more bids are recorded.
+		"""
+		record = self._records.get(rfp_id)
+		if record is None:
+			return {'action': 'human-review', 'reason': 'RFP not found', 'bid_score': 0.0,
+					'thresholds': {'auto_go': 87.0, 'auto_no_bid': 40.0}}
+
+		bid_score     = float(record.bid_score or 0)
+		disqualifiers = disqualifiers or []
+
+		# Default thresholds
+		threshold_go  = 87.0
+		threshold_out = 40.0
+
+		# Adjust from historical win rate
+		try:
+			from core.feedback_store import get_feedback_store
+			store = get_feedback_store()
+			wr = store.win_rate(
+				naics=getattr(record, 'naics', ''),
+				issuer=record.issuer,
+			)
+			if wr and isinstance(wr, dict):
+				win_pct = float(wr.get('win_pct', 0))
+				n       = int(wr.get('sample_size', 0))
+				if n >= 5:
+					# Low historical win rate → raise the bar for auto-go
+					if win_pct < 30:
+						threshold_go = min(95.0, threshold_go + 5.0)
+					# High historical win rate → be more aggressive
+					elif win_pct > 60:
+						threshold_go = max(75.0, threshold_go - 5.0)
+		except Exception:
+			pass
+
+		if disqualifiers:
+			return {
+				'action':     'human-review',
+				'reason':     f'Disqualifiers present: {"; ".join(disqualifiers[:3])}',
+				'bid_score':  bid_score,
+				'thresholds': {'auto_go': threshold_go, 'auto_no_bid': threshold_out},
+			}
+
+		if bid_score >= threshold_go:
+			return {
+				'action':     'auto-go',
+				'reason':     f'Bid score {bid_score:.1f} ≥ {threshold_go:.0f} auto-go threshold',
+				'bid_score':  bid_score,
+				'thresholds': {'auto_go': threshold_go, 'auto_no_bid': threshold_out},
+			}
+
+		if bid_score < threshold_out:
+			return {
+				'action':     'auto-no-bid',
+				'reason':     f'Bid score {bid_score:.1f} < {threshold_out:.0f} auto-reject threshold',
+				'bid_score':  bid_score,
+				'thresholds': {'auto_go': threshold_go, 'auto_no_bid': threshold_out},
+			}
+
+		return {
+			'action':     'human-review',
+			'reason':     f'Bid score {bid_score:.1f} in review band ({threshold_out:.0f}–{threshold_go:.0f})',
+			'bid_score':  bid_score,
+			'thresholds': {'auto_go': threshold_go, 'auto_no_bid': threshold_out},
+		}
+
+	def auto_advance_if_warranted(
+		self,
+		rfp_id: str,
+		disqualifiers: list[str] | None = None,
+	) -> dict:
+		"""
+		Auto-advance or auto-reject the RFP if the checkpoint suggestion is
+		unambiguous.  Returns the suggestion dict with an added 'advanced' bool.
+		"""
+		suggestion = self.suggest_checkpoint_action(rfp_id, disqualifiers)
+		action     = suggestion['action']
+
+		if action == 'auto-go':
+			try:
+				self.advance_status(rfp_id, RFPStatus.AWAITING_STRATEGY.value,
+									notes=suggestion['reason'])
+				suggestion['advanced'] = True
+			except (ValueError, KeyError):
+				suggestion['advanced'] = False
+
+		elif action == 'auto-no-bid':
+			try:
+				self.advance_status(rfp_id, RFPStatus.NO_BID.value,
+									notes=suggestion['reason'])
+				suggestion['advanced'] = True
+			except (ValueError, KeyError):
+				suggestion['advanced'] = False
+
+		else:
+			suggestion['advanced'] = False
+
+		return suggestion
+
+	@staticmethod
+	def _record_outcome(record: 'RFPRecord', outcome: str, notes: str) -> None:
+		try:
+			from core.feedback_store import get_feedback_store
+			store = get_feedback_store()
+			store.record_outcome(
+				rfp_id=record.id,
+				title=record.title,
+				issuer=record.issuer,
+				naics=getattr(record, 'naics', ''),
+				budget_est=float(getattr(record, 'budget_est', 0) or 0),
+				bid_score=float(record.bid_score or 0),
+				win_themes=list(record.win_themes) if hasattr(record, 'win_themes') else [],
+				outcome=outcome,
+				notes=notes,
+			)
+		except Exception:
+			pass  # feedback recording is best-effort — never block the tracker
 
 	# ── Persistence ───────────────────────────────────────────────────────────
 

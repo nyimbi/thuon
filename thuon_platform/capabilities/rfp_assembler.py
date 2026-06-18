@@ -113,6 +113,30 @@ class RFPAssembler:
 		except Exception:
 			pass
 
+		# Record document lineage — best-effort, never blocks assembly
+		lineage_doc_id = ''
+		try:
+			from core.lineage_store import get_lineage_store
+			ls = get_lineage_store()
+			lineage_doc_id = ls.create_document(
+				doc_type='proposal', rfp_id=rfp_id, title=rfp_title,
+			)
+			for sec_name, sec in (sections.items() if isinstance(sections, dict) else []):
+				content = sec.get('content', str(sec)) if isinstance(sec, dict) else str(sec)
+				sec_id  = ls.create_section(
+					document_id=lineage_doc_id,
+					section_name=sec_name,
+					content=content,
+				)
+				ls.add_source(
+					section_id=sec_id,
+					source_type='capability_output',
+					source_ref='capabilities.rfp_section_writer',
+					capability='rfp_section_writer',
+				)
+		except Exception:
+			pass
+
 		return {
 			'document_md':     document_md,
 			'filename':        filename,
@@ -120,4 +144,5 @@ class RFPAssembler:
 			'section_index':   section_index,
 			'output_path':     str(out_path),
 			'neditor_opened':  neditor_opened,
+			'lineage_doc_id':  lineage_doc_id,
 		}

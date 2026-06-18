@@ -80,6 +80,8 @@ def _params_to_json_schema(params: list[SkillParam]) -> dict[str, Any]:
 
 		if p.default is not None:
 			prop['default'] = p.default
+		if getattr(p, 'description', ''):
+			prop['description'] = p.description
 
 		properties[p.name] = prop
 		if p.required:

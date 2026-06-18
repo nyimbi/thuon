@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}CRM — Thuon{% endblock %}
+
+{% block breadcrumb %}
+  <a href="/" class="tb-bc-link">Workspace</a>
+  <span class="tb-bc-sep">/</span>
+  <span class="tb-bc-current">CRM</span>
+{% endblock %}
+
+{% block extra_styles %}
+.crm-header { margin-bottom:24px; display:flex; align-items:center; gap:16px; }
+.crm-header h1 { font-family:var(--heading-font); font-size:22px; font-weight:700; margin:0; letter-spacing:-0.3px; flex:1; }
+.crm-search { flex:0 0 280px; }
+.crm-search input { width:100%; padding:7px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--surface); color:var(--text); }
+.crm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.crm-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
+.crm-card-name { font-weight:700; font-size:14px; margin-bottom:2px; }
+.crm-card-role { font-size:12px; color:var(--text-muted); margin-bottom:8px; }
+.crm-card-org  { font-size:12.5px; color:var(--accent); margin-bottom:6px; }
+.crm-card-email { font-size:12px; color:var(--text-muted); word-break:break-all; }
+.add-btn { background:var(--accent); color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:13px; cursor:pointer; }
+.add-btn:hover { opacity:.88; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:28px; width:420px; max-width:95vw; }
+.modal h2 { font-family:var(--heading-font); font-size:17px; font-weight:700; margin:0 0 20px; }
+.modal label { display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px; }
+.modal input, .modal select, .modal textarea { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--bg); color:var(--text); margin-bottom:12px; box-sizing:border-box; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+.cancel-btn { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:8px 14px; font-size:13px; cursor:pointer; color:var(--text); }
+{% endblock %}
+
+{% block content %}
+<div class="crm-header">
+  <h1>CRM</h1>
+  <div class="crm-search">
+    <input type="text" id="searchInput" placeholder="Search contacts…" oninput="filterContacts(this.value)">
+  </div>
+  <button class="add-btn" onclick="openModal()">+ Add Contact</button>
+</div>
+
+<div class="crm-grid" id="crmGrid">
+{% for c in contacts %}
+  <div class="crm-card" data-name="{{ c.name|lower }}" data-email="{{ c.email|lower }}" data-org="{{ (c.org_name or '')|lower }}">
+    <div class="crm-card-name">{{ c.name }}</div>
+    <div class="crm-card-role">{{ c.role or '—' }}</div>
+    {% if c.org_name %}<div class="crm-card-org">{{ c.org_name }}</div>{% endif %}
+    {% if c.email %}<div class="crm-card-email">{{ c.email }}</div>{% endif %}
+  </div>
+{% else %}
+  <p style="color:var(--text-muted);font-size:13px;">No contacts yet. Add your first contact.</p>
+{% endfor %}
+</div>
+
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h2>Add Contact</h2>
+    <label>Name *</label><input id="f_name" type="text" placeholder="Jane Smith">
+    <label>Email</label><input id="f_email" type="email" placeholder="jane@agency.gov">
+    <label>Phone</label><input id="f_phone" type="text" placeholder="+1 202-555-0100">
+    <label>Organisation</label><input id="f_org" type="text" placeholder="Agency or company">
+    <label>Role</label><input id="f_role" type="text" placeholder="Contracting Officer">
+    <label>Notes</label><textarea id="f_notes" rows="3" placeholder="Additional notes…"></textarea>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="add-btn" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModal()  { document.getElementById('addModal').classList.add('open'); }
+function closeModal() { document.getElementById('addModal').classList.remove('open'); }
+
+function filterContacts(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.crm-card').forEach(c => {
+    const match = !q || c.dataset.name.includes(q) || c.dataset.email.includes(q) || c.dataset.org.includes(q);
+    c.style.display = match ? '' : 'none';
+  });
+}
+
+async function saveContact() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  const body = {
+    name, email: document.getElementById('f_email').value,
+    phone: document.getElementById('f_phone').value,
+    org_name: document.getElementById('f_org').value,
+    role: document.getElementById('f_role').value,
+    notes: document.getElementById('f_notes').value,
+  };
+  const r = await fetch('/api/crm/contacts', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  if (r.ok) { closeModal(); location.reload(); }
+  else { alert('Failed to save contact'); }
+}
+</script>
+{% endblock %}

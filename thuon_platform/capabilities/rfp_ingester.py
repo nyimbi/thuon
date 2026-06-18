@@ -100,12 +100,111 @@ class RFPIngester:
 		from pathlib import Path
 		ext = Path(path).suffix.lower()
 		if ext == '.pdf':
-			from pypdf import PdfReader
-			reader = PdfReader(path)
-			return '\n\n'.join(p.extract_text() or '' for p in reader.pages)
+			return self._read_pdf(path)
 		if ext in ('.docx', '.doc'):
 			from docx import Document
 			doc = Document(path)
 			return '\n'.join(p.text for p in doc.paragraphs)
 		with open(path, encoding='utf-8', errors='replace') as f:
 			return f.read()
+
+	def _read_pdf(self, path: str) -> str:
+		"""
+		Extract text from a PDF. For pages that return < 100 chars (scanned/image),
+		fall back to the vision model OCR via pdf2image.
+		"""
+		from pypdf import PdfReader
+		reader = PdfReader(path)
+		pages: list[str] = []
+		for i, page in enumerate(reader.pages):
+			text = page.extract_text() or ''
+			if len(text.strip()) >= 100:
+				pages.append(text)
+			else:
+				# Low-text page — attempt vision OCR
+				ocr_text = self._vision_ocr_page(path, i)
+				pages.append(ocr_text if ocr_text else text)
+		return '\n\n'.join(pages)
+
+	def _vision_ocr_page(self, pdf_path: str, page_index: int) -> str:
+		"""
+		Render one PDF page to a temp PNG via pdf2image and OCR it with OllamaVisionModel.
+		Returns empty string if pdf2image or the vision model is unavailable.
+		"""
+		import logging
+		import os
+		import tempfile
+		try:
+			from pdf2image import convert_from_path
+		except ImportError:
+			logging.warning('pdf2image not installed; skipping vision OCR for page %d of %s', page_index, pdf_path)
+			return ''
+		try:
+			images = convert_from_path(pdf_path, dpi=150, first_page=page_index + 1, last_page=page_index + 1)
+			if not images:
+				return ''
+		except Exception:
+			return ''
+		tmp_path = None
+		try:
+			with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+				tmp_path = tmp.name
+			images[0].save(tmp_path, 'PNG')
+			if not hasattr(self, '_vision'):
+				from core.ai_engine import OllamaVisionModel
+				self._vision = OllamaVisionModel()
+			return self._vision.extract_text(tmp_path)
+		except Exception:
+			return ''
+		finally:
+			if tmp_path and os.path.exists(tmp_path):
+				os.unlink(tmp_path)
+
+	def analyze_visual_elements(self, pdf_path: str) -> list[dict]:
+		"""
+		Extract charts, tables, and diagrams from a PDF using vision model.
+		Returns list of {page_num, element_type, description, data}
+		"""
+		import logging
+		import os
+		import tempfile
+		try:
+			from pdf2image import convert_from_path
+		except ImportError:
+			logging.warning('pdf2image not installed; analyze_visual_elements requires it')
+			return []
+		from pypdf import PdfReader
+		try:
+			reader = PdfReader(pdf_path)
+			page_count = len(reader.pages)
+		except Exception:
+			return []
+		if not hasattr(self, '_vision'):
+			from core.ai_engine import OllamaVisionModel
+			self._vision = OllamaVisionModel()
+		results: list[dict] = []
+		for page_num in range(page_count):
+			tmp_path = None
+			try:
+				images = convert_from_path(pdf_path, dpi=150, first_page=page_num + 1, last_page=page_num + 1)
+				if not images:
+					continue
+				with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+					tmp_path = tmp.name
+				images[0].save(tmp_path, 'PNG')
+				analysis = self._vision.analyze_document_page(tmp_path)
+				# Filter for pages containing tables or charts
+				element_type = analysis.get('element_type', '')
+				if any(kw in str(element_type).lower() for kw in ('table', 'chart', 'diagram', 'graph', 'figure')):
+					results.append({
+						'page_num':    page_num + 1,
+						'element_type': element_type,
+						'description': analysis.get('description', ''),
+						'data':        analysis.get('data', {}),
+					})
+			except Exception as exc:
+				logging.warning('Vision analysis failed for page %d of %s: %s', page_num + 1, pdf_path, exc)
+			finally:
+				if tmp_path and os.path.exists(tmp_path):
+					os.unlink(tmp_path)
+		return results

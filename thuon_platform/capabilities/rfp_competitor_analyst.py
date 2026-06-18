@@ -9,6 +9,21 @@ from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
 from core.llm_utils import extract_json, extract_json_array
 
+_graph = None
+_graph_lock = __import__('threading').Lock()
+
+def _get_graph():
+	global _graph
+	if _graph is None:
+		with _graph_lock:
+			if _graph is None:
+				try:
+					from core.competitor_graph import CompetitorGraph
+					_graph = CompetitorGraph()
+				except Exception:
+					_graph = None
+	return _graph
+
 
 class RFPCompetitorAnalyst:
 	def __init__(self, ai_engine: AIModel, search_engine: SearchEngine):
@@ -58,16 +73,32 @@ class RFPCompetitorAnalyst:
 		)
 
 		response = self.ai_engine.generate_text(prompt)
-		try:
-			return extract_json(response)
-		except Exception:
-			pass
+		result = extract_json(response)
+		if result is None:
+			result = {
+				'known_incumbents':       [],
+				'likely_bidders':         [],
+				'competitor_strengths':   {},
+				'competitor_weaknesses':  {},
+				'differentiation_angles': [],
+				'ghosting_opportunities': [],
+			}
 
-		return {
-			'known_incumbents':       [],
-			'likely_bidders':         [],
-			'competitor_strengths':   {},
-			'competitor_weaknesses':  {},
-			'differentiation_angles': [],
-			'ghosting_opportunities': [],
-		}
+		# Upsert all identified competitors into the living graph
+		graph = _get_graph()
+		if graph is not None:
+			rfp_id = re.sub(r'\W+', '_', rfp_title[:40].lower())
+			for name in result.get('known_incumbents', []):
+				try:
+					cid = graph.upsert_competitor(name)
+					graph.record_rfp_appearance(cid, rfp_id, rfp_title, issuer, role='incumbent')
+				except Exception:
+					pass
+			for name in result.get('likely_bidders', []):
+				try:
+					cid = graph.upsert_competitor(name)
+					graph.record_rfp_appearance(cid, rfp_id, rfp_title, issuer, role='likely_bidder')
+				except Exception:
+					pass
+
+		return result

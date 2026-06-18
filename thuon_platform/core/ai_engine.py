@@ -263,5 +263,150 @@ def screenshot_url(url: str, output_path: str = '/tmp/thuon_screenshot.png') -> 
 	return output_path
 
 
+class LiteLLMModel(AIModel):
+	"""
+	Route requests through a LiteLLM proxy (e.g. the ml server at 62.169.25.77).
+	Falls back to OllamaModel on import error or connection failure.
+
+	config.yaml keys used:
+	  litellm.api_base      — proxy URL, e.g. http://62.169.25.77:4000
+	  litellm.model         — default model, e.g. openai/gpt-4o
+	  litellm.api_key       — proxy API key (optional)
+	  litellm.timeout       — seconds (default 120)
+	  litellm.max_retries   — default 2
+	"""
+
+	def __init__(
+		self,
+		model_name: str | None = None,
+		api_base: str | None = None,
+		api_key: str | None = None,
+	):
+		settings = get_settings()
+		resolved_model = (
+			model_name
+			or settings.get_setting('litellm.model', 'openai/gpt-4o-mini')
+		)
+		super().__init__(resolved_model)
+		self._api_base    = api_base or settings.get_setting('litellm.api_base', '')
+		self._api_key     = api_key  or settings.get_setting('litellm.api_key', 'no-key')
+		self._timeout     = int(settings.get_setting('litellm.timeout', 120))
+		self._max_retries = int(settings.get_setting('litellm.max_retries', 2))
+		try:
+			import litellm as _ll
+			self._ll = _ll
+		except ImportError:
+			self._ll = None
+
+	def _call(self, messages: list[dict], **kw) -> str:
+		if self._ll is None:
+			raise RuntimeError('litellm not installed — run: uv add litellm')
+		kwargs: dict = dict(
+			model=self.model_name,
+			messages=messages,
+			timeout=self._timeout,
+			num_retries=self._max_retries,
+			**kw,
+		)
+		if self._api_base:
+			kwargs['api_base'] = self._api_base
+		if self._api_key:
+			kwargs['api_key'] = self._api_key
+		resp = self._ll.completion(**kwargs)
+		return resp.choices[0].message.content or ''
+
+	def generate_text(self, prompt: str, generation_parameters: dict = {}) -> str:
+		return self._call(
+			[{'role': 'user', 'content': prompt}],
+			**{k: v for k, v in generation_parameters.items()
+			   if k in ('temperature', 'max_tokens', 'top_p', 'stop')},
+		)
+
+	def generate_stream(self, prompt: str):
+		"""Yield token chunks from the LiteLLM proxy."""
+		if self._ll is None:
+			yield self.generate_text(prompt)
+			return
+		kwargs: dict = dict(
+			model=self.model_name,
+			messages=[{'role': 'user', 'content': prompt}],
+			stream=True,
+			timeout=self._timeout,
+		)
+		if self._api_base:
+			kwargs['api_base'] = self._api_base
+		if self._api_key:
+			kwargs['api_key'] = self._api_key
+		for chunk in self._ll.completion(**kwargs):
+			delta = chunk.choices[0].delta.content
+			if delta:
+				yield delta
+
+	def analyze_sentiment(self, text: str) -> str:
+		prompt = (
+			"Classify the sentiment of the following text as exactly one of: "
+			"'positive', 'negative', or 'neutral'. Reply with only the label.\n\nText: "
+			+ text + "\nSentiment:"
+		)
+		return self.generate_text(prompt).strip().lower()
+
+	def extract_entities(self, text: str, entity_types: list) -> dict:
+		types_str = ', '.join(entity_types)
+		prompt = (
+			f"Extract the following entity types from the text: {types_str}.\n"
+			f"Return a JSON object where each key is an entity type and the value is a list "
+			f"of extracted entities.\n\nText: {text}\nJSON:"
+		)
+		response = self.generate_text(prompt)
+		try:
+			match = re.search(r'\{.*\}', response, re.DOTALL)
+			return json.loads(match.group()) if match else {t: [] for t in entity_types}
+		except Exception:
+			return {t: [] for t in entity_types}
+
+	def summarize_text(self, text: str, length: str = 'medium') -> str:
+		word_counts = {'short': 100, 'medium': 300, 'long': 600}
+		words = word_counts.get(length, 300)
+		prompt = f"Summarize the following text in approximately {words} words:\n\n{text}\n\nSummary:"
+		return self.generate_text(prompt).strip()
+
+	def translate_text(self, text: str, target_language: str) -> str:
+		prompt = (
+			f"Translate the following text to {target_language}. "
+			f"Reply with only the translation.\n\nText: {text}\n\nTranslation:"
+		)
+		return self.generate_text(prompt).strip()
+
+
+# ── Tier-based factory ────────────────────────────────────────────────────────
+
+def get_ai_engine(tier: str = 'default') -> AIModel:
+	"""
+	Return the right AIModel for the requested capability tier.
+
+	  tier='fast'    → LiteLLM proxy (cloud model, lowest latency)
+	  tier='default' → OllamaModel (local, balanced)
+	  tier='vision'  → OllamaVisionModel (multimodal tasks)
+	  tier='strong'  → LiteLLM proxy with a stronger model
+
+	Falls back to OllamaModel if LiteLLM is unavailable.
+	"""
+	settings = get_settings()
+
+	if tier == 'vision':
+		return OllamaVisionModel()  # type: ignore[return-value]
+
+	if tier in ('fast', 'strong'):
+		model_key = 'litellm.strong_model' if tier == 'strong' else 'litellm.fast_model'
+		model = settings.get_setting(model_key, settings.get_setting('litellm.model', ''))
+		api_base = settings.get_setting('litellm.api_base', '')
+		# Only use LiteLLM when explicitly configured; otherwise Ollama is the default
+		if api_base and model:
+			return LiteLLMModel(model_name=model)
+		return OllamaModel()
+
+	return OllamaModel()
+
+
 # Backward-compat alias
 OllamaDeepSeekR1 = OllamaModel

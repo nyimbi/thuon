@@ -69,14 +69,16 @@ class DailyBrief:
 		knowledge_pipeline=None,
 		calendar_store=None,
 		obsidian_bridge=None,
+		market_signal_provider=None,
 		config: dict | None = None,
 	):
-		self.ai_engine          = ai_engine
-		self.search_engine      = search_engine
-		self.knowledge_pipeline = knowledge_pipeline
-		self.calendar_store     = calendar_store
-		self.obsidian_bridge    = obsidian_bridge
-		self.cfg                = config or {}
+		self.ai_engine              = ai_engine
+		self.search_engine          = search_engine
+		self.knowledge_pipeline     = knowledge_pipeline
+		self.calendar_store         = calendar_store
+		self.obsidian_bridge        = obsidian_bridge
+		self.market_signal_provider = market_signal_provider
+		self.cfg                    = config or {}
 
 	# ── Public ────────────────────────────────────────────────────────────────
 
@@ -87,9 +89,10 @@ class DailyBrief:
 	) -> dict:
 		today   = date_str or date.today().isoformat()
 		display = datetime.strptime(today, '%Y-%m-%d').strftime('%A, %d %B %Y')
-		run     = set(include_sections) if include_sections else {
-			'fx', 'weather', 'news', 'economic_calendar', 'calendar', 'todos', 'emails',
-		}
+		default_sections = {'fx', 'weather', 'news', 'economic_calendar', 'calendar', 'todos', 'emails'}
+		if self.market_signal_provider is not None:
+			default_sections.add('market_signals')
+		run = set(include_sections) if include_sections else default_sections
 
 		brief: dict[str, Any] = {
 			'generated_at': datetime.utcnow().isoformat(),
@@ -106,6 +109,7 @@ class DailyBrief:
 		if 'calendar'           in run: sec['calendar']           = self._calendar_summary(today)
 		if 'todos'              in run: sec['todos']              = self._collect_todos(today)
 		if 'emails'             in run: sec['emails']             = self._email_summaries()
+		if 'market_signals'     in run: sec['market_signals']     = self._market_signals(today)
 
 		sec['synthesis']        = self._synthesize(sec, today)
 		brief['formatted_text'] = self._format(brief)
@@ -460,6 +464,29 @@ class DailyBrief:
 					conn.logout()
 				except Exception:
 					pass
+
+	# ── Market signals ────────────────────────────────────────────────────────
+
+	def _market_signals(self, date_str: str) -> dict:
+		"""Inject live market signals via MarketSignalProvider (Tier 1 when provider set)."""
+		if self.market_signal_provider is None:
+			return {'status': 'unavailable', 'items': []}
+		try:
+			topic = self.cfg.get('market_signals_topic', 'business economy markets')
+			signals = self.market_signal_provider.inject_into_context(
+				'blog', topic=topic,
+			)
+			formatted = self.market_signal_provider.format_for_prompt(signals, max_chars=800)
+			items: list[dict] = []
+			for item in signals.get('news', []):
+				items.append({'title': item.get('title', ''), 'summary': item.get('summary', '')})
+			return {
+				'status':    'ok',
+				'items':     items,
+				'formatted': formatted,
+			}
+		except Exception as exc:
+			return {'status': f'error: {exc}', 'items': []}
 
 	# ── Synthesis ─────────────────────────────────────────────────────────────
 

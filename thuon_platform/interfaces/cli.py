@@ -172,7 +172,55 @@ def parse_arguments() -> argparse.Namespace:
 	p.add_argument('system', help='System or application description')
 	p.add_argument('--scan-type', dest='scan_type', default='quick', choices=['quick', 'deep'])
 
+	# install — skill pack installation
+	p = subparsers.add_parser('install', help='Install a skill pack (.spack file or URL)')
+	p.add_argument('source', help='Path to .spack file or HTTPS URL')
+	p.add_argument('--sha256', dest='expected_sha256', default=None,
+	               help='Expected SHA-256 checksum for verification')
+
+	# packs — manage installed packs
+	p = subparsers.add_parser('packs', help='Manage installed skill packs')
+	p.add_argument('action', choices=['list', 'remove'], help='Action to perform')
+	p.add_argument('name', nargs='?', default=None, help='Pack name (required for remove)')
+
 	return parser.parse_args()
+
+
+def cli_install(args: argparse.Namespace) -> None:
+	from tools.skill_pack_manager import install
+	try:
+		pack = install(args.source, expected_sha256=args.expected_sha256)
+		print(f"Installed pack '{pack['name']}' v{pack['version']}")
+		print(f"  Capabilities: {', '.join(pack['capabilities']) or 'none'}")
+		print(f"  Skills:       {', '.join(pack['skills']) or 'none'}")
+	except Exception as exc:
+		print(f'Error: {exc}')
+		sys.exit(1)
+
+
+def cli_packs(args: argparse.Namespace) -> None:
+	from tools.skill_pack_manager import list_packs, remove
+	if args.action == 'list':
+		packs = list_packs()
+		if not packs:
+			print('No skill packs installed.')
+			return
+		for p in packs:
+			print(f"  {p['name']} v{p['version']} — {p['description']}")
+			if p['capabilities']:
+				print(f"    caps:   {', '.join(p['capabilities'])}")
+			if p['skills']:
+				print(f"    skills: {', '.join(p['skills'])}")
+	elif args.action == 'remove':
+		if not args.name:
+			print('Error: pack name required for remove')
+			sys.exit(1)
+		try:
+			remove(args.name)
+			print(f"Removed pack '{args.name}'")
+		except KeyError as exc:
+			print(f'Error: {exc}')
+			sys.exit(1)
 
 
 def main_cli():
@@ -185,6 +233,8 @@ def main_cli():
 		'market-research': cli_market_research,
 		'proposal': cli_proposal,
 		'cybersecurity': cli_cybersecurity,
+		'install': cli_install,
+		'packs':   cli_packs,
 	}
 	if args.capability in dispatch:
 		dispatch[args.capability](args)

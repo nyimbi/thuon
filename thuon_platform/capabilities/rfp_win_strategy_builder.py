@@ -51,10 +51,9 @@ class RFPWinStrategyBuilder:
 		)
 
 		response = self.ai_engine.generate_text(prompt)
-		try:
-			return extract_json(response)
-		except Exception:
-			pass
+		result = extract_json(response)
+		if result is not None:
+			return result
 
 		return {
 			'win_themes':                  [],
