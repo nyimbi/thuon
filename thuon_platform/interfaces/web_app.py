@@ -1180,6 +1180,186 @@ CAPABILITY_REGISTRY = {
 		'module': 'capabilities.knowledge_reviewer',
 		'class': 'KnowledgeReviewer',
 	},
+
+	# ── Sysadmin cluster ──────────────────────────────────────────────────────
+
+	'fleet_health_monitor': {
+		'description': 'Poll all fleet servers in parallel via SSH and return CPU/RAM/disk/load snapshots with anomaly flags and an AI summary.',
+		'method': 'check',
+		'params': [
+			{'name': 'hosts',              'type': 'str',  'required': False, 'default': 'all', 'description': 'all | hostname | role:X | tag:X'},
+			{'name': 'ram_warn',           'type': 'int',  'required': False, 'default': 70,    'description': 'RAM % alert threshold'},
+			{'name': 'disk_warn',          'type': 'int',  'required': False, 'default': 70,    'description': 'Disk % alert threshold'},
+			{'name': 'include_ai_summary', 'type': 'bool', 'required': False, 'default': True},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.fleet_health_monitor',
+		'class': 'FleetHealthMonitor',
+		'model_tier': 'fast',
+	},
+
+	'security_auditor': {
+		'description': 'Audit fleet servers for cryptominers, failed SSH attempts, authorized_keys count, and open ports. Returns critical findings with AI analysis.',
+		'method': 'audit',
+		'params': [
+			{'name': 'hosts',                'type': 'str',  'required': False, 'default': 'all'},
+			{'name': 'include_ai_analysis',  'type': 'bool', 'required': False, 'default': True},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.security_auditor',
+		'class': 'SecurityAuditor',
+	},
+
+	'service_status_checker': {
+		'description': 'Check systemd service status across the fleet. Returns active/inactive/failed counts and per-host details.',
+		'method': 'check',
+		'params': [
+			{'name': 'service', 'type': 'str', 'required': True,  'description': 'systemd unit name (e.g. caddy, postgresql)'},
+			{'name': 'hosts',   'type': 'str', 'required': False, 'default': 'all'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.service_status_checker',
+		'class': 'ServiceStatusChecker',
+		'model_tier': 'fast',
+	},
+
+	'log_analyzer': {
+		'description': 'Tail and analyse logs from a remote server via SSH + LLM. Supports journald units and log files.',
+		'method': 'analyze',
+		'params': [
+			{'name': 'host',     'type': 'str', 'required': True,  'description': 'hostname or IP'},
+			{'name': 'source',   'type': 'str', 'required': False, 'default': 'journald:caddy', 'description': 'journald:<unit> or file:/path'},
+			{'name': 'lines',    'type': 'int', 'required': False, 'default': 100},
+			{'name': 'pattern',  'type': 'str', 'required': False, 'default': ''},
+			{'name': 'question', 'type': 'str', 'required': False, 'default': 'Are there any errors or anomalies?'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.log_analyzer',
+		'class': 'LogAnalyzer',
+	},
+
+	'service_manager': {
+		'description': 'Start, stop, restart, reload, enable, or disable systemd services on remote hosts. Defaults to dry_run=True.',
+		'method': 'manage',
+		'params': [
+			{'name': 'action',        'type': 'str',  'required': True,  'description': 'start|stop|restart|reload|enable|disable|status|journal'},
+			{'name': 'service',       'type': 'str',  'required': True,  'description': 'systemd unit name'},
+			{'name': 'host',          'type': 'str',  'required': False, 'default': ''},
+			{'name': 'dry_run',       'type': 'bool', 'required': False, 'default': True},
+			{'name': 'journal_lines', 'type': 'int',  'required': False, 'default': 50},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.service_manager',
+		'class': 'ServiceManager',
+		'model_tier': 'fast',
+	},
+
+	'deployment_runner': {
+		'description': 'Deploy to a remote server: git pull, run deploy script, reload services. Defaults to dry_run=True.',
+		'method': 'deploy',
+		'params': [
+			{'name': 'host',                'type': 'str',  'required': True},
+			{'name': 'repo_path',           'type': 'str',  'required': False, 'default': ''},
+			{'name': 'deploy_script',       'type': 'str',  'required': False, 'default': ''},
+			{'name': 'services_to_reload',  'type': 'str',  'required': False, 'default': ''},
+			{'name': 'branch',              'type': 'str',  'required': False, 'default': 'main'},
+			{'name': 'dry_run',             'type': 'bool', 'required': False, 'default': True},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.deployment_runner',
+		'class': 'DeploymentRunner',
+	},
+
+	'postgres_operator': {
+		'description': 'PostgreSQL operations: health check, replication lag, list databases, dump, bloat analysis.',
+		'method': 'operate',
+		'params': [
+			{'name': 'action',    'type': 'str',  'required': True,  'description': 'health|replication_lag|list_databases|dump|pg_stat_activity|bloat_check'},
+			{'name': 'host',      'type': 'str',  'required': False, 'default': 'db-main'},
+			{'name': 'database',  'type': 'str',  'required': False, 'default': ''},
+			{'name': 'dump_dir',  'type': 'str',  'required': False, 'default': '/var/backups/postgres'},
+			{'name': 'dry_run',   'type': 'bool', 'required': False, 'default': True},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.postgres_operator',
+		'class': 'PostgresOperator',
+	},
+
+	'openbao_operator': {
+		'description': 'Inspect OpenBao (Vault) status and get guided unseal instructions. Never stores or logs unseal keys.',
+		'method': 'operate',
+		'params': [
+			{'name': 'action',     'type': 'str', 'required': True,  'description': 'status|seal_status|check_health|list_mounts|unseal_instructions|token_lookup'},
+			{'name': 'host',       'type': 'str', 'required': False, 'default': 'ml'},
+			{'name': 'vault_addr', 'type': 'str', 'required': False, 'default': 'http://127.0.0.1:8200'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.openbao_operator',
+		'class': 'OpenBaoOperator',
+		'model_tier': 'fast',
+	},
+
+	'backup_operator': {
+		'description': 'Backup operations: dump PostgreSQL databases, verify dump integrity, check rsync status.',
+		'method': 'operate',
+		'params': [
+			{'name': 'action',          'type': 'str',  'required': True,  'description': 'dump_database|verify_dump|rsync_status|list_dumps|check_disk_space|dump_and_verify'},
+			{'name': 'host',            'type': 'str',  'required': False, 'default': 'db-main'},
+			{'name': 'database',        'type': 'str',  'required': False, 'default': ''},
+			{'name': 'dump_dir',        'type': 'str',  'required': False, 'default': '/var/backups/postgres'},
+			{'name': 'offsite_target',  'type': 'str',  'required': False, 'default': ''},
+			{'name': 'dry_run',         'type': 'bool', 'required': False, 'default': True},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.backup_operator',
+		'class': 'BackupOperator',
+	},
+
+	'firewall_manager': {
+		'description': 'Manage UFW firewall rules. Read status or list rules without confirmation; allow/deny/enable default to dry_run=True.',
+		'method': 'manage',
+		'params': [
+			{'name': 'action',   'type': 'str',  'required': True,  'description': 'status|list_rules|audit|allow|deny|delete|enable|disable'},
+			{'name': 'host',     'type': 'str',  'required': False, 'default': ''},
+			{'name': 'port',     'type': 'str',  'required': False, 'default': ''},
+			{'name': 'proto',    'type': 'str',  'required': False, 'default': 'tcp'},
+			{'name': 'from_ip',  'type': 'str',  'required': False, 'default': 'any'},
+			{'name': 'comment',  'type': 'str',  'required': False, 'default': ''},
+			{'name': 'dry_run',  'type': 'bool', 'required': False, 'default': True},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.firewall_manager',
+		'class': 'FirewallManager',
+	},
+
+	'incident_analyst': {
+		'description': 'Gather diagnostics from a host (load, failed services, recent errors, OOM events) and produce an AI root-cause analysis with remediation steps.',
+		'method': 'analyze',
+		'params': [
+			{'name': 'host',               'type': 'str', 'required': True},
+			{'name': 'symptom',            'type': 'str', 'required': False, 'default': ''},
+			{'name': 'affected_service',   'type': 'str', 'required': False, 'default': ''},
+			{'name': 'gather_extra_logs',  'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.incident_analyst',
+		'class': 'IncidentAnalyst',
+		'model_tier': 'frontier',
+	},
+
+	'linux_admin_assistant': {
+		'description': 'Natural-language Linux admin assistant. Ask any sysadmin question; it gathers data from the fleet and returns analysis + recommended commands.',
+		'method': 'ask',
+		'params': [
+			{'name': 'question',      'type': 'str',  'required': True,  'description': 'Plain English sysadmin question or instruction'},
+			{'name': 'host',          'type': 'str',  'required': False, 'default': ''},
+			{'name': 'execute_safe',  'type': 'bool', 'required': False, 'default': False, 'description': 'If True, runs read-only diagnostic commands'},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.linux_admin_assistant',
+		'class': 'LinuxAdminAssistant',
+		'model_tier': 'frontier',
+	},
 }
 
 
@@ -1287,6 +1467,19 @@ _CATEGORY_MAP = {
 	'proposal_red_team':        'strategy',
 	'bid_calendar_builder':     'strategy',
 	'knowledge_reviewer':       'research',
+	# Sysadmin cluster
+	'fleet_health_monitor':     'sysadmin',
+	'security_auditor':         'sysadmin',
+	'service_status_checker':   'sysadmin',
+	'log_analyzer':             'sysadmin',
+	'service_manager':          'sysadmin',
+	'deployment_runner':        'sysadmin',
+	'postgres_operator':        'sysadmin',
+	'openbao_operator':         'sysadmin',
+	'backup_operator':          'sysadmin',
+	'firewall_manager':         'sysadmin',
+	'incident_analyst':         'sysadmin',
+	'linux_admin_assistant':    'sysadmin',
 }
 
 
