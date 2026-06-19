@@ -1498,14 +1498,16 @@ def create_app() -> Flask:
 	_start_scheduler(app)
 
 	_ICON_MAP = {
-		'research': ('🔬', 'rgba(124,106,247,0.15)', '#7c6af7'),
-		'content': ('✍️', 'rgba(62,207,207,0.12)', '#3ecfcf'),
-		'analytics': ('📊', 'rgba(251,191,36,0.12)', '#fbbf24'),
-		'hr': ('👥', 'rgba(52,211,153,0.12)', '#34d399'),
-		'risk': ('🛡️', 'rgba(248,113,113,0.12)', '#f87171'),
-		'strategy': ('♟️', 'rgba(167,139,250,0.12)', '#a78bfa'),
-		'data': ('🔗', 'rgba(96,165,250,0.12)', '#60a5fa'),
-		'other': ('⚙️', 'rgba(100,116,139,0.12)', '#64748b'),
+		'research':  ('○', 'rgba(124,106,247,0.15)', '#7c6af7'),
+		'content':   ('◇', 'rgba(62,207,207,0.12)',  '#3ecfcf'),
+		'analytics': ('△', 'rgba(251,191,36,0.12)',  '#d97706'),
+		'hr':        ('◎', 'rgba(52,211,153,0.12)',  '#059669'),
+		'risk':      ('◈', 'rgba(248,113,113,0.12)', '#dc2626'),
+		'strategy':  ('◆', 'rgba(167,139,250,0.12)', '#7c3aed'),
+		'data':      ('□', 'rgba(96,165,250,0.12)',  '#2563eb'),
+		'dev':       ('◻', 'rgba(100,116,139,0.12)', '#475569'),
+		'sysadmin':  ('◉', 'rgba(20,184,166,0.12)',  '#0f766e'),
+		'other':     ('·', 'rgba(100,116,139,0.12)', '#64748b'),
 	}
 
 	@app.context_processor
@@ -1515,7 +1517,7 @@ def create_app() -> Flask:
 		for name in CAPABILITY_REGISTRY:
 			cat = _CATEGORY_MAP.get(name, 'other')
 			cats[cat].append(name)
-		_CAT_ORDER = ['research', 'content', 'strategy', 'analytics', 'hr', 'risk', 'data', 'dev', 'other']
+		_CAT_ORDER = ['research', 'content', 'strategy', 'analytics', 'hr', 'risk', 'data', 'dev', 'sysadmin', 'other']
 		sidebar_groups = [
 			(cat, sorted(cats[cat]))
 			for cat in _CAT_ORDER
