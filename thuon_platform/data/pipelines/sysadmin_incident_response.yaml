@@ -1,0 +1,35 @@
+name: sysadmin_incident_response
+description: >
+  Automated incident triage: gather comprehensive diagnostics from the
+  affected host, produce a root-cause analysis with severity and ordered
+  remediation steps, then check fleet-wide health to assess blast radius.
+
+steps:
+  - name: incident_analysis
+    capability: incident_analyst
+    params:
+      host: "{input.host}"
+      symptom: "{input.symptom}"
+      affected_service: "{input.affected_service}"
+      gather_extra_logs: "{input.extra_logs}"
+
+  - name: service_logs
+    capability: log_analyzer
+    params:
+      host: "{input.host}"
+      source: "journald:{input.affected_service}"
+      lines: 100
+      question: "What errors or warnings explain the reported symptom?"
+
+  - name: fleet_health
+    capability: fleet_health_monitor
+    params:
+      hosts: all
+      include_ai_summary: false
+
+  - name: admin_question
+    capability: linux_admin_assistant
+    params:
+      question: "Given the incident on {input.host} ({input.symptom}), what are the top 3 immediate actions?"
+      host: "{input.host}"
+      execute_safe: true

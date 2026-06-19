@@ -1,0 +1,43 @@
+name: sysadmin_backup_verify
+description: >
+  Backup verification pipeline: list existing dumps, verify the most
+  recent dump's integrity, check available disk space on the backup
+  host, and optionally trigger a fresh database dump.
+
+steps:
+  - name: list_dumps
+    capability: backup_operator
+    params:
+      action: list_dumps
+      host: "{input.backup_host}"
+      dump_dir: "{input.dump_dir}"
+
+  - name: verify_dump
+    capability: backup_operator
+    params:
+      action: verify_dump
+      host: "{input.backup_host}"
+      database: "{input.database}"
+      dump_dir: "{input.dump_dir}"
+
+  - name: disk_space
+    capability: backup_operator
+    params:
+      action: check_disk_space
+      host: "{input.backup_host}"
+      dump_dir: "{input.dump_dir}"
+
+  - name: replication_status
+    capability: postgres_operator
+    params:
+      action: replication_status
+      host: db-main
+
+  - name: fresh_dump
+    capability: backup_operator
+    params:
+      action: dump_and_verify
+      host: "{input.backup_host}"
+      database: "{input.database}"
+      dump_dir: "{input.dump_dir}"
+      dry_run: "{input.dry_run}"

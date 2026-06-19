@@ -1,0 +1,38 @@
+name: sysadmin_health_check
+description: >
+  Full fleet health check: poll every server for CPU/RAM/disk/load,
+  audit UFW firewall exposure, and check systemd service status for
+  key services.  Produces a consolidated health report.
+
+steps:
+  - name: fleet_health
+    capability: fleet_health_monitor
+    params:
+      hosts: "{input.hosts}"
+      ram_warn_pct: "{input.ram_warn_pct}"
+      disk_warn_pct: "{input.disk_warn_pct}"
+      include_ai_summary: true
+
+  - name: firewall_audit
+    capability: firewall_manager
+    params:
+      action: audit
+      host: "{input.hosts}"
+
+  - name: caddy_status
+    capability: service_status_checker
+    params:
+      service: caddy
+      hosts: "{input.hosts}"
+
+  - name: postgres_health
+    capability: postgres_operator
+    params:
+      action: health
+      host: db-main
+
+  - name: replication_lag
+    capability: postgres_operator
+    params:
+      action: replication_lag
+      host: db-main

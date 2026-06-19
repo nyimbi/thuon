@@ -1,0 +1,38 @@
+name: sysadmin_security_audit
+description: >
+  Full fleet security audit: scan for cryptominers and malware,
+  review firewall exposure, check OpenBao seal status, and analyse
+  recent auth failures.  Returns prioritised findings.
+
+steps:
+  - name: malware_scan
+    capability: security_auditor
+    params:
+      hosts: "{input.hosts}"
+      include_ai_analysis: true
+
+  - name: firewall_audit
+    capability: firewall_manager
+    params:
+      action: audit
+      host: "{input.hosts}"
+
+  - name: auth_failures
+    capability: log_analyzer
+    params:
+      host: easf
+      source: "file:/var/log/auth.log"
+      lines: 200
+      question: "List unique source IPs with more than 10 failed SSH login attempts."
+
+  - name: vault_status
+    capability: openbao_operator
+    params:
+      action: seal_status
+      host: ml
+
+  - name: admin_review
+    capability: linux_admin_assistant
+    params:
+      question: "Based on the security audit findings, what hardening steps are most urgent?"
+      execute_safe: false

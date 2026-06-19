@@ -44,6 +44,7 @@ dependencies = [
     "matplotlib",
     "chromadb",
     "playwright",
+    "paramiko>=3.0.0",
 ]
 
 [tool.pytest.ini_options]
