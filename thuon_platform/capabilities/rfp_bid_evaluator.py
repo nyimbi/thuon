@@ -8,6 +8,7 @@ import json
 import re
 from core.ai_engine import AIModel
 from core.llm_utils import extract_json, extract_json_array
+from core.output_validator import validated_llm_call
 
 
 class RFPBidEvaluator:
@@ -81,20 +82,18 @@ class RFPBidEvaluator:
 			'resource_fit, margin_potential, competition_level} each 1-5'
 		)
 
-		response = self.ai_engine.generate_text(prompt)
-		result = extract_json(response)
-		if result is not None:
-			return result
-
-		return {
-			'bid_score':               50,
-			'bid_recommendation':      'conditional_go',
-			'disqualifiers':           [],
-			'risks':                   [],
-			'rationale':               response[:500],
-			'estimated_win_probability': 50,
-			'scoring_breakdown':        {},
-		}
+		result = validated_llm_call(
+			self.ai_engine, prompt,
+			required_keys=['bid_score', 'bid_recommendation', 'rationale'],
+			optional_keys=['disqualifiers', 'risks', 'estimated_win_probability', 'scoring_breakdown'],
+		)
+		if result.get('status') == 'parse_failed':
+			result.update({
+				'bid_score': 50, 'bid_recommendation': 'conditional_go',
+				'disqualifiers': [], 'risks': [], 'estimated_win_probability': 50,
+				'scoring_breakdown': {},
+			})
+		return result
 
 	def record_outcome(
 		self,

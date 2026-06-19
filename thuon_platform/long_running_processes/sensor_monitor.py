@@ -5,19 +5,19 @@ Sensor Monitor Module for Thuon Platform — Environmental Data Collection & LLM
 
 Monitors RSS feeds, web pages, and simulated market events. Evaluates items via LLM
 and emits Blinker signals for strategically significant events.
-
-TODO: Integrate Crawl4AI into the scraping pipeline
 """
 
 import time
 import random
 import logging
 import threading
-import requests
 import feedparser
-from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
 from typing import List, Optional
+
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from core.search_engine import scrape_webpage
 
 from long_running_processes.reactor_control import (
 	price_change_detected_signal,
@@ -109,9 +109,7 @@ class RSSFeedDataSource(DataSource):
 
 	def fetch_data(self):
 		try:
-			resp = requests.get(self.feed_url, timeout=30)
-			resp.raise_for_status()
-			return feedparser.parse(resp.text)
+			return feedparser.parse(self.feed_url)
 		except Exception as e:
 			logger.error(f"RSS fetch error for '{self.source_name}': {e}")
 			return None
@@ -126,30 +124,17 @@ class WebScrapingDataSource(DataSource):
 	def __init__(self, config: dict):
 		super().__init__(config)
 		self.scrape_url = config.get('scrape_url')
-		self.content_selector = config.get('content_selector')
-		if not self.scrape_url or not self.content_selector:
-			raise ValueError(f"WebScrapingDataSource '{self.source_name}' requires 'scrape_url' and 'content_selector'.")
+		if not self.scrape_url:
+			raise ValueError(f"WebScrapingDataSource '{self.source_name}' requires 'scrape_url'.")
 
 	def fetch_data(self):
-		try:
-			resp = requests.get(self.scrape_url, timeout=30, headers={'User-Agent': 'Mozilla/5.0'})
-			resp.raise_for_status()
-			return resp.text
-		except Exception as e:
-			logger.error(f"Web scrape fetch error for '{self.source_name}': {e}")
-			return None
+		text = scrape_webpage(self.scrape_url)
+		return text if text else None
 
-	def parse_data(self, raw_html) -> list:
-		if not raw_html:
+	def parse_data(self, text: str) -> list:
+		if not text:
 			return []
-		try:
-			soup = BeautifulSoup(raw_html, 'html.parser')
-			elements = soup.select(self.content_selector)
-			if elements:
-				return [{'title': f"Scraped from {self.scrape_url}", 'summary': elements[0].get_text().strip(), 'source_url': self.scrape_url}]
-		except Exception as e:
-			logger.error(f"Parse error for '{self.source_name}': {e}")
-		return []
+		return [{'title': f"Scraped from {self.scrape_url}", 'summary': text[:1000], 'source_url': self.scrape_url}]
 
 
 class DataSourceManager:

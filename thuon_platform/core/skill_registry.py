@@ -170,6 +170,7 @@ class SkillRegistry:
 				params=params,
 				category=category_map.get(name, 'general'),
 				source='registry_web',
+				model_tier=str(entry.get('model_tier') or 'standard'),
 			)
 		self._category_map.update(category_map)
 		self._discover_skills()

@@ -7,6 +7,7 @@ import json
 import re
 from core.ai_engine import AIModel
 from core.llm_utils import extract_json, extract_json_array
+from core.output_validator import validated_llm_call
 
 
 class RFPWinStrategyBuilder:
@@ -50,15 +51,16 @@ class RFPWinStrategyBuilder:
 			'- pricing_strategy_hint (str): how to position price given the competitive landscape'
 		)
 
-		response = self.ai_engine.generate_text(prompt)
-		result = extract_json(response)
-		if result is not None:
-			return result
-
-		return {
-			'win_themes':                  [],
-			'solution_outline':            {},
-			'executive_summary_blueprint': response[:400],
-			'discriminators':              [],
-			'pricing_strategy_hint':       '',
-		}
+		result = validated_llm_call(
+			self.ai_engine, prompt,
+			required_keys=['win_themes'],
+			optional_keys=['solution_outline', 'executive_summary_blueprint',
+						   'discriminators', 'pricing_strategy_hint'],
+		)
+		if result.get('status') == 'parse_failed':
+			result.update({
+				'win_themes': [], 'solution_outline': {},
+				'executive_summary_blueprint': result.get('result', '')[:400],
+				'discriminators': [], 'pricing_strategy_hint': '',
+			})
+		return result

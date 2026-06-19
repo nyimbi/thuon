@@ -1409,6 +1409,18 @@ def create_app() -> Flask:
 		mod = importlib.import_module(cfg['module'])
 		cls = getattr(mod, cfg['class'])
 
+		# Route to the correct model tier when the skill declares one
+		if ai_engine_override is None:
+			try:
+				from core.skill_registry import SkillRegistry
+				from core.ai_engine import get_ai_engine
+				manifest = SkillRegistry.get_instance().get(cap_name)
+				tier = getattr(manifest, 'model_tier', 'standard') if manifest else 'standard'
+				if tier and tier != 'standard':
+					ai_engine_override = get_ai_engine(tier)
+			except Exception:
+				pass
+
 		dep_map = {
 			'ai_engine': ai_engine_override or svc.get('ai_engine'),
 			'search_engine': svc.get('search_engine'),

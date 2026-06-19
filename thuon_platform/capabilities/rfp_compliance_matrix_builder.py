@@ -7,6 +7,7 @@ import json
 import re
 from core.ai_engine import AIModel
 from core.llm_utils import extract_json, extract_json_array
+from core.output_validator import validated_llm_call
 
 
 class RFPComplianceMatrixBuilder:
@@ -52,14 +53,14 @@ class RFPComplianceMatrixBuilder:
 			f'REQUIREMENTS:\n{reqs_text}'
 		)
 
-		response = self.ai_engine.generate_text(prompt)
-		result = extract_json(response)
-		if result is not None and 'matrix' in result:
-			return result
-
-		return {
-			'matrix': [],
-			'total_shall': 0,
-			'total_should': 0,
-			'error': 'Could not parse compliance matrix',
-		}
+		result = validated_llm_call(
+			self.ai_engine, prompt,
+			required_keys=['matrix'],
+			optional_keys=['total_shall', 'total_should'],
+		)
+		if result.get('status') == 'parse_failed' or 'matrix' not in result:
+			result.update({
+				'matrix': [], 'total_shall': 0, 'total_should': 0,
+				'error': 'Could not parse compliance matrix',
+			})
+		return result
