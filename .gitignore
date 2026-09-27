@@ -45,3 +45,6 @@ docs/rfp_resp-1.md
 
 # Obsolete docs subdir (research moved to docs/research/)
 thuon_platform/docs/
+
+# zvec-grep local workspace index
+.zvec-grep/
