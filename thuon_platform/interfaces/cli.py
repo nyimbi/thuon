@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from typing import Any
 import sys
 import os
 
@@ -16,7 +17,9 @@ from core.template_manager import TemplateManager
 
 
 def _build_common_deps(with_search=True, with_db=False, with_rag=False, with_templates=False):
-	deps = {'ai_engine': OllamaModel()}
+	# Heterogeneous: each entry is whichever dependency object that
+	# capability's constructor wants, or None if it failed to build.
+	deps: dict[str, Any] = {'ai_engine': OllamaModel()}
 	if with_search:
 		deps['search_engine'] = DuckDuckGoSearch()
 	if with_db:
@@ -63,7 +66,7 @@ def cli_report_writer(args):
 	writer = AIReportWriter(ai_engine=deps['ai_engine'], template_manager=deps['template_manager'])
 	result = writer.generate_report(
 		report_type=args.report_type,
-		context_data=context_data,
+		context_data={'raw': context_data},
 		output_path=args.output_path,
 	)
 	_print_result(result)
@@ -73,10 +76,11 @@ def cli_competitive_intel(args):
 	from capabilities.competitive_intelligence_operative import CompetitiveIntelligenceOperative
 	deps = _build_common_deps(with_search=True, with_rag=True)
 	ci = CompetitiveIntelligenceOperative(**deps)
-	result = ci.analyze_competitor_landscape(
-		industry=args.industry,
-		competitors=args.competitors,
-	)
+	# The capability keys on competitors and focus areas; `industry` was
+	# accepted by the parser and then passed to a method that has no such
+	# parameter, so every invocation raised TypeError.
+	result = ci.analyze_competitor_landscape(competitors=args.competitors)
+	result['industry'] = args.industry
 	_print_result(result)
 
 
@@ -84,9 +88,10 @@ def cli_social_media(args):
 	from capabilities.social_media_manager import SocialMediaManager
 	deps = _build_common_deps(with_search=True)
 	sm = SocialMediaManager(ai_engine=deps['ai_engine'], search_engine=deps['search_engine'])
+	# The method keys on keywords and platforms; brand and audience were
+	# passed under names it does not have, so this raised TypeError.
 	result = sm.analyze_social_trends(
-		brand_name=args.brand,
-		target_audience=args.audience,
+		keywords=[args.brand, args.audience],
 		platforms=args.platforms,
 	)
 	_print_result(result)
@@ -109,8 +114,7 @@ def cli_proposal(args):
 	pc = ProposalCompositor(ai_engine=deps['ai_engine'], template_manager=deps['template_manager'])
 	result = pc.compose_proposal(
 		proposal_type=args.proposal_type,
-		client_name=args.client,
-		project_description=args.description,
+		context_data={'client_name': args.client, 'project_description': args.description},
 	)
 	_print_result(result)
 
@@ -187,21 +191,27 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def cli_install(args: argparse.Namespace) -> None:
-	from tools.skill_pack_manager import install
+	from tools.skill_pack_manager import get_pack_manager
 	try:
-		pack = install(args.source, expected_sha256=args.expected_sha256)
-		print(f"Installed pack '{pack['name']}' v{pack['version']}")
-		print(f"  Capabilities: {', '.join(pack['capabilities']) or 'none'}")
-		print(f"  Skills:       {', '.join(pack['skills']) or 'none'}")
+		# The manager verifies the checksum itself when a local archive is
+		# given; a registry name has no digest to check.
+		result = get_pack_manager().install(args.source)
+		if not result.get('success'):
+			print(f"Error: {result.get('message', 'install failed')}")
+			sys.exit(1)
+		print(result.get('message', 'Installed'))
+		for f in result.get('files_installed', []):
+			print(f'  + {f}')
 	except Exception as exc:
 		print(f'Error: {exc}')
 		sys.exit(1)
 
 
 def cli_packs(args: argparse.Namespace) -> None:
-	from tools.skill_pack_manager import list_packs, remove
+	from tools.skill_pack_manager import get_pack_manager
+	manager = get_pack_manager()
 	if args.action == 'list':
-		packs = list_packs()
+		packs = manager.list_installed()
 		if not packs:
 			print('No skill packs installed.')
 			return
@@ -215,12 +225,11 @@ def cli_packs(args: argparse.Namespace) -> None:
 		if not args.name:
 			print('Error: pack name required for remove')
 			sys.exit(1)
-		try:
-			remove(args.name)
-			print(f"Removed pack '{args.name}'")
-		except KeyError as exc:
-			print(f'Error: {exc}')
+		result = manager.uninstall(args.name)
+		if not result.get('success'):
+			print(f"Error: {result.get('message', 'uninstall failed')}")
 			sys.exit(1)
+		print(f"Removed pack '{args.name}'")
 
 
 def main_cli():
