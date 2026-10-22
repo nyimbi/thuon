@@ -49,7 +49,35 @@ dependencies = [
 
 [tool.pytest.ini_options]
 pythonpath = ["thuon_platform"]
-testpaths  = ["thuon_platform/tests/ci"]
+# Both suites. Listing only thuon_platform/tests/ci meant the root suite never
+# ran under a bare `pytest`, so drift accumulated in files no gate touched.
+testpaths  = ["tests/ci", "thuon_platform/tests/ci"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# The codebase is tab-indented by convention (see CLAUDE.md). ruff >=0.9 infers
+# indentation and no longer takes `indent-style`, so the enforcement is the
+# ignore list below rather than a formatter setting.
+
+[tool.ruff.lint]
+# Rules that catch defects, not style preferences. Import ordering (I001) and
+# one-line-statement rules are excluded deliberately: the codebase uses tabs,
+# semicolons in compact branches, and its own import grouping throughout.
+select = ["F", "B", "E712", "E711", "E713", "E714", "E722"]
+ignore = [
+	"B008",   # function call in default arg — used deliberately for dependency injection
+	"B904",   # raise-without-from inside except — existing style
+	"F403",   # star imports in a few legacy modules
+	"F405",   # names from star imports
+	# Mutable argument defaults. Every one of the 36 sites is read-only, and
+	# several are load-bearing: the web UI populates capability forms from
+	# inspect.signature, and test_registry_contracts compares those defaults to
+	# CAPABILITY_REGISTRY. Rewriting them as None sentinels would change what
+	# the UI shows to fix a bug that is not there. tests/ci/test_mutable_defaults.py
+	# is the gate that matters: it fails if any default is ever mutated.
+	"B006",
+]
 
 [dependency-groups]
 dev = [

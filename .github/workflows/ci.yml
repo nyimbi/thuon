@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # No requirements.txt in this repo — dependencies live in pyproject.
+          # Torch, pywebview and the PyObjC frameworks are heavy or
+          # platform-specific; the CI suites exercise everything else.
+          python - <<'PY' > /tmp/reqs.txt
+          import re, tomllib
+          with open('pyproject.toml', 'rb') as f:
+              deps = tomllib.load(f)['project']['dependencies']
+          skip = re.compile(r'^(torch|pyobjc|pywebview)', re.I)
+          print('\n'.join(d for d in deps if not skip.match(d)))
+          PY
+          pip install -r /tmp/reqs.txt
+          pip install ruff
+
+      - name: Lint (defect rules)
+        run: python -m ruff check thuon_platform/ tests/
+
+      - name: Test
+        # pyproject.toml testpaths covers both suites: tests/ci and
+        # thuon_platform/tests/ci. Listing only one was how the root suite
+        # stopped running.
+        run: python -m pytest -q

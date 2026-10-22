@@ -48,3 +48,10 @@ thuon_platform/docs/
 
 # zvec-grep local workspace index
 .zvec-grep/
+
+# Runtime output from capability runs — regenerate, never commit
+thuon_platform/data/blog/
+
+# Browser-automation scratch and UI screenshots
+.playwright-mcp/
+ui-*.png

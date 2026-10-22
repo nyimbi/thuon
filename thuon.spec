@@ -17,7 +17,11 @@ a = Analysis(
         # Web UI assets
         ('thuon_platform/interfaces/templates', 'interfaces/templates'),
         ('thuon_platform/interfaces/static',    'interfaces/static'),
-        # Skills directory
+        # Skills directory. The SKILL.md tree lives at the repo root; the
+        # thuon_platform/skills directory only holds whatever ships in a
+        # bundle. Pack both so a frozen build sees the same skills a
+        # development checkout does.
+        ('skills',                              'skills'),
         ('thuon_platform/skills',               'skills'),
         # Pipeline definitions (read-only)
         ('thuon_platform/data/pipelines',       'data/pipelines'),
