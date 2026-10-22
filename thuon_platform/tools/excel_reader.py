@@ -82,14 +82,15 @@ class ExcelReader:
 
 				headers = [str(h) if h is not None else '' for h in header_row]
 				rows: list[dict] = []
-				sheet_truncated = False
 
 				for i, row in enumerate(rows_iter):
 					if i >= max_rows:
-						sheet_truncated = True
 						truncated = True
 						break
-					rows.append(dict(zip(headers, [str(v) if v is not None else '' for v in row])))
+					# strict=False: a short row keeps its named columns instead of
+					# raising; openpyxl pads ragged rows to the sheet width.
+					rows.append(dict(zip(headers, [str(v) if v is not None else '' for v in row],
+										strict=False)))
 
 				sheets.append({
 					'name': name,

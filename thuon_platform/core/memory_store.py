@@ -161,7 +161,26 @@ class MemoryStore:
 			self._db.commit()
 			return cur.lastrowid
 
+	@staticmethod
+	def _fts_query(query: str) -> str:
+		"""
+		Turn arbitrary text into a safe FTS5 MATCH expression.
+
+		FTS5 reads `[`, `(`, `:`, `-`, `+`, `*` and friends as query syntax, so a
+		raw user string raises OperationalError. Quoting each term turns it into
+		a literal phrase term; unmatched quotes are stripped so the expression
+		stays well-formed.
+		"""
+		terms = [t.replace('"', '') for t in str(query).split()]
+		terms = [t for t in terms if t]
+		if not terms:
+			return ''
+		return ' '.join(f'"{t}"' for t in terms)
+
 	def search_episodes(self, query: str, limit: int = 10) -> list[dict]:
+		fts_query = self._fts_query(query)
+		if not fts_query:
+			return self.recent_episodes(limit=limit)
 		with self._lock:
 			rows = self._db.execute(
 				"""
@@ -172,7 +191,7 @@ class MemoryStore:
 				ORDER BY rank
 				LIMIT ?
 				""",
-				(query, limit),
+				(fts_query, limit),
 			).fetchall()
 		return [{'id': r[0], 'session_id': r[1], 'type': r[2], 'content': r[3], 'created_at': r[4]} for r in rows]
 

@@ -14,10 +14,13 @@ Tier 3 (credentials required):
 """
 from __future__ import annotations
 
-import email as _email_lib
+import email.header as _email_header
+import email.message as _email_message
+from email import message_from_bytes
 import imaplib
 import json
 import re
+import urllib.parse
 import urllib.request
 from datetime import date, datetime
 from pathlib import Path
@@ -148,7 +151,7 @@ class DailyBrief:
 	def _weather(self) -> dict:
 		"""Fetch weather from wttr.in (free, no key)."""
 		location = self.cfg.get('weather_location', 'Nairobi')
-		url = _WTTR_URL.format(location=urllib.request.quote(location))
+		url = _WTTR_URL.format(location=urllib.parse.quote(location))
 		try:
 			with urllib.request.urlopen(url, timeout=6) as r:
 				data = json.loads(r.read())
@@ -429,9 +432,9 @@ class DailyBrief:
 			for uid in reversed(uids):
 				try:
 					_, msg_data = conn.fetch(uid, '(RFC822)')
-					msg = _email_lib.message_from_bytes(msg_data[0][1])
+					msg = message_from_bytes(msg_data[0][1])
 
-					raw_subj  = _email_lib.header.decode_header(msg.get('Subject', ''))[0]
+					raw_subj  = _email_header.decode_header(msg.get('Subject', ''))[0]
 					subject   = (
 						raw_subj[0].decode(
 							raw_subj[1].decode() if isinstance(raw_subj[1], bytes) else (raw_subj[1] or 'utf-8')
@@ -674,7 +677,7 @@ def _strip_think(text: str) -> str:
 	return text[:text.index('<think>')].strip()
 
 
-def _extract_email_body(msg: _email_lib.message.Message) -> str:
+def _extract_email_body(msg: _email_message.Message) -> str:
 	"""Walk MIME tree, prefer plain text, fall back to HTML→text."""
 	for part in msg.walk():
 		ct = part.get_content_type()

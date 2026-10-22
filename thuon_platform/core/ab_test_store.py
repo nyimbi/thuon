@@ -244,16 +244,6 @@ class ABTestStore:
 
 		promotions_needed: int = exp_dict['promotions_needed']
 
-		# Count trials per variant
-		counts = self._db.execute(
-			"""SELECT variant, COUNT(*) as cnt FROM trials
-			   WHERE experiment_id=? GROUP BY variant""",
-			(experiment_id,),
-		).fetchall()
-		count_map: dict[str, int] = {r['variant']: r['cnt'] for r in counts}
-		cnt_a = count_map.get('a', 0)
-		cnt_b = count_map.get('b', 0)
-
 		# A "win" per trial: higher score wins; compute head-to-head wins by score
 		# We use mean scores as the decision metric — simpler and deterministic.
 		all_trials = self._db.execute(

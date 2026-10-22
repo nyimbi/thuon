@@ -76,9 +76,15 @@ class OpenBaoOperator:
 		elif action == 'unseal_instructions':
 			# Always check actual seal status first
 			cmd = f'{env} bao status -format=json 2>/dev/null || echo \'{{"sealed":true}}\''
+		else:
+			# Unreachable while _ALLOWED_ACTIONS and this chain agree, but the
+			# two are separate literals: if they drift, an unbound `cmd` below
+			# is a NameError instead of a clean error message.
+			return {'error': f'Action {action!r} is allowed but not implemented'}
+
+		from core.sysadmin_types import SSHUnavailableError
 
 		try:
-			from core.sysadmin_types import SSHUnavailableError
 			res = run_command(srv, cmd, timeout=15)
 		except SSHUnavailableError:
 			# Return instructions even when SSH is unavailable

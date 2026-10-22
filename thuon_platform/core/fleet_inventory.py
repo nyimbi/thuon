@@ -15,7 +15,7 @@ import logging
 import threading
 from typing import Any
 
-from core.sysadmin_types import FleetConfigError, ServerInfo
+from core.sysadmin_types import ServerInfo
 
 logger = logging.getLogger('thuon.fleet_inventory')
 
@@ -59,15 +59,15 @@ class FleetInventory:
 			fleet_cfg = config.get('fleet', {}) or {}
 		else:
 			try:
-				from core.settings_manager import SettingsManager
-				sm = SettingsManager()
-				fleet_cfg = sm.get('fleet') or {}
-			except Exception:
+				from core.settings_manager import get_settings
+				fleet_cfg = get_settings().get_setting('fleet') or {}
+			except Exception as exc:  # noqa: BLE001
+				logger.warning('Fleet config unavailable, using defaults: %s', exc)
 				fleet_cfg = {}
 
-		default_user     = fleet_cfg.get('ssh_user', 'root')
-		default_key_file = fleet_cfg.get('ssh_key_file', '~/.ssh/id_ed25519')
-		default_port     = int(fleet_cfg.get('ssh_port', 22))
+		default_user     = fleet_cfg.get('ssh_user') or fleet_cfg.get('default_ssh_user') or 'root'
+		default_key_file = fleet_cfg.get('ssh_key_file') or fleet_cfg.get('default_ssh_key_file') or '~/.ssh/id_ed25519'
+		default_port     = int(fleet_cfg.get('ssh_port') or fleet_cfg.get('default_ssh_port') or 22)
 
 		raw_servers: list[dict] = fleet_cfg.get('servers', []) or _DEFAULT_SERVERS
 
