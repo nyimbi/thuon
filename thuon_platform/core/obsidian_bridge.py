@@ -17,14 +17,27 @@ class ObsidianBridge:
 	def __init__(self):
 		settings = get_settings()
 		vault_raw = settings.get_setting('obsidian.vault_path', '')
-		self._vault: Path | None = Path(vault_raw).expanduser() if vault_raw else None
-		self._inbox  = settings.get_setting('obsidian.inbox_folder',  'Thuon Inbox')
-		self._rfps   = settings.get_setting('obsidian.rfp_folder',    'RFPs')
-		self._blog   = settings.get_setting('obsidian.blog_folder',   'Blog Posts')
+		self._vault: Path | None = Path(str(vault_raw)).expanduser() if vault_raw else None
+		self._inbox  = str(settings.get_setting('obsidian.inbox_folder',  'Thuon Inbox'))
+		self._rfps   = str(settings.get_setting('obsidian.rfp_folder',    'RFPs'))
+		self._blog   = str(settings.get_setting('obsidian.blog_folder',   'Blog Posts'))
 
 	@property
 	def enabled(self) -> bool:
 		return self._vault is not None and self._vault.is_dir()
+
+	@property
+	def vault(self) -> Path:
+		"""
+		The configured vault, for callers that have already checked `enabled`.
+
+		Raising here rather than returning None keeps every `self._vault / x`
+		below a plain Path operation; the check that matters is `enabled`, and
+		it is the caller's job.
+		"""
+		if self._vault is None:
+			raise RuntimeError('Obsidian vault is not configured (obsidian.vault_path is unset)')
+		return self._vault
 
 	# ── Read ─────────────────────────────────────────────────────────────────
 
@@ -32,7 +45,7 @@ class ObsidianBridge:
 		"""Read all .md files from the inbox folder as raw text strings."""
 		if not self.enabled:
 			return []
-		inbox = self._vault / self._inbox
+		inbox = self.vault / self._inbox
 		if not inbox.is_dir():
 			return []
 		ideas = []
@@ -49,7 +62,7 @@ class ObsidianBridge:
 		"""Return list of {name, content} dicts for all .md files in a subfolder."""
 		if not self.enabled:
 			return []
-		folder = self._vault / folder_name
+		folder = self.vault / folder_name
 		if not folder.is_dir():
 			return []
 		results = []
@@ -79,8 +92,9 @@ class ObsidianBridge:
 		if not self.enabled:
 			return None
 		safe_folder = re.sub(r'[^\w\- ]', '', folder_name).strip()[:80] or 'Notes'
-		folder = (self._vault / safe_folder).resolve()
-		if not str(folder).startswith(str(self._vault.resolve())):
+		vault = self.vault
+		folder = (vault / safe_folder).resolve()
+		if not str(folder).startswith(str(vault.resolve())):
 			return None
 		folder.mkdir(parents=True, exist_ok=True)
 		safe = re.sub(r'[^\w\- ]', '', title)[:80].strip()

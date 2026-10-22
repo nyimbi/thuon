@@ -38,6 +38,12 @@ if TYPE_CHECKING:
 	from core.pipeline_hooks import PipelineHooks
 	from thuon import Thuon
 
+# Imported at module level, not inside the loop: the four fire_* calls are
+# guarded by `_hooks_active`, but a conditional import leaves StepEvent
+# possibly-unbound to any reader that cannot follow the guard. pipeline_hooks
+# imports nothing from this module, so there is no cycle to defer.
+from core.pipeline_hooks import StepEvent
+
 logger = logging.getLogger('thuon.pipeline_runner')
 
 class _NoopCheckpointStore:
@@ -152,10 +158,12 @@ class PipelineRunner:
 			resume_from = None
 
 		last_result = None
+		# None when no hooks are registered, so every fire_* site below is
+		# guarded by a plain truthiness test on this one name.
 		hooks = self._hooks
-		_hooks_active = hooks and not hooks.is_empty()
-		if _hooks_active:
-			from core.pipeline_hooks import StepEvent
+		if hooks is not None and hooks.is_empty():
+			hooks = None
+		_hooks_active = hooks is not None
 
 		try:
 			for step in spec.get('steps', []):
