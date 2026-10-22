@@ -208,7 +208,7 @@ class OllamaVisionModel:
 		base_prompt += (
 			'Return JSON with keys: page_title, main_content (text), '
 			'data_tables (list), key_numbers (list with: label, value, unit), '
-			'navigation_items (list), ' + (f'answer (to the question above)' if question else 'summary') + '.'
+			'navigation_items (list), ' + ('answer (to the question above)' if question else 'summary') + '.'
 		)
 		response = self.analyze_image(image_path, base_prompt)
 		try:
@@ -380,14 +380,30 @@ class LiteLLMModel(AIModel):
 
 # ── Tier-based factory ────────────────────────────────────────────────────────
 
+# The skill registry names tiers 'fast' | 'standard' | 'frontier'; this factory
+# historically knew 'fast' | 'default' | 'strong' | 'vision'. Without the alias
+# map a 'frontier' capability fell through to the default OllamaModel, so the
+# tier was recorded and then silently ignored.
+_TIER_ALIASES = {
+	'standard': 'default',
+	'frontier': 'strong',
+}
+
+
 def get_ai_engine(tier: str = 'default') -> AIModel:
 	"""
 	Return the right AIModel for the requested capability tier.
 
-	  tier='fast'    → LiteLLM proxy (cloud model, lowest latency)
-	  tier='default' → OllamaModel (local, balanced)
-	  tier='vision'  → OllamaVisionModel (multimodal tasks)
-	  tier='strong'  → LiteLLM proxy with a stronger model
+	  tier='fast'                  → LiteLLM proxy (cloud model, lowest latency)
+	  tier='default' | 'standard'  → OllamaModel (local, balanced)
+	  tier='vision'                → OllamaVisionModel (multimodal tasks)
+	  tier='strong' | 'frontier'   → LiteLLM proxy with a stronger model
+
+	`standard` and `frontier` are the vocabulary the skill registry uses;
+	`default` and `strong` are the historical names. Both spellings map to the
+	same model — a tier the registry can name but this function does not
+	recognise silently degrades to Ollama, which is how `frontier` used to
+	quietly resolve to the local model.
 
 	Falls back to OllamaModel if LiteLLM is unavailable.
 	"""
@@ -395,6 +411,8 @@ def get_ai_engine(tier: str = 'default') -> AIModel:
 
 	if tier == 'vision':
 		return OllamaVisionModel()  # type: ignore[return-value]
+
+	tier = _TIER_ALIASES.get(tier, tier)
 
 	if tier in ('fast', 'strong'):
 		model_key = 'litellm.strong_model' if tier == 'strong' else 'litellm.fast_model'

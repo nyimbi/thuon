@@ -9,8 +9,8 @@ steps:
     capability: fleet_health_monitor
     params:
       hosts: "{input.hosts}"
-      ram_warn_pct: "{input.ram_warn_pct}"
-      disk_warn_pct: "{input.disk_warn_pct}"
+      ram_warn: "{input.ram_warn}"
+      disk_warn: "{input.disk_warn}"
       include_ai_summary: true
 
   - name: firewall_audit

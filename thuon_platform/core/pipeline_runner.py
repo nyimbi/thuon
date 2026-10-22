@@ -32,7 +32,6 @@ import logging
 import os
 import re
 import time
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -56,7 +55,11 @@ _PIPELINES_DIR = str(_pd())
 
 
 def _resolve_template(value: Any, inputs: dict, step_results: dict) -> Any:
-	"""Substitute {input.x} and {steps.name.key} in string values."""
+	"""Substitute {input.x} and {steps.name.key} in strings, recursing into lists and dicts."""
+	if isinstance(value, list):
+		return [_resolve_template(v, inputs, step_results) for v in value]
+	if isinstance(value, dict):
+		return {k: _resolve_template(v, inputs, step_results) for k, v in value.items()}
 	if not isinstance(value, str):
 		return value
 	def replacer(m: re.Match) -> str:

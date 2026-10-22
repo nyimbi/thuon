@@ -56,12 +56,32 @@ class ResearchAssistant:
 		if depth not in RESEARCH_LEVELS:
 			depth = 'medium'
 		if depth == 'shallow':
-			return self._shallow_research(research_query)
-		# medium/deep: direct agent loop (stable API, tested separately)
-		if depth in ('medium', 'deep'):
-			return self._direct_agentic(research_query, depth=depth)
-		# quick/comprehensive/academic/phd: routed through DeepResearcher
-		return self._routed_research(research_query, depth=depth)
+			result = self._shallow_research(research_query)
+		elif depth in ('medium', 'deep'):
+			# medium/deep: direct agent loop (stable API, tested separately)
+			result = self._direct_agentic(research_query, depth=depth)
+		else:
+			# quick/comprehensive/academic/phd: routed through DeepResearcher
+			result = self._routed_research(research_query, depth=depth)
+		return self._verify_citations(result)
+
+	def _verify_citations(self, result: dict) -> dict:
+		"""
+		Check that the claims in *result* actually appear in the sources it cites.
+
+		Research output is the one place the platform produces verifiable
+		claims, so it is where grounding is worth the network cost. Failures
+		are attached as a status block rather than raised — an unverifiable
+		report is still a report, but the caller should know.
+		"""
+		if not isinstance(result, dict):
+			return result
+		try:
+			from core.citation_verifier import add_citation_verification
+			return add_citation_verification(result, self.ai_engine)
+		except Exception as exc:  # noqa: BLE001
+			result['citation_verification'] = {'status': 'error', 'reason': str(exc)}
+			return result
 
 	def _shallow_research(self, query: str) -> dict:
 		web_results = self.search_engine.search(query, num_results=5)

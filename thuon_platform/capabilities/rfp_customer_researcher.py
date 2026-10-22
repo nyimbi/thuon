@@ -68,6 +68,24 @@ class RFPCustomerResearcher:
 			else ''
 		)
 
+		# Known contacts at the issuer, from the CRM. This is the one source of
+		# first-hand relationship context the platform already holds, so it
+		# belongs in the prompt ahead of anything scraped from the web.
+		contacts_block = ''
+		known_contacts: list[dict] = []
+		try:
+			from core.crm_store import get_crm_store
+			known_contacts = get_crm_store().search_contacts(organization=issuer)
+			if known_contacts:
+				lines = []
+				for c in known_contacts[:8]:
+					desc = ', '.join(filter(None, [c.get('name', ''), c.get('role', '')]))
+					notes = (c.get('notes') or '').strip()
+					lines.append(f'- {desc}' + (f' — {notes[:200]}' if notes else ''))
+				contacts_block = '\nKnown contacts at this organization:\n' + '\n'.join(lines) + '\n'
+		except Exception:
+			pass
+
 		prompt = (
 			'You are a business development strategist. Research this buyer for an RFP response.\n\n'
 			f'Issuing Organization: {issuer}\n'
@@ -75,6 +93,7 @@ class RFPCustomerResearcher:
 			f'{f"NAICS: {naics}" if naics else ""}\n'
 			f'\nWeb research context:\n{web_context}\n'
 			f'{market_section}'
+			f'{contacts_block}'
 			'\nReturn ONLY a valid JSON object with:\n'
 			'- strategic_priorities (list of str): top 3-5 documented organizational priorities\n'
 			'- pain_points (list of str): inferred problems they are trying to solve\n'
@@ -98,5 +117,10 @@ class RFPCustomerResearcher:
 
 		if raw_signals:
 			result['market_signals'] = raw_signals
+		if known_contacts:
+			result['known_contacts'] = [
+				{'name': c.get('name', ''), 'role': c.get('role', ''), 'email': c.get('email', '')}
+				for c in known_contacts[:8]
+			]
 
 		return result

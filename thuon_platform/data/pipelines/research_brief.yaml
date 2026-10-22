@@ -5,14 +5,10 @@ steps:
   - name: research
     capability: research_assistant
     params:
-      query: "{input.topic}"
-      num_sources: 5
+      research_query: "{input.topic}"
+      depth: "{input.depth}"
 
   - name: brief
     capability: daily_brief
     params:
-      topics:
-        - "{input.topic}"
-      include_sections:
-        - news_summary
-        - action_items
+      date_str: "{input.date_str}"

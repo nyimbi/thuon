@@ -10,7 +10,10 @@ from flask import Flask, request, jsonify, render_template, flash
 from flask_cors import CORS
 
 import collections
+import logging
 import time
+
+logger = logging.getLogger('thuon.web')
 
 from core.ai_engine import OllamaModel
 from core.search_engine import DuckDuckGoSearch
@@ -68,9 +71,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Analyzes competitor landscape with positioning and strategic insights.',
 		'method': 'analyze_competitor_landscape',
 		'params': [
-			{'name': 'industry', 'type': 'str', 'required': True},
 			{'name': 'competitors', 'type': 'list', 'required': True},
-			{'name': 'analysis_dimensions', 'type': 'list', 'required': False, 'default': ['product', 'pricing', 'marketing']},
+			{'name': 'areas_of_focus', 'type': 'list', 'required': False, 'default': ['market_share', 'product_strategy', 'financial_performance', 'marketing_tactics']},
 		],
 		'deps': ['ai_engine', 'search_engine', 'rag_engine'],
 		'module': 'capabilities.competitive_intelligence_operative',
@@ -80,8 +82,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Assesses ethical risks in AI systems against governance frameworks.',
 		'method': 'assess_ethical_risks',
 		'params': [
-			{'name': 'ai_system_description', 'type': 'str', 'required': True},
-			{'name': 'ethical_guidelines', 'type': 'list', 'required': False, 'default': ['fairness', 'transparency', 'privacy']},
+			{'name': 'text_prompt', 'type': 'str', 'required': True},
+			{'name': 'ethical_guidelines', 'type': 'list', 'required': False, 'default': ['privacy', 'fairness', 'transparency', 'accountability']},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.ethical_ai_governance_engine',
@@ -91,9 +93,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Analyzes social media trends and generates platform-specific content strategies.',
 		'method': 'analyze_social_trends',
 		'params': [
-			{'name': 'brand_name', 'type': 'str', 'required': True},
-			{'name': 'target_audience', 'type': 'str', 'required': True},
-			{'name': 'platforms', 'type': 'list', 'required': False, 'default': ['Twitter', 'LinkedIn', 'Instagram']},
+			{'name': 'keywords', 'type': 'list', 'required': True},
+			{'name': 'platforms', 'type': 'list', 'required': False, 'default': ['Twitter', 'Facebook', 'Instagram', 'LinkedIn']},
 		],
 		'deps': ['ai_engine', 'search_engine'],
 		'module': 'capabilities.social_media_manager',
@@ -104,9 +105,8 @@ CAPABILITY_REGISTRY = {
 		'method': 'compose_proposal',
 		'params': [
 			{'name': 'proposal_type', 'type': 'str', 'required': True},
-			{'name': 'client_name', 'type': 'str', 'required': True},
-			{'name': 'project_description', 'type': 'str', 'required': True},
-			{'name': 'budget_range', 'type': 'str', 'required': False, 'default': 'TBD'},
+			{'name': 'context_data', 'type': 'dict', 'required': True},
+			{'name': 'output_path', 'type': 'str', 'required': False, 'default': 'ai_proposal.docx'},
 		],
 		'deps': ['ai_engine', 'template_manager'],
 		'module': 'capabilities.proposal_compositor',
@@ -116,9 +116,10 @@ CAPABILITY_REGISTRY = {
 		'description': 'Designs comprehensive course outlines with learning objectives and assessments.',
 		'method': 'design_course_outline',
 		'params': [
-			{'name': 'course_topic', 'type': 'str', 'required': True},
+			{'name': 'topic', 'type': 'str', 'required': True},
+			{'name': 'learning_objectives', 'type': 'list', 'required': True},
 			{'name': 'target_audience', 'type': 'str', 'required': True},
-			{'name': 'course_duration_hours', 'type': 'int', 'required': False, 'default': 10},
+			{'name': 'duration_hours', 'type': 'int', 'required': False, 'default': 10},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.course_creator',
@@ -128,9 +129,9 @@ CAPABILITY_REGISTRY = {
 		'description': 'Monitors regulatory changes and assesses business impact.',
 		'method': 'monitor_regulatory_changes',
 		'params': [
-			{'name': 'industry_sector', 'type': 'str', 'required': True},
-			{'name': 'jurisdictions', 'type': 'list', 'required': False, 'default': ['US', 'EU']},
-			{'name': 'regulation_types', 'type': 'list', 'required': False, 'default': ['data_privacy', 'financial', 'environmental']},
+			{'name': 'industry', 'type': 'str', 'required': True},
+			{'name': 'region', 'type': 'str', 'required': True},
+			{'name': 'keywords', 'type': 'list', 'required': False, 'default': ['regulation', 'compliance']},
 		],
 		'deps': ['ai_engine', 'search_engine'],
 		'module': 'capabilities.regulatory_change_manager',
@@ -141,8 +142,8 @@ CAPABILITY_REGISTRY = {
 		'method': 'simulate_crisis_scenario',
 		'params': [
 			{'name': 'crisis_type', 'type': 'str', 'required': True},
-			{'name': 'organization_description', 'type': 'str', 'required': True},
-			{'name': 'severity_level', 'type': 'str', 'required': False, 'default': 'high'},
+			{'name': 'organization_profile', 'type': 'str', 'required': True},
+			{'name': 'external_factors', 'type': 'list', 'required': False, 'default': ['economic_downturn', 'natural_disaster', 'reputational_damage']},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.crisis_simulation_response_architect',
@@ -152,9 +153,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Profiles M&A acquisition targets with financial and strategic analysis.',
 		'method': 'profile_ma_target',
 		'params': [
-			{'name': 'target_company', 'type': 'str', 'required': True},
-			{'name': 'acquirer_profile', 'type': 'str', 'required': True},
-			{'name': 'areas_of_interest', 'type': 'list', 'required': False, 'default': ['financials', 'technology', 'market_position']},
+			{'name': 'target_company_name', 'type': 'str', 'required': True},
+			{'name': 'areas_of_interest', 'type': 'list', 'required': False, 'default': ['financials', 'market_position', 'technology_stack', 'culture_fit']},
 		],
 		'deps': ['ai_engine', 'search_engine'],
 		'module': 'capabilities.ma_target_profiler',
@@ -165,9 +165,10 @@ CAPABILITY_REGISTRY = {
 		'method': 'draft_internal_communication',
 		'params': [
 			{'name': 'communication_type', 'type': 'str', 'required': True},
-			{'name': 'key_message', 'type': 'str', 'required': True},
-			{'name': 'target_audience', 'type': 'str', 'required': True},
+			{'name': 'context_data', 'type': 'dict', 'required': True},
+			{'name': 'audience', 'type': 'str', 'required': True},
 			{'name': 'tone', 'type': 'str', 'required': False, 'default': 'professional'},
+			{'name': 'output_path', 'type': 'str', 'required': False, 'default': 'internal_communication.docx'},
 		],
 		'deps': ['ai_engine', 'template_manager'],
 		'module': 'capabilities.internal_communications_automator',
@@ -177,9 +178,9 @@ CAPABILITY_REGISTRY = {
 		'description': 'Predicts succession candidates using talent analytics and HR data.',
 		'method': 'predict_succession_candidates',
 		'params': [
-			{'name': 'role_title', 'type': 'str', 'required': True},
-			{'name': 'employee_data_table', 'type': 'str', 'required': False, 'default': 'employees'},
-			{'name': 'assessment_criteria', 'type': 'list', 'required': False, 'default': ['performance', 'leadership', 'skills_gap']},
+			{'name': 'job_role', 'type': 'str', 'required': True},
+			{'name': 'employee_data_table', 'type': 'str', 'required': True},
+			{'name': 'criteria', 'type': 'list', 'required': False, 'default': ['performance_ratings', 'skill_scores', 'leadership_potential']},
 		],
 		'deps': ['ai_engine', 'db_handler'],
 		'module': 'capabilities.talent_analytics_succession_forecaster',
@@ -190,8 +191,7 @@ CAPABILITY_REGISTRY = {
 		'method': 'analyze_brand_sentiment',
 		'params': [
 			{'name': 'brand_name', 'type': 'str', 'required': True},
-			{'name': 'analysis_channels', 'type': 'list', 'required': False, 'default': ['news', 'social_media', 'reviews']},
-			{'name': 'time_period_days', 'type': 'int', 'required': False, 'default': 30},
+			{'name': 'sources', 'type': 'list', 'required': False, 'default': ['social_media', 'news_articles', 'customer_reviews']},
 		],
 		'deps': ['ai_engine', 'search_engine'],
 		'module': 'capabilities.brand_sentiment_orchestrator',
@@ -201,9 +201,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Conducts patent landscape analysis and IP strategy development.',
 		'method': 'conduct_patent_landscape_analysis',
 		'params': [
-			{'name': 'technology_domain', 'type': 'str', 'required': True},
-			{'name': 'company_focus', 'type': 'str', 'required': True},
-			{'name': 'analysis_scope', 'type': 'list', 'required': False, 'default': ['filing_trends', 'key_players', 'white_spaces']},
+			{'name': 'keywords', 'type': 'list', 'required': True},
+			{'name': 'jurisdictions', 'type': 'list', 'required': False, 'default': ['US', 'EP', 'CN', 'JP']},
 		],
 		'deps': ['ai_engine', 'search_engine', 'rag_engine'],
 		'module': 'capabilities.intellectual_property_strategist',
@@ -224,8 +223,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Simulates environmental impact and generates sustainability roadmaps.',
 		'method': 'simulate_environmental_impact',
 		'params': [
-			{'name': 'business_activity_description', 'type': 'str', 'required': True},
-			{'name': 'simulation_parameters', 'type': 'list', 'required': False, 'default': ['carbon_emissions', 'water_usage', 'waste_generation']},
+			{'name': 'product_lifecycle_description', 'type': 'str', 'required': True},
+			{'name': 'impact_categories', 'type': 'list', 'required': False, 'default': ['carbon_footprint', 'water_usage', 'waste_generation', 'resource_depletion']},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.sustainability_impact_simulator',
@@ -591,7 +590,8 @@ CAPABILITY_REGISTRY = {
 		'description': 'Assemble all proposal sections into a single markdown document and save to disk.',
 		'method': 'assemble',
 		'params': [
-			{'name': 'sections', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'sections', 'type': 'dict', 'required': True},
+			{'name': 'compliance_matrix', 'type': 'list', 'required': False, 'default': []},
 			{'name': 'rfp_title', 'type': 'str', 'required': False, 'default': 'RFP Response'},
 			{'name': 'rfp_id', 'type': 'str', 'required': False, 'default': ''},
 		],
@@ -620,6 +620,7 @@ CAPABILITY_REGISTRY = {
 			{'name': 'audience', 'type': 'str', 'required': False, 'default': ''},
 			{'name': 'target_length', 'type': 'int', 'required': False, 'default': 1200},
 			{'name': 'seo_keyword', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'tone', 'type': 'str', 'required': False, 'default': 'authoritative-friendly'},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.blog_outliner',
@@ -633,6 +634,9 @@ CAPABILITY_REGISTRY = {
 			{'name': 'subheadings', 'type': 'list', 'required': False, 'default': []},
 			{'name': 'seo_keyword', 'type': 'str', 'required': False, 'default': ''},
 			{'name': 'tone', 'type': 'str', 'required': False, 'default': 'authoritative-friendly'},
+			{'name': 'word_target', 'type': 'int', 'required': False, 'default': 300},
+			{'name': 'is_full_post', 'type': 'bool', 'required': False, 'default': False},
+			{'name': 'outline', 'type': 'list', 'required': False, 'default': []},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.blog_section_writer',
@@ -645,6 +649,7 @@ CAPABILITY_REGISTRY = {
 			{'name': 'full_content', 'type': 'str', 'required': True},
 			{'name': 'target_keyword', 'type': 'str', 'required': False, 'default': ''},
 			{'name': 'meta_description', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'save_to_disk', 'type': 'bool', 'required': False, 'default': True},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.blog_seo_optimizer',
@@ -737,13 +742,28 @@ CAPABILITY_REGISTRY = {
 		'module': 'capabilities.social_post_writer',
 		'class': 'SocialPostWriter',
 	},
+	# ── Documents ─────────────────────────────────────────────────────────────
+	'document_generator': {
+		'description': 'Generate a report, proposal, memo or presentation as docx, pdf, pptx or xlsx.',
+		'method': 'generate',
+		'params': [
+			{'name': 'topic', 'type': 'str', 'required': True},
+			{'name': 'format', 'type': 'str', 'required': False, 'default': 'docx'},
+			{'name': 'doc_type', 'type': 'str', 'required': False, 'default': 'report'},
+			{'name': 'context', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'output_path', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.document_generator',
+		'class': 'DocumentGenerator',
+	},
 	# ── Daily brief ───────────────────────────────────────────────────────────
 	'daily_brief': {
 		'description': 'Generate a structured daily/weekly digest of news, market signals, and KB highlights.',
 		'method': 'generate',
 		'params': [
-			{'name': 'topics', 'type': 'list', 'required': False, 'default': []},
-			{'name': 'focus_areas', 'type': 'list', 'required': False, 'default': []},
+			{'name': 'date_str', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'include_sections', 'type': 'list', 'required': False, 'default': []},
 		],
 		'deps': ['ai_engine', 'search_engine', 'market_signal_provider'],
 		'module': 'capabilities.daily_brief',
@@ -847,6 +867,7 @@ CAPABILITY_REGISTRY = {
 			{'name': 'target_pages',    'type': 'number', 'required': False, 'default': 50},
 			{'name': 'sections_hint',   'type': 'text',   'required': False, 'default': ''},
 			{'name': 'render_pdf',      'type': 'checkbox', 'required': False, 'default': False},
+			{'name': 'render_docx',     'type': 'checkbox', 'required': False, 'default': False},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.long_form_document_engine',
@@ -1135,9 +1156,10 @@ CAPABILITY_REGISTRY = {
 		'description': 'Adaptive pipeline compiler: given a plain-language task description, select and sequence capabilities dynamically. Returns an executable pipeline plan.',
 		'method': 'plan',
 		'params': [
-			{'name': 'task_description',  'type': 'str',  'required': True,  'description': 'What needs to be accomplished'},
-			{'name': 'available_inputs',  'type': 'dict', 'required': False, 'default': {}, 'description': 'Known input values'},
-			{'name': 'context',           'type': 'str',  'required': False, 'default': '', 'description': 'Additional context'},
+			{'name': 'task',              'type': 'str',  'required': True,  'description': 'What needs to be accomplished'},
+			{'name': 'context',           'type': 'dict', 'required': False, 'default': {}, 'description': 'Known input values and additional context'},
+			{'name': 'max_steps',         'type': 'int',  'required': False, 'default': 10},
+			{'name': 'pipeline_name',     'type': 'str',  'required': False, 'default': ''},
 		],
 		'deps': ['ai_engine'],
 		'module': 'capabilities.pipeline_planner',
@@ -1464,6 +1486,7 @@ _CATEGORY_MAP = {
 	'proposal_win_probability': 'strategy',
 	'capability_judge':         'dev',
 	'pipeline_planner':         'dev',
+	'document_generator':       'content',
 	'proposal_red_team':        'strategy',
 	'bid_calendar_builder':     'strategy',
 	'knowledge_reviewer':       'research',
@@ -1487,7 +1510,12 @@ def create_app() -> Flask:
 	settings = get_settings()
 	app = Flask(__name__, template_folder='templates')
 	app.secret_key = settings.get_setting('flask.secret_key', 'thuon-dev-secret-key')
-	CORS(app)
+	# Same-origin only. Thuon's API includes capabilities that SSH into the
+	# fleet as root; a wildcard CORS policy lets any page in the browser drive
+	# them. Opt into extra origins explicitly via flask.cors_origins.
+	_origins = settings.get_setting('flask.cors_origins', []) or []
+	if _origins:
+		CORS(app, origins=list(_origins))
 
 	# Bootstrap unified skill registry from both hardcoded dicts + SKILL.md discovery
 	from core.skill_registry import SkillRegistry
@@ -1632,6 +1660,25 @@ def create_app() -> Flask:
 		kwargs = {param_rename.get(k, k): v for k, v in needed.items()}
 		return cls(**kwargs)
 
+	class _PlatformShim:
+		"""Thin shim so PipelineRunner can call capabilities via _build_instance."""
+		def __getattr__(self, name):
+			if name in CAPABILITY_REGISTRY:
+				cfg = CAPABILITY_REGISTRY[name]
+				instance = _build_instance(name)
+				method   = getattr(instance, cfg['method'])
+				import inspect
+				sig = inspect.signature(method)
+				def _call(**kwargs):
+					call_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+					return method(**call_kwargs)
+				return _call
+			raise AttributeError(name)
+
+	def _make_pipeline_runner():
+		from core.pipeline_runner import PipelineRunner
+		return PipelineRunner(_PlatformShim())
+
 	# Register MCP blueprint — exposes all capabilities as MCP tools at POST /mcp
 	from core.mcp_server import build_mcp_blueprint
 	app.register_blueprint(build_mcp_blueprint(_build_instance))
@@ -1704,6 +1751,16 @@ def create_app() -> Flask:
 			call_kwargs = {k: v for k, v in body.items() if k in sig.parameters}
 			result = method(**call_kwargs)
 			elapsed = round(time.time() - t0, 2)
+
+			# Annotate with a confidence block. Results are plain dicts; a
+			# capability returning something else is left untouched.
+			if isinstance(result, dict) and '_confidence' not in result:
+				try:
+					from core.confidence import ConfidenceCalibrator
+					result = ConfidenceCalibrator().annotate(result)
+				except Exception as exc:  # noqa: BLE001
+					logger.debug('Confidence scoring skipped for %s: %s', cap_name, exc)
+
 			_run_history.appendleft({
 				'cap_name': cap_name, 'params': body,
 				'status': 'success', 'elapsed': elapsed,
@@ -1901,8 +1958,6 @@ def create_app() -> Flask:
 		body   = request.get_json(force=True, silent=True) or {}
 		fmt    = body.get('format', 'docx').lower()
 		data   = body.get('data') or {}
-		title  = body.get('title', 'Thuon Export')
-
 		allowed = {'docx', 'pdf', 'xlsx', 'pptx'}
 		if fmt not in allowed:
 			return jsonify({'error': f'Unsupported format: {fmt}'}), 400
@@ -1989,25 +2044,7 @@ def create_app() -> Flask:
 			return jsonify({'error': f'Pipeline "{pipe_name}" not found'}), 404
 
 		try:
-			sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-			from core.pipeline_runner import PipelineRunner
-
-			class _PlatformShim:
-				"""Thin shim so PipelineRunner can call capabilities via web_app._build_instance."""
-				def __getattr__(self, name):
-					if name in CAPABILITY_REGISTRY:
-						cfg = CAPABILITY_REGISTRY[name]
-						instance = _build_instance(name)
-						method   = getattr(instance, cfg['method'])
-						import inspect
-						sig = inspect.signature(method)
-						def _call(**kwargs):
-							call_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-							return method(**call_kwargs)
-						return _call
-					raise AttributeError(name)
-
-			runner = PipelineRunner(_PlatformShim())
+			runner = _make_pipeline_runner()
 			t0 = time.time()
 			step_results = runner.run(spec, body)
 			elapsed = round(time.time() - t0, 2)
@@ -2032,7 +2069,14 @@ def create_app() -> Flask:
 		if record is None:
 			flash(f'RFP {rfp_id!r} not found.', 'error')
 			return render_template('rfps.html', by_status={}, RFPStatus=None), 404
-		return render_template('rfp_detail.html', record=record)
+		# Bid/no-bid checkpoint recommendation, so the detail page can show
+		# whether the score already decides the call or needs a human.
+		try:
+			checkpoint = tracker.suggest_checkpoint_action(rfp_id)
+		except Exception as exc:  # noqa: BLE001
+			logger.debug('Checkpoint suggestion unavailable for %s: %s', rfp_id, exc)
+			checkpoint = None
+		return render_template('rfp_detail.html', record=record, checkpoint=checkpoint)
 
 	@app.route('/api/rfp/discover', methods=['POST'])
 	def rfp_discover():
@@ -2181,7 +2225,6 @@ def create_app() -> Flask:
 	@app.route('/api/settings/company/<filename>', methods=['POST'])
 	def save_company_file(filename):
 		import re as _re
-		from pathlib import Path as _Path
 		from core.company_profile import get_company_profile
 		if not _re.match(r'^[\w\-]+\.md$', filename):
 			return jsonify({'error': 'Invalid filename'}), 400
@@ -2230,7 +2273,7 @@ def create_app() -> Flask:
 		from core.notification_bus import get_notification_bus
 		from core.settings_manager import get_settings
 
-		secret = (get_settings().get('neditor', {}).get('webhook_secret') or '').encode()
+		secret = str(get_settings().get_setting('neditor.webhook_secret') or '').encode()
 		if secret:
 			sig   = request.headers.get('X-Neditor-Signature', '')
 			body_bytes = request.get_data(cache=True)
@@ -2454,7 +2497,6 @@ def create_app() -> Flask:
 
 	@app.route('/api/memory/consolidate', methods=['POST'])
 	def memory_consolidate():
-		from core.memory_store import get_memory_store
 		body         = request.get_json(force=True, silent=True) or {}
 		conversation = body.get('conversation', '')
 		svc          = _get_services()
@@ -2476,7 +2518,7 @@ def create_app() -> Flask:
 	def crm_index():
 		from core.crm_store import get_crm_store
 		store = get_crm_store()
-		contacts = store.search_contacts(limit=50)
+		contacts = store.search_contacts()[:50]
 		return render_template('crm.html', contacts=contacts)
 
 	@app.route('/api/crm/contacts', methods=['GET'])
@@ -2485,8 +2527,8 @@ def create_app() -> Flask:
 		store = get_crm_store()
 		q     = request.args.get('q', '')
 		limit = int(request.args.get('limit', 50))
-		contacts = store.search_contacts(query=q, limit=limit) if q else store.search_contacts(limit=limit)
-		return jsonify({'contacts': contacts})
+		contacts = store.search_contacts(query=q) if q else store.search_contacts()
+		return jsonify({'contacts': contacts[:limit]})
 
 	@app.route('/api/crm/contacts', methods=['POST'])
 	def crm_contact_create():
@@ -2495,10 +2537,11 @@ def create_app() -> Flask:
 		store = get_crm_store()
 		cid   = store.upsert_contact(
 			name=body.get('name', ''),
+			role=body.get('role', ''),
+			organization=body.get('organization') or body.get('org_name', ''),
 			email=body.get('email', ''),
 			phone=body.get('phone', ''),
-			org_name=body.get('org_name', ''),
-			role=body.get('role', ''),
+			linkedin=body.get('linkedin', ''),
 			notes=body.get('notes', ''),
 		)
 		return jsonify({'id': cid}), 201
@@ -2519,8 +2562,9 @@ def create_app() -> Flask:
 		iid   = store.log_interaction(
 			contact_id=contact_id,
 			interaction_type=body.get('type', 'note'),
-			summary=body.get('summary', ''),
-			rfp_id=body.get('rfp_id'),
+			subject=body.get('subject', ''),
+			notes=body.get('notes') or body.get('summary', ''),
+			rfp_id=body.get('rfp_id', ''),
 		)
 		return jsonify({'id': iid}), 201
 
@@ -2570,24 +2614,36 @@ def create_app() -> Flask:
 
 		try:
 			# Step 1: transcribe
-			svc = _get_services()
 			import importlib
-			whisper_mod  = importlib.import_module('tools.whisper_transcriber')
+			whisper_mod  = importlib.import_module('tools.whisper_transcribe')
 			transcription = whisper_mod.WhisperTranscriber().transcribe(audio_path)
+			if isinstance(transcription, dict) and transcription.get('status') == 'error':
+				return jsonify({'error': transcription.get('error', 'transcription failed')}), 500
 			text = transcription if isinstance(transcription, str) else transcription.get('text', '')
+			if not text.strip():
+				return jsonify({'transcription': text, 'error': 'Empty transcription'}), 200
 
 			# Step 2: route through skill registry
 			registry = SkillRegistry.get_instance()
-			match     = registry.find_best(text)
-			if match is None:
+			matches  = registry.search(text, top_k=1)
+			if not matches:
 				return jsonify({'transcription': text, 'error': 'No matching capability found'}), 200
 
-			cap_name = match['name']
-			proxy    = getattr(svc['platform'], cap_name, None)
-			if proxy is None:
+			cap_name = matches[0].name
+			if cap_name not in CAPABILITY_REGISTRY:
 				return jsonify({'transcription': text, 'error': f'Capability {cap_name} not available'}), 200
 
-			result = proxy(text)
+			cfg = CAPABILITY_REGISTRY[cap_name]
+			# Feed the transcript to the first required string parameter.
+			first_param = next(
+				(p['name'] for p in cfg['params'] if p.get('required') and p.get('type') == 'str'),
+				None,
+			)
+			if first_param is None:
+				return jsonify({'transcription': text, 'error': f'{cap_name} takes no text input'}), 200
+
+			instance = _build_instance(cap_name)
+			result   = getattr(instance, cfg['method'])(**{first_param: text})
 			return jsonify({
 				'transcription': text,
 				'capability':    cap_name,
@@ -2645,11 +2701,10 @@ def create_app() -> Flask:
 		if run is None:
 			return jsonify({'error': f'Run {run_id} not found'}), 404
 
-		svc          = _get_services()
 		pipeline_name = run['pipeline_name']
 		inputs        = run.get('inputs') or {}
 		try:
-			result = svc['platform'].pipeline_runner.run(
+			result = _make_pipeline_runner().run(
 				pipeline_name,
 				inputs=inputs,
 				run_id=run_id,
@@ -2662,7 +2717,23 @@ def create_app() -> Flask:
 	return app
 
 
-def run_app(host: str = '0.0.0.0', port: int = 5000, debug: bool = False):
+def run_app(host: str | None = None, port: int = 5000, debug: bool = False):
+	"""
+	Serve the web UI.
+
+	Binds to loopback by default. The API is unauthenticated and reaches
+	capabilities that run as root across the fleet, so exposing it on a
+	public interface is an explicit decision: pass host='0.0.0.0' or set
+	flask.host in config.yaml, and put an authenticating proxy in front.
+	"""
+	settings = get_settings()
+	if host is None:
+		host = settings.get_setting('flask.host', '127.0.0.1')
+	if host not in ('127.0.0.1', 'localhost', '::1') and not settings.get_setting('flask.allow_public_bind', False):
+		logger.warning(
+			'Binding Thuon to %s — the API is unauthenticated. '
+			'Set flask.allow_public_bind: true to silence this.', host,
+		)
 	app = create_app()
 	app.run(host=host, port=port, debug=debug)
 

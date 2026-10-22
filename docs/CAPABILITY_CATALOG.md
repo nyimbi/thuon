@@ -1,6 +1,12 @@
 # Thuon Platform — Capability Catalog
 
-36 capabilities across 9 categories. Each entry covers: what it does, dependencies, parameters, full output schema, and a usage example.
+103 capabilities across 9 categories. This catalog documents the 36 core business
+capabilities in full; the remaining entries (sysadmin cluster, tool wrappers, and
+world-class additions) are discoverable from `CAPABILITY_REGISTRY` in
+`thuon_platform/interfaces/web_app.py`, which is the source of truth for both the
+web UI and the pipeline runner.
+
+Each entry covers: what it does, dependencies, parameters, full output schema, and a usage example.
 
 All capabilities are accessible via:
 - **Web UI:** `http://localhost:5000/capability/<name>`

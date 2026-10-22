@@ -1,6 +1,6 @@
 # Thuon
 
-Thuon is a locally-run AI business automation platform. It chains 60+ atomic capabilities — each producing structured JSON — into YAML pipelines that cover the full business development cycle: RFP response, content creation, company knowledge management, competitive intelligence, and more.
+Thuon is a locally-run AI business automation platform. It chains 103 atomic capabilities — each producing structured JSON — into YAML pipelines that cover the full business development cycle: RFP response, content creation, company knowledge management, competitive intelligence, and more.
 
 All inference runs through a local **Ollama** server. No external LLM API keys required. Runs as a macOS menu-bar app, a web server, or a CLI.
 
@@ -60,7 +60,7 @@ ollama pull qwen2.5       # tool-calling agent loop
 └──────────────────────────┬──────────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────────┐
-│                   Capability Layer  (60+ modules)                │
+│                   Capability Layer  (103 modules)                │
 │  RFP: ingester · bid_evaluator · section_writer · assembler      │
 │  Content: blog_researcher · blog_writer · seo_optimizer          │
 │  Intel: deep_researcher · competitive_intel · niche_finder       │
