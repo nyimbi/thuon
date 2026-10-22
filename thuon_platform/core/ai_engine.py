@@ -1,9 +1,13 @@
 # core/ai_engine.py
 
 import json
+import logging
 import re
 from abc import ABC, abstractmethod
+from typing import Any
 from core.settings_manager import get_settings
+
+logger = logging.getLogger('thuon.ai_engine')
 
 
 class AIModel(ABC):
@@ -30,6 +34,28 @@ class AIModel(ABC):
 	@abstractmethod
 	def translate_text(self, text: str, target_language: str) -> str:
 		pass
+
+
+def _content_to_text(response: object) -> str:
+	"""
+	Flatten a LangChain response into plain text.
+
+	`response.content` is a str for text models but a list of typed parts
+	when the model was invoked with an image, so returning it unmodified
+	leaked a list into callers typed `-> str`.
+	"""
+	content = getattr(response, 'content', response)
+	if isinstance(content, str):
+		return content
+	if isinstance(content, list):
+		parts = []
+		for part in content:
+			if isinstance(part, str):
+				parts.append(part)
+			elif isinstance(part, dict):
+				parts.append(str(part.get('text', '')))
+		return ''.join(parts)
+	return str(content)
 
 
 class OllamaModel(AIModel):
@@ -117,7 +143,7 @@ class OllamaVisionModel:
 			{'type': 'image_url', 'image_url': {'url': f'data:{mime};base64,{b64}'}},
 		])
 		response = self.llm.invoke([message])
-		return response.content if hasattr(response, 'content') else str(response)
+		return _content_to_text(response)
 
 	def analyze_image(self, image_path: str, prompt: str) -> str:
 		"""Analyze an image file with a text prompt."""
@@ -237,7 +263,7 @@ class OllamaVisionModel:
 		# Text-only comparison after descriptions are extracted
 		from langchain_core.messages import HumanMessage
 		response = self.llm.invoke([HumanMessage(content=prompt)])
-		text = response.content if hasattr(response, 'content') else str(response)
+		text = _content_to_text(response)
 		try:
 			match = re.search(r'\{.*\}', text, re.DOTALL)
 			if match:
@@ -261,6 +287,28 @@ def screenshot_url(url: str, output_path: str = '/tmp/thuon_screenshot.png') -> 
 		page.screenshot(path=output_path, full_page=False)
 		browser.close()
 	return output_path
+
+
+def _import_litellm():
+	"""
+	Return the litellm module, or None if it is not usable.
+
+	`import litellm` can succeed while the module has no `completion`:
+	a namespace package left behind by a partial install has a valid
+	`__path__` and nothing in it, so an ImportError-only guard passes and
+	every call fails later with AttributeError. Check the attribute.
+	"""
+	try:
+		import litellm as _ll
+	except ImportError:
+		return None
+	if not hasattr(_ll, 'completion'):
+		logger.warning(
+			'litellm is importable but exposes no completion() — treating it '
+			'as unavailable and falling back to Ollama.'
+		)
+		return None
+	return _ll
 
 
 class LiteLLMModel(AIModel):
@@ -292,11 +340,8 @@ class LiteLLMModel(AIModel):
 		self._api_key     = api_key  or settings.get_setting('litellm.api_key', 'no-key')
 		self._timeout     = int(settings.get_setting('litellm.timeout', 120))
 		self._max_retries = int(settings.get_setting('litellm.max_retries', 2))
-		try:
-			import litellm as _ll
-			self._ll = _ll
-		except ImportError:
-			self._ll = None
+		# Any: the module is absent from the stubs, and every use is guarded.
+		self._ll: Any = _import_litellm()
 
 	def _call(self, messages: list[dict], **kw) -> str:
 		if self._ll is None:

@@ -12,6 +12,7 @@ from flask_cors import CORS
 import collections
 import logging
 import time
+from typing import Any
 
 logger = logging.getLogger('thuon.web')
 
@@ -1656,12 +1657,20 @@ def create_app() -> Flask:
 		needed = {d: dep_map[d] for d in cfg['deps'] if d in dep_map and dep_map[d] is not None}
 
 		# Map dep keys to constructor param names
-		param_rename = {'db_handler': 'data_handler'}
-		kwargs = {param_rename.get(k, k): v for k, v in needed.items()}
+		param_rename: dict[str, str] = {'db_handler': 'data_handler'}
+		kwargs: dict[str, Any] = {
+			str(param_rename.get(k, k)): v for k, v in needed.items()
+		}
 		return cls(**kwargs)
 
 	class _PlatformShim:
-		"""Thin shim so PipelineRunner can call capabilities via _build_instance."""
+		"""
+		Thin shim so PipelineRunner can call capabilities via _build_instance.
+
+		PipelineRunner is annotated against Thuon; this duck-types the one
+		method it uses (attribute access returning a callable), so the cast
+		at the construction site is deliberate rather than a widening.
+		"""
 		def __getattr__(self, name):
 			if name in CAPABILITY_REGISTRY:
 				cfg = CAPABILITY_REGISTRY[name]
@@ -1677,7 +1686,7 @@ def create_app() -> Flask:
 
 	def _make_pipeline_runner():
 		from core.pipeline_runner import PipelineRunner
-		return PipelineRunner(_PlatformShim())
+		return PipelineRunner(_PlatformShim())  # type: ignore[arg-type]
 
 	# Register MCP blueprint — exposes all capabilities as MCP tools at POST /mcp
 	from core.mcp_server import build_mcp_blueprint
@@ -2126,6 +2135,8 @@ def create_app() -> Flask:
 				updated = tracker.advance_status(rfp_id, 'responding')
 			else:  # review
 				updated = tracker.advance_status(rfp_id, 'submitted')
+			if updated is None:
+				return jsonify({'error': 'RFP not found'}), 404
 			return jsonify(updated.to_dict())
 		except ValueError as exc:
 			return jsonify({'error': str(exc)}), 422
@@ -2142,6 +2153,8 @@ def create_app() -> Flask:
 		           'bid_recommendation', 'response_dir', 'pipeline_step'}
 		fields  = {k: v for k, v in body.items() if k in allowed}
 		updated = tracker.update(rfp_id, **fields)
+		if updated is None:
+			return jsonify({'error': 'RFP not found'}), 404
 		return jsonify(updated.to_dict())
 
 	@app.route('/api/rfps')

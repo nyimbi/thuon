@@ -1,5 +1,9 @@
 # core/settings_manager.py
 
+from __future__ import annotations
+
+from typing import Any, TypeVar, overload
+
 import yaml
 import os
 from core.bundle import config_dir
@@ -19,7 +23,23 @@ class SettingsManager:
 				self.settings = yaml.safe_load(f) or {}
 		return self.settings
 
-	def get_setting(self, key_path: str, default=None):
+	_T = TypeVar('_T')
+
+	@overload
+	def get_setting(self, key_path: str, default: None = None) -> Any: ...
+
+	@overload
+	def get_setting(self, key_path: str, default: _T) -> _T: ...
+
+	def get_setting(self, key_path: str, default: Any = None) -> Any:
+		"""
+		Read a dotted config path.
+
+		Returns *default* when the path is absent, when an intermediate node
+		is not a mapping, or when the stored value is an unedited 'YOUR_…'
+		placeholder. The overloads exist so a typed default narrows the
+		result: callers pass strings and lists and otherwise get `Any`.
+		"""
 		keys = key_path.split('.')
 		val = self.settings
 		for k in keys:
