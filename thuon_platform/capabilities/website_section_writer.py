@@ -4,9 +4,8 @@ Atomic capability: write new/updated website page content.
 """
 
 import json
-import re
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 
 class WebsiteSectionWriter:

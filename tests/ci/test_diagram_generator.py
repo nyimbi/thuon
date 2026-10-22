@@ -53,7 +53,7 @@ class TestDiagramGeneratorGenerate:
 			out = os.path.join(d, 'diagram.png')
 			with patch('shutil.which', return_value=None):
 				result = gen.generate('flow', output_path=out)
-		assert result.get('rendered') is None or result.get('rendered') == False
+		assert not result.get('rendered')
 
 	def test_mindmap_shortcut(self):
 		gen, mock_ai = _make_gen('mindmap\n  root\n    branch')
@@ -101,9 +101,8 @@ class TestDiagramGeneratorGenerate:
 		mock_proc = MagicMock()
 		mock_proc.returncode = 0
 		with patch('shutil.which', return_value='/usr/bin/mmdc'), \
-			 patch('subprocess.run', return_value=mock_proc) as mock_run, \
+			 patch('subprocess.run', return_value=mock_proc), \
 			 patch('os.makedirs'), patch('os.unlink'):
-			import tempfile
 			with patch('tempfile.NamedTemporaryFile') as mock_ntf:
 				mock_ntf.return_value.__enter__ = MagicMock(return_value=MagicMock(name='f'))
 				mock_ntf.return_value.__enter__.return_value.name = '/tmp/fake.mmd'

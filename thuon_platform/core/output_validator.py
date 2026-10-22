@@ -8,7 +8,6 @@
 
 import json
 import re
-from typing import Any
 
 from core.ai_engine import AIModel
 
@@ -60,7 +59,7 @@ def validated_llm_call(
 	last_response = ''
 	active_prompt = prompt
 
-	for attempt in range(max_retries):
+	for _attempt in range(max_retries):
 		last_response = ai_engine.generate_text(active_prompt)
 		result = _extract_json(last_response)
 

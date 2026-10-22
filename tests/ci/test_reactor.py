@@ -10,10 +10,7 @@ from unittest.mock import MagicMock, patch
 def test_signals_importable():
 	from long_running_processes.reactor_control import (
 		price_change_detected_signal,
-		ma_announcement_detected_signal,
 		environmental_event_detected_signal,
-		process_completed_signal,
-		process_error_signal,
 	)
 	import blinker
 	assert isinstance(price_change_detected_signal, blinker.Signal)
@@ -40,7 +37,7 @@ def test_event_reactor_handles_signal():
 	ai = MagicMock()
 	ai.generate_text.return_value = '{"action": "buy", "priority": 8}'
 	pr = MagicMock(spec=ProcessReactor)
-	reactor = EventReactor(ai_engine=ai, process_reactor=pr)
+	EventReactor(ai_engine=ai, process_reactor=pr)
 	# Send a signal — verify no exception raised
 	price_change_detected_signal.send({'price': 100.0, 'symbol': 'AAPL'})
 

@@ -11,8 +11,7 @@ from typing import Any
 
 from core.ai_engine import AIModel
 from core.fleet_inventory import get_fleet_inventory
-from core.ssh_executor import run_on_fleet, run_command
-from core.sysadmin_types import ServerInfo
+from core.ssh_executor import run_on_fleet
 
 logger = logging.getLogger('thuon.security_auditor')
 
@@ -94,7 +93,7 @@ class SecurityAuditor:
 		server_reports: list[dict] = []
 		critical: list[dict] = []
 
-		for srv, res in zip(servers, results):
+		for srv, res in zip(servers, results, strict=False):
 			report: dict[str, Any] = {'hostname': srv.hostname, 'ip': srv.ip}
 
 			if not res.success and not res.stdout:

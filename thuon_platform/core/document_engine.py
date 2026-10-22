@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 import os
-from pathlib import Path
 
 
 def _docx(content: str, title: str, output_path: str) -> str:

@@ -5,7 +5,7 @@ import os
 import json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'thuon_platform'))
 
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ def test_research_mode_calls_search_multiple_times():
 		mock_loop = MagicMock()
 		mock_loop.run.return_value = _mock_agent_run('fintech niches')
 		MockLoop.return_value = mock_loop
-		result = nf.find_niches('fintech', mode='research')
+		nf.find_niches('fintech', mode='research')
 
 	# 4 phases × 3 queries each = 12 search calls
 	assert search.search.call_count >= 8
@@ -210,7 +210,7 @@ def test_research_mode_runs_agent_loop():
 		mock_loop = MagicMock()
 		mock_loop.run.return_value = _mock_agent_run('fintech niches')
 		MockLoop.return_value = mock_loop
-		result = nf.find_niches('fintech', mode='research')
+		nf.find_niches('fintech', mode='research')
 
 	MockLoop.assert_called_once()
 	mock_loop.run.assert_called_once()
@@ -268,7 +268,7 @@ def test_landscape_summary_in_research_output():
 
 def test_num_niches_clamped_to_max_5():
 	nf, ai, search = _make_niche_finder()
-	result = nf.find_niches('fintech', mode='quick', num_niches=99)
+	nf.find_niches('fintech', mode='quick', num_niches=99)
 	prompt = ai.generate_text.call_args[0][0]
 	# Clamped to 5 — prompt should mention 5 not 99
 	assert '99' not in prompt
@@ -276,7 +276,7 @@ def test_num_niches_clamped_to_max_5():
 
 def test_num_niches_clamped_to_min_1():
 	nf, ai, search = _make_niche_finder()
-	result = nf.find_niches('fintech', mode='quick', num_niches=0)
+	nf.find_niches('fintech', mode='quick', num_niches=0)
 	prompt = ai.generate_text.call_args[0][0]
 	assert '0 objects' not in prompt
 

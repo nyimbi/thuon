@@ -1,9 +1,9 @@
 # tests/ci/test_daily_brief.py
 """Tests for capabilities/daily_brief.py"""
-import sys, os, json
+import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 
 def _make_brief(ai_response='- Key insight 1\n- Key insight 2', search_results=None):
@@ -111,7 +111,7 @@ class TestSynthesize:
 
 	def test_no_news_section_skips_llm(self):
 		brief, mock_ai, _ = _make_brief()
-		result = brief._synthesize({}, '2026-06-13')
+		brief._synthesize({}, '2026-06-13')
 		mock_ai.generate_text.assert_not_called()
 
 	def test_sections_used_count(self):

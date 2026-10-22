@@ -5,7 +5,6 @@ Does NOT git push — human reviews and commits manually.
 """
 
 import json
-import re
 import time
 from pathlib import Path
 from core.ai_engine import AIModel

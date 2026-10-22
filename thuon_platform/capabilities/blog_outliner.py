@@ -3,10 +3,8 @@
 Atomic capability: create a detailed structured outline for a blog post.
 """
 
-import json
-import re
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 
 class BlogOutliner:

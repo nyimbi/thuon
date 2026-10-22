@@ -150,7 +150,7 @@ class CalendarStore:
 
 	def due_alerts(self) -> list[dict[str, Any]]:
 		"""Return events whose alert_days threshold has been crossed but not yet fired."""
-		from datetime import date, timedelta
+		from datetime import date
 		today = date.today()
 		upcoming = self._db.execute(
 			"SELECT * FROM events WHERE date >= ? ORDER BY date ASC",

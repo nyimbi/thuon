@@ -5,7 +5,6 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'thuon_platform'))
 
 import importlib
-import inspect
 
 CAPABILITY_MAP = {
 	'capabilities.research_assistant': ('ResearchAssistant', 'perform_research'),

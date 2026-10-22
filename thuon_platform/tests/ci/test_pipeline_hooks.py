@@ -5,9 +5,8 @@ No network, no LLM, no database.
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
-import pytest
 
 from core.pipeline_hooks import (
 	PipelineHooks,

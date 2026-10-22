@@ -91,7 +91,7 @@ class TestAnalyzeBytes:
 class TestAnalyzeImage:
 	def test_reads_file_and_delegates(self):
 		# Use a real temp file — avoids mimetypes misbehaving when builtins.open is patched globally
-		import tempfile, os
+		import os
 		fake_bytes = b'\x89PNG fake'
 		with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
 			f.write(fake_bytes)
@@ -109,7 +109,7 @@ class TestAnalyzeImage:
 			os.unlink(tmppath)
 
 	def test_guesses_mime_type(self):
-		import tempfile, os
+		import os
 		with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as f:
 			f.write(b'JFIF fake')
 			tmppath = f.name
@@ -216,7 +216,7 @@ class TestCompareImages:
 			vm = OllamaVisionModel()
 
 		with patch.object(vm, 'describe', side_effect=['desc A', 'desc B']) as mock_d:
-			result = vm.compare_images('/tmp/a.png', '/tmp/b.png')
+			vm.compare_images('/tmp/a.png', '/tmp/b.png')
 		assert mock_d.call_count == 2
 
 

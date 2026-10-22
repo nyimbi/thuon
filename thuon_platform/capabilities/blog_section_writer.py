@@ -5,11 +5,8 @@ Can write the full post when given the full outline.
 """
 
 import json
-import re
-import time
-from pathlib import Path
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 from core.bundle import writable_data_dir as _wdd
 _OUTPUT_DIR = _wdd() / 'blog'

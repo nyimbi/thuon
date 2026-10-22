@@ -138,7 +138,7 @@ class TestAnalyzePortfolio:
 		assert result['opportunities'][0]['vendor'] == 'Expensive'
 
 	def test_high_priority_threshold(self):
-		from capabilities.contract_renegotiator import ContractRenegotiator, _CATEGORY_DISCOUNT
+		from capabilities.contract_renegotiator import ContractRenegotiator
 		renegotiator = ContractRenegotiator(MagicMock())
 		# cloud at 20% discount: 50000 * 0.20 = 10000 > 500 → high
 		subs = [{'vendor': 'AWS', 'monthly_cost': 50000, 'category': 'cloud'}]

@@ -4,9 +4,8 @@ Atomic capability: write platform-specific social media posts for a given idea.
 """
 
 import json
-import re
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 _PLATFORM_RULES = {
 	'linkedin': (

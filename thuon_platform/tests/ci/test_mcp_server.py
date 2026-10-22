@@ -12,7 +12,6 @@ import pytest
 from flask import Flask
 
 from core.mcp_server import (
-	ThuonMCPServer,
 	_manifest_to_tool,
 	_params_to_json_schema,
 	build_mcp_blueprint,

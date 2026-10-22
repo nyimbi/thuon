@@ -11,8 +11,7 @@ from typing import Any
 
 from core.ai_engine import AIModel
 from core.fleet_inventory import get_fleet_inventory
-from core.ssh_executor import run_command, run_on_fleet
-from core.sysadmin_types import CommandResult
+from core.ssh_executor import run_on_fleet
 
 logger = logging.getLogger('thuon.service_manager')
 

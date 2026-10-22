@@ -3,7 +3,6 @@
 # Works with any Ollama model that supports tool/function calling
 # (Llama 3.1+, Qwen 2.5, Mistral Nemo, Gemma 2, etc.).
 
-import json
 import time
 from typing import Any
 

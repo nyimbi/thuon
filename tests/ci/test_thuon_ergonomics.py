@@ -15,7 +15,7 @@ Tests for all 10 Thuon ergonomic improvements:
 import sys, os, json, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,9 +75,8 @@ class TestThuonResult:
 
 	def test_to_pdf_adds_pdf_path(self):
 		from core.result import ThuonResult
-		from core.document_engine import generate_document
 		r = ThuonResult({'content': '# Report\n## Section\nContent here with enough words ' * 5}, 'cap')
-		with patch('core.document_engine._pdf', return_value='/tmp/out.pdf') as mock_pdf:
+		with patch('core.document_engine._pdf', return_value='/tmp/out.pdf'):
 			r.to_pdf('/tmp/out.pdf')
 		assert 'pdf_path' in r
 
@@ -163,15 +162,17 @@ class TestSchemas:
 	def test_research_input_invalid_depth(self):
 		from core.schemas import ResearchInput
 		import pytest
-		with pytest.raises(Exception):
+		from pydantic import ValidationError
+		with pytest.raises(ValidationError):
 			ResearchInput(query='x', depth='ultradeep')
 
 	def test_research_input_num_sources_bounds(self):
 		from core.schemas import ResearchInput
 		import pytest
-		with pytest.raises(Exception):
+		from pydantic import ValidationError
+		with pytest.raises(ValidationError):
 			ResearchInput(query='x', num_sources=0)   # ge=1
-		with pytest.raises(Exception):
+		with pytest.raises(ValidationError):
 			ResearchInput(query='x', num_sources=100) # le=20
 
 	def test_tender_input_valid(self):
@@ -204,7 +205,8 @@ class TestSchemas:
 	def test_extra_fields_forbidden(self):
 		from core.schemas import ResearchInput
 		import pytest
-		with pytest.raises(Exception):
+		from pydantic import ValidationError
+		with pytest.raises(ValidationError):
 			ResearchInput(query='x', unknown_field='y')
 
 
@@ -356,7 +358,7 @@ steps:
 			],
 		}
 		runner = PipelineRunner(mock_platform)
-		result = runner.run(spec, {})
+		runner.run(spec, {})
 		mock_platform.research_assistant.assert_called_once()
 		mock_platform.daily_brief.assert_called_once()
 
@@ -447,7 +449,6 @@ class TestThuonFacade:
 	# #8 Hot-reload
 	def test_reload_config_clears_container(self):
 		from thuon import Thuon
-		import core.settings_manager as sm
 		t = Thuon()
 		t._container['ai_engine'] = MagicMock()
 		assert 'ai_engine' in t._container
@@ -513,7 +514,7 @@ class TestThuonFacade:
 
 	# #9 Explain mode via CapabilityProxy
 	def test_explain_flag_populates_trace(self):
-		from thuon import Thuon, CapabilityProxy
+		from thuon import CapabilityProxy
 		t, mock_ai, mock_search = self._make_thuon('{"answer": "AI is growing"}')
 
 		# Mock the capability to avoid real instantiation
@@ -531,7 +532,7 @@ class TestThuonFacade:
 		assert 'capability' in result.trace
 
 	def test_explain_false_leaves_empty_trace(self):
-		from thuon import Thuon, CapabilityProxy
+		from thuon import CapabilityProxy
 		t, _, _ = self._make_thuon()
 
 		mock_instance = MagicMock()

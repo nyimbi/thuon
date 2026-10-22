@@ -10,7 +10,7 @@ from typing import Any
 
 from core.ai_engine import AIModel
 from core.fleet_inventory import get_fleet_inventory
-from core.ssh_executor import run_command, run_on_fleet
+from core.ssh_executor import run_on_fleet
 
 logger = logging.getLogger('thuon.firewall_manager')
 
@@ -112,7 +112,7 @@ class FirewallManager:
 		analysis = ''
 		if action == 'audit' and raw_results:
 			combined = '\n'.join(f'=== {srv.hostname} ===\n{res.stdout}'
-								 for srv, res in zip(servers, raw_results) if res.stdout)
+								 for srv, res in zip(servers, raw_results, strict=False) if res.stdout)
 			if combined:
 				prompt = (
 					'You are a Linux security engineer reviewing firewall and open-port status.\n\n'

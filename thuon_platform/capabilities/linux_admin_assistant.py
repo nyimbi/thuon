@@ -14,7 +14,7 @@ from typing import Any
 
 from core.ai_engine import AIModel
 from core.fleet_inventory import get_fleet_inventory
-from core.ssh_executor import run_command, run_on_fleet
+from core.ssh_executor import run_on_fleet
 from core.output_validator import validated_llm_call
 
 logger = logging.getLogger('thuon.linux_admin_assistant')
@@ -106,7 +106,7 @@ class LinuxAdminAssistant:
 			results = run_on_fleet(servers[:10], _FLEET_SUMMARY_CMD, timeout=20)
 			gathered_data['fleet_summary'] = '\n'.join(
 				f'{srv.hostname}: {res.stdout or res.stderr}'
-				for srv, res in zip(servers[:10], results)
+				for srv, res in zip(servers[:10], results, strict=False)
 			)
 
 			# Run any LLM-suggested diagnostic commands (safe only)
@@ -122,7 +122,7 @@ class LinuxAdminAssistant:
 				cmd_results = run_on_fleet(servers[:5], cmd, timeout=15)
 				gathered_data[f'cmd_{i}_{cmd[:30]}'] = '\n'.join(
 					f'{srv.hostname}: {res.stdout[:300]}'
-					for srv, res in zip(servers[:5], cmd_results)
+					for srv, res in zip(servers[:5], cmd_results, strict=False)
 				)
 
 		# Step 3: Analyse

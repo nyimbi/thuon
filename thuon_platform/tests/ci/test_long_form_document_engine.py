@@ -10,10 +10,8 @@ section assembly, entity state updates, PDF render fallback.
 from __future__ import annotations
 
 import json
-import re
 from unittest.mock import MagicMock
 
-import pytest
 
 from capabilities.long_form_document_engine import (
 	DocumentPlan,
@@ -271,7 +269,6 @@ class TestLongFormDocumentEngine:
 	def test_generate_returns_required_keys(self):
 		# Mock plan response
 		plan = _make_plan()
-		plan_json = plan.model_dump()
 		# Serialize exhibits and sections for JSON response
 		plan_dict = {
 			'title': plan.title,

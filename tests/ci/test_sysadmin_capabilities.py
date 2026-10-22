@@ -7,7 +7,6 @@ All SSH and LLM calls are mocked; no real servers are contacted.
 
 from __future__ import annotations
 
-import asyncio
 import json
 from unittest.mock import MagicMock, patch
 
@@ -135,7 +134,8 @@ class TestSSHExecutor:
 			import core.ssh_executor as mod
 			importlib.reload(mod)
 			# SSHUnavailableError should be raised when calling run_command
-			with pytest.raises(Exception):
+			from core.sysadmin_types import SSHUnavailableError
+			with pytest.raises(SSHUnavailableError):
 				mod.run_command(_srv(), 'echo hi')
 		finally:
 			if saved is None:
@@ -364,10 +364,10 @@ class TestServiceManager:
 
 		srv = _srv()
 		with patch('capabilities.service_manager.get_fleet_inventory') as gi, \
-			 patch('capabilities.service_manager.run_command') as rc:
+			 patch('capabilities.service_manager.run_on_fleet') as rc:
 			m = MagicMock(); m.resolve.return_value = [srv]
 			gi.return_value = m
-			rc.return_value = _cmd('● caddy.service - Web Server')
+			rc.return_value = [_cmd('● caddy.service - Web Server')]
 			# status is read-only: dry_run=True should still execute
 			result = cap.manage(action='status', service='caddy', host='easf', dry_run=True)
 

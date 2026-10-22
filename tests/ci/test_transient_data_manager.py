@@ -42,7 +42,7 @@ def test_save_and_load_text():
 def test_cleanup_all():
 	tdm = TransientDataManager()
 	d1 = tdm.create_temp_directory()
-	d2 = tdm.create_temp_directory()
+	tdm.create_temp_directory()
 	tdm.save_data_to_temp_file({'x': 1}, 'a.json')
 	tdm.cleanup_all()
 	# After cleanup all, tracked resources should be gone

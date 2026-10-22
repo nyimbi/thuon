@@ -106,7 +106,6 @@ class TestCalculatorReal:
 		assert abs(result['result'] - 5.0) < 1e-9
 
 	def test_trig_sin(self):
-		import math
 		result = self.calc.calculate('sin(pi / 2)')
 		assert result['status'] == 'success'
 		assert abs(result['result'] - 1.0) < 1e-9

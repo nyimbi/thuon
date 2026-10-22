@@ -1,10 +1,8 @@
 import csv
 import re
 from langchain_ollama.llms import OllamaLLM
-from requests.models import encode_multipart_formdata
 
 
-import re
 
 def parse_thought(response: str) -> tuple[str, str]:
     """

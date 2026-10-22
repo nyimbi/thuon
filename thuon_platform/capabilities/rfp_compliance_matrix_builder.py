@@ -4,9 +4,7 @@ Atomic capability: build a compliance matrix from a list of parsed requirements.
 """
 
 import json
-import re
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
 from core.output_validator import validated_llm_call
 
 

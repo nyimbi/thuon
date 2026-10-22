@@ -1,8 +1,7 @@
 """Tests for core/rfp_tracker.py"""
-import sys, os, json, tempfile
+import sys, os, json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
-from pathlib import Path
 import pytest
 
 from core.rfp_tracker import RFPRecord, RFPStatus, RFPTracker, _TRANSITIONS

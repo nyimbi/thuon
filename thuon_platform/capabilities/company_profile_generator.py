@@ -3,7 +3,6 @@ Generates all company KB markdown files from structured interview answers.
 """
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from typing import Any

@@ -1,10 +1,9 @@
 """Tests for core/skill_registry.py + core/skill_router.py"""
-import sys, os, tempfile
+import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
-from pathlib import Path
 import pytest
-from core.skill_registry import SkillManifest, SkillParam, SkillRegistry, _parse_skill_md
+from core.skill_registry import SkillManifest, SkillRegistry, _parse_skill_md
 from core.skill_router import SkillRouter, _extract_quoted, _score_gap
 
 

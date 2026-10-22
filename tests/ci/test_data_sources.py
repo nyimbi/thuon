@@ -4,7 +4,6 @@ Tests for core/data_sources/* — all HTTP is mocked via unittest.mock.
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
-import json
 from unittest.mock import patch, MagicMock
 
 

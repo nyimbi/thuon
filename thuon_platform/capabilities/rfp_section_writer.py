@@ -5,9 +5,8 @@ management_plan, past_performance, pricing, personnel, corporate_capabilities).
 """
 
 import json
-import re
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 _memory_store = None
 _memory_lock = __import__('threading').Lock()

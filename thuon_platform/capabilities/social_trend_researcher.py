@@ -4,10 +4,9 @@ Atomic capability: research trending context for a social media post idea.
 """
 
 import json
-import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 
 class SocialTrendResearcher:

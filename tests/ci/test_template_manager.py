@@ -46,7 +46,7 @@ def test_generate_document_text_output():
 	with tempfile.NamedTemporaryFile(suffix='.md', delete=False) as f:
 		output_path = f.name
 	try:
-		result = tm.generate_document_from_template_string(template_str, {'summary': 'Test summary'}, 'md', output_path)
+		tm.generate_document_from_template_string(template_str, {'summary': 'Test summary'}, 'md', output_path)
 		assert os.path.exists(output_path)
 		with open(output_path) as f:
 			content = f.read()

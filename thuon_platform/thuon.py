@@ -46,11 +46,9 @@ Thuon — the single import you need.
 from __future__ import annotations
 import importlib
 import inspect
-import json
 import os
-import re
 import time
-from typing import Any, Generator, Iterator
+from typing import Any, Iterator
 
 from core.result import ThuonResult
 from core.settings_manager import get_settings

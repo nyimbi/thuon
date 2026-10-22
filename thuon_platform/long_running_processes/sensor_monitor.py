@@ -13,7 +13,7 @@ import logging
 import threading
 import feedparser
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))

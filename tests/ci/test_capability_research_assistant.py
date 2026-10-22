@@ -3,7 +3,6 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'thuon_platform'))
 
-import json
 from unittest.mock import MagicMock
 from capabilities.research_assistant import ResearchAssistant
 

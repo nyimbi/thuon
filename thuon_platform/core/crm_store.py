@@ -34,7 +34,7 @@ def _dumps(v: Any) -> str:
 
 
 def _row_to_dict(cursor: sqlite3.Cursor, row: sqlite3.Row) -> dict[str, Any]:
-	return dict(zip([c[0] for c in cursor.description], row))
+	return dict(zip([c[0] for c in cursor.description], row, strict=False))
 
 
 def _json_field(row: dict[str, Any], key: str) -> Any:

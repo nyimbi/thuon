@@ -2,7 +2,7 @@
 import sys, os, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
-import math
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -292,11 +292,15 @@ class TestCalendarTool:
 	def test_get_events_after_create(self, tmp_path):
 		cal = self._cal()
 		p = str(tmp_path / 'cal.ics')
+		# Relative to now — a fixed date falls outside the forward window
+		# as soon as it passes, which is a time bomb, not a regression.
+		start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0)
+		end = start + timedelta(minutes=15)
 		cal.create_event(
 			calendar_path=p,
 			title='Stand-up',
-			start='2026-07-01T09:00:00',
-			end='2026-07-01T09:15:00',
+			start=start.isoformat(),
+			end=end.isoformat(),
 		)
 		r = cal.get_events(days_ahead=30, calendar_path=p)
 		assert r['status'] == 'success'

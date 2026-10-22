@@ -67,7 +67,7 @@ class ServiceStatusChecker:
 		results = run_on_fleet(servers, cmd, timeout=20)
 
 		statuses: list[ServiceStatus] = []
-		for srv, res in zip(servers, results):
+		for srv, res in zip(servers, results, strict=False):
 			if not res.success and not res.stdout:
 				statuses.append(ServiceStatus(
 					hostname=srv.hostname, ip=srv.ip, service=service,

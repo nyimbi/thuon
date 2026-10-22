@@ -13,7 +13,6 @@ from __future__ import annotations
 import time
 import threading
 from contextlib import contextmanager
-from typing import Any
 
 
 _local = threading.local()

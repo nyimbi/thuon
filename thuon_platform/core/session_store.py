@@ -8,7 +8,6 @@
 import json
 import time
 import hashlib
-from typing import Any
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS capability_sessions (

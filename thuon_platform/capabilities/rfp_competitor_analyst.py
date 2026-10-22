@@ -3,11 +3,10 @@
 Atomic capability: competitive landscape analysis for an RFP.
 """
 
-import json
 import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 _graph = None
 _graph_lock = __import__('threading').Lock()

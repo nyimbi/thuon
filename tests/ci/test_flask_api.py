@@ -52,7 +52,7 @@ def test_list_capabilities():
 	assert isinstance(data, dict)
 	assert len(data) > 0
 	# Each capability has required fields
-	for name, cap in data.items():
+	for cap in data.values():
 		assert 'description' in cap
 		assert 'method' in cap
 		assert 'endpoint' in cap

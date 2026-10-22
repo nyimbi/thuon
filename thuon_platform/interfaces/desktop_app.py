@@ -203,7 +203,6 @@ def run_desktop_app() -> None:
 
 	def _on_started():
 		from Foundation import NSObject
-		import objc
 
 		class _MainDispatch(NSObject):
 			"""Trampoline: schedules _setup_statusbar on the main run-loop."""

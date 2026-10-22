@@ -6,7 +6,6 @@ returns a structured health snapshot with anomaly flags and an LLM summary.
 
 from __future__ import annotations
 
-import re
 import logging
 from typing import Any
 
@@ -124,7 +123,7 @@ class FleetHealthMonitor:
 		results = run_on_fleet(servers, _HEALTH_SCRIPT, timeout=30)
 
 		snapshots: list[HealthSnapshot] = []
-		for srv, res in zip(servers, results):
+		for srv, res in zip(servers, results, strict=False):
 			if not res.success and not res.stdout:
 				snap = HealthSnapshot(hostname=srv.hostname, ip=srv.ip, reachable=False,
 									  error=res.stderr or 'SSH failed')

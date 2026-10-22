@@ -10,7 +10,7 @@ Usage:
 
 from __future__ import annotations
 from typing import Literal, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class _Base(BaseModel):

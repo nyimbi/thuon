@@ -7,7 +7,6 @@ All methods are graceful no-ops when neditor is not installed or unconfigured.
 
 from __future__ import annotations
 import json
-import os
 import subprocess
 import threading
 import time

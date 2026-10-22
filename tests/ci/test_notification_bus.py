@@ -74,12 +74,6 @@ class TestNotificationBus:
 		assert bus.unread_count() == 0
 
 	def test_retention_cap(self):
-		# default retention is 50; create bus with small cap
-		from unittest.mock import patch
-		from core.settings_manager import get_settings
-		settings = get_settings()
-		original = settings.get_setting('notifications.retention_count', 50)
-
 		# Directly instantiate with deque maxlen override
 		from collections import deque
 		bus = self._bus()

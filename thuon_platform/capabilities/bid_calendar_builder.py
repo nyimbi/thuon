@@ -12,7 +12,7 @@ from typing import Any
 
 import httpx
 
-from thuon_platform.core.ai_engine import AIModel
+from core.ai_engine import AIModel
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +207,7 @@ class BidCalendarBuilder:
 			"action_items": [],
 		}
 		try:
-			raw = self._ai.generate(prompt)
+			raw = self._ai.generate_text(prompt)
 			parsed = extract_json(raw)
 			if parsed:
 				enriched["recompete_likelihood"] = float(parsed.get("recompete_likelihood", 0.5))

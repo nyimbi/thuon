@@ -27,7 +27,6 @@ def _run_job(name: str, fn) -> None:
 
 
 def _job_rfp_discovery() -> None:
-	from core.company_profile import get_company_profile
 	from core.notification_bus import get_notification_bus
 	bus = get_notification_bus()
 	bus.publish(
@@ -58,7 +57,6 @@ def _job_social_daily() -> None:
 	bridge = get_obsidian_bridge()
 	ideas = bridge.read_ideas() if bridge.enabled else []
 	# Also collect in-app ideas
-	from pathlib import Path
 	from core.bundle import writable_data_dir as _wdd
 	ideas_dir = _wdd() / 'ideas'
 	if ideas_dir.is_dir():

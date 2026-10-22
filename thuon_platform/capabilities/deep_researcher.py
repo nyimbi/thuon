@@ -201,7 +201,7 @@ class DeepResearcher:
 		ss_citations_found = 0
 		try:
 			from core.data_sources.semantic_scholar import (
-				search_papers, get_citations, get_references, format_papers_for_context
+				search_papers, get_citations
 			)
 			ss_results = search_papers(refined_query, limit=5)
 			for paper in ss_results[:3]:

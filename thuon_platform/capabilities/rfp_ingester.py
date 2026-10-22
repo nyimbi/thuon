@@ -4,10 +4,8 @@ Atomic capability: parse an RFP from URL, file path, or raw text.
 Returns structured JSON with title, issuer, deadline, requirements, etc.
 """
 
-import json
-import re
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json, extract_json_array
+from core.llm_utils import extract_json
 
 
 class RFPIngester:

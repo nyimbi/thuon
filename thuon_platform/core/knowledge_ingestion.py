@@ -118,7 +118,7 @@ class KnowledgeIngestionPipeline:
 		self._ensure_index()
 		tokenized_query = query.lower().split()
 		scores = self._index.get_scores(tokenized_query)
-		ranked = sorted(zip(scores, self._chunks), key=lambda x: -x[0])
+		ranked = sorted(zip(scores, self._chunks, strict=False), key=lambda x: -x[0])
 		return [
 			{'score': float(score), 'source': c['source'], 'text': c['text']}
 			for score, c in ranked[:top_k]

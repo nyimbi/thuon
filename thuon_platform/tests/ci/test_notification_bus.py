@@ -5,7 +5,6 @@ No network, no disk, no LLM.
 """
 from __future__ import annotations
 
-import pytest
 
 from core.notification_bus import Notification, NotificationBus
 

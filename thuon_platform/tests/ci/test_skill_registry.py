@@ -7,7 +7,6 @@ No network, no LLM, no filesystem side-effects beyond tmp_path.
 from __future__ import annotations
 
 import textwrap
-from pathlib import Path
 
 import pytest
 

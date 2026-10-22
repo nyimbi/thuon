@@ -26,7 +26,7 @@ result = engine.generate(
 )
 elapsed = round(time.time() - t0, 1)
 
-print(f'\n--- RESULT ---')
+print('\n--- RESULT ---')
 print(f'Status:        {result["status"]}')
 print(f'Title:         {result["title"]}')
 print(f'Word count:    {result["word_count"]:,}')

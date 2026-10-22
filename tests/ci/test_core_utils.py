@@ -3,9 +3,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'thuon_platform'))
 
-import json
 import tempfile
-from pathlib import Path
 from core.utils import (
 	log_message,
 	handle_exception,

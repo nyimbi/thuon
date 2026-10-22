@@ -12,8 +12,6 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
 import json
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -134,7 +132,7 @@ class TestFeedbackStore:
 		assert wr['sample_size'] == 1
 
 	def test_get_feedback_store_singleton(self, tmp_path):
-		from core.feedback_store import get_feedback_store, FeedbackStore
+		from core.feedback_store import get_feedback_store
 		s1 = get_feedback_store()
 		s2 = get_feedback_store()
 		assert s1 is s2
