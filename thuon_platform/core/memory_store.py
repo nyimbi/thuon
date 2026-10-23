@@ -151,7 +151,7 @@ class MemoryStore:
 
 	# ── episodic store ────────────────────────────────────────────────────────
 
-	def log_episode(self, session_id: str, event_type: str, content: str, metadata: dict | None = None) -> int:
+	def log_episode(self, session_id: str, event_type: str, content: str, metadata: dict | None = None) -> int | None:
 		import json
 		with self._lock:
 			cur = self._db.execute(

@@ -76,7 +76,7 @@ class CalendarStore:
 		ref_id: str | None = None,
 		ref_type: str | None = None,
 		alert_days: str = '7,1',
-	) -> dict[str, Any]:
+	) -> dict[str, Any] | None:
 		import uuid
 		eid  = str(uuid.uuid4())
 		now  = _now()

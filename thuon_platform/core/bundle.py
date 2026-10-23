@@ -32,7 +32,9 @@ def app_root() -> Path:
 	Bundle:      sys._MEIPASS (where PyInstaller extracts frozen data).
 	"""
 	if getattr(sys, 'frozen', False):
-		return Path(sys._MEIPASS)
+		# PyInstaller sets _MEIPASS on the interpreter at runtime; it is not
+		# in the stdlib stubs, so the type checker needs telling.
+		return Path(sys._MEIPASS)  # type: ignore[attr-defined]
 	# __file__ = .../thuon_platform/core/bundle.py  →  .parent.parent = thuon_platform/
 	return Path(__file__).resolve().parent.parent
 

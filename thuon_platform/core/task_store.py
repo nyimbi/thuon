@@ -62,7 +62,7 @@ class TaskStore:
 		tags: str = '',
 		parent_id: str | None = None,
 		status: str = 'pending',
-	) -> dict[str, Any]:
+	) -> dict[str, Any] | None:
 		import uuid
 		task_id = str(uuid.uuid4())
 		now = time.time()

@@ -6,7 +6,7 @@
 import time
 from typing import Any
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
 
 from core.settings_manager import get_settings
@@ -35,6 +35,11 @@ Your workflow:
 6. Return the final working code with a brief explanation
 
 Always test your code before returning it as the final answer."""
+
+
+def _as_text(content) -> str:
+	"""Message content as plain text — it is a list of blocks for multimodal models."""
+	return content if isinstance(content, str) else str(content)
 
 
 class AgentLoop:
@@ -70,13 +75,16 @@ class AgentLoop:
 		start = time.time()
 
 		for iteration in range(self.max_iterations):
-			response: AIMessage = self.llm_with_tools.invoke(messages)
+			# invoke() is typed to return BaseMessage; only AIMessage carries
+			# tool_calls, so the isinstance test below is what routes a plain
+			# message to the final-answer branch.
+			response: BaseMessage = self.llm_with_tools.invoke(messages)
 			messages.append(response)
 
-			if not getattr(response, 'tool_calls', None):
+			if not isinstance(response, AIMessage) or not response.tool_calls:
 				# No tool calls — this is the final answer
 				return {
-					'answer': response.content,
+					'answer': _as_text(response.content),
 					'iterations': iteration + 1,
 					'tool_calls': tool_calls_log,
 					'elapsed_seconds': round(time.time() - start, 1),
@@ -86,7 +94,7 @@ class AgentLoop:
 			for call in response.tool_calls:
 				tool_name: str = call['name']
 				tool_args: dict = call['args']
-				call_id: str = call['id']
+				call_id: str = call['id'] or ''
 
 				if tool_name in self.tools_by_name:
 					try:
@@ -109,7 +117,9 @@ class AgentLoop:
 		last_content = ''
 		for m in reversed(messages):
 			if isinstance(m, AIMessage) and m.content:
-				last_content = m.content
+				# content is a str for text models and a list of typed blocks
+				# otherwise; the return type is str either way.
+				last_content = m.content if isinstance(m.content, str) else str(m.content)
 				break
 
 		return {
