@@ -49,10 +49,11 @@ class BlogSEOOptimizer:
 		)
 
 		response = self.ai_engine.generate_text(prompt)
-		result = {}
-		try:
-			result = extract_json(response)
-		except Exception:
+		# extract_json returns None rather than raising when the model emits
+		# no JSON, so a try/except here never fires and every result.get()
+		# below would be an AttributeError on None.
+		result = extract_json(response)
+		if not result:
 			result = {
 				'optimized_content': full_content,
 				'seo_title':         target_keyword,

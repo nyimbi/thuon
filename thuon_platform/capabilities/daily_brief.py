@@ -181,9 +181,14 @@ class DailyBrief:
 
 		def _fetch(queries: list[str], per_query: int = 3, cap: int = 6) -> list[dict]:
 			results: list[dict] = []
+			# Bind once: the caller's `if not self.search_engine` guard does
+			# not narrow the attribute inside this closure.
+			engine = self.search_engine
+			if engine is None:
+				return results
 			for q in queries:
 				try:
-					for r in self.search_engine.search(
+					for r in engine.search(
 						f'{q} {month}',
 						num_results=per_query + 1,
 						time_range='week',
@@ -244,12 +249,16 @@ class DailyBrief:
 			import feedparser
 			feed = feedparser.parse(_FF_RSS)
 			ym   = date_str[:7]
-			for entry in feed.entries[:30]:
-				pub = entry.get('published', '')
+			# feedparser returns a FeedParserDict with no `entries` key at
+			# all when the fetch failed, so indexing it raises AttributeError.
+			# getattr covers both a FeedParserDict and any dict-shaped stub.
+			entries = getattr(feed, 'entries', None) or []
+			for entry in list(entries)[:30]:
+				pub = str(entry.get('published') or '')
 				if ym in pub or not pub:
 					events.append({
 						'event':  entry.get('title', ''),
-						'detail': entry.get('summary', '')[:200],
+						'detail': str(entry.get('summary') or '')[:200],
 						'source': 'ForexFactory',
 					})
 		except Exception:
@@ -432,16 +441,19 @@ class DailyBrief:
 			for uid in reversed(uids):
 				try:
 					_, msg_data = conn.fetch(uid, '(RFC822)')
+					if not msg_data or not isinstance(msg_data[0], tuple):
+						continue
 					msg = message_from_bytes(msg_data[0][1])
 
 					raw_subj  = _email_header.decode_header(msg.get('Subject', ''))[0]
-					subject   = (
-						raw_subj[0].decode(
-							raw_subj[1].decode() if isinstance(raw_subj[1], bytes) else (raw_subj[1] or 'utf-8')
+					# decode_header yields (str | bytes, charset | None).
+					subj_text = raw_subj[0]
+					if isinstance(subj_text, bytes):
+						subj_text = subj_text.decode(
+							raw_subj[1].decode() if isinstance(raw_subj[1], bytes) else (raw_subj[1] or 'utf-8'),
+							errors='replace',
 						)
-						if isinstance(raw_subj[0], bytes)
-						else str(raw_subj[0])
-					)
+					subject = subj_text
 					from_addr = msg.get('From', '')
 					body      = _extract_email_body(msg)[:1500]
 
@@ -683,17 +695,21 @@ def _extract_email_body(msg: _email_message.Message) -> str:
 		ct = part.get_content_type()
 		if ct == 'text/plain':
 			try:
-				return part.get_payload(decode=True).decode(
-					part.get_content_charset() or 'utf-8', errors='replace'
-				)
+				payload = part.get_payload(decode=True)
+				# decode=True yields bytes at runtime; the stub's union also
+				# admits a nested Message, which is not decodable.
+				if not isinstance(payload, bytes):
+					continue
+				return payload.decode(part.get_content_charset() or 'utf-8', errors='replace')
 			except Exception:
 				pass
 		if ct == 'text/html':
 			try:
 				from bs4 import BeautifulSoup
-				return BeautifulSoup(
-					part.get_payload(decode=True), 'html.parser'
-				).get_text(' ')
+				payload = part.get_payload(decode=True)
+				if not isinstance(payload, bytes):
+					continue
+				return BeautifulSoup(payload, 'html.parser').get_text(' ')
 			except Exception:
 				pass
 	return ''
