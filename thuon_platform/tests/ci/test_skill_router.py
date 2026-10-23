@@ -194,6 +194,7 @@ def test_llm_disambiguation_failure_falls_back_to_bm25():
 	_seed_registry()
 	router = SkillRouter(ai_engine=RejectingAI())
 	result = router.route('find government procurement tenders')
+	assert result is not None
 	assert result.name == 'tender_scout'
 
 

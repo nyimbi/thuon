@@ -163,7 +163,9 @@ def test_bootstrap_params_parsed():
 def test_bootstrap_source_tag():
 	reg = SkillRegistry.get_instance()
 	reg.bootstrap(_MINIMAL_WEB_REGISTRY, _MINIMAL_CATEGORY_MAP)
-	assert reg.get('research_assistant').source == 'registry_web'
+	m = reg.get('research_assistant')
+	assert m is not None
+	assert m.source == 'registry_web'
 
 
 # ── SkillRegistry — augment_cli ───────────────────────────────────────────────
@@ -174,6 +176,7 @@ def test_augment_cli_adds_keywords_to_existing():
 	reg.augment_cli(_MINIMAL_CLI_REGISTRY)
 
 	m = reg.get('research_assistant')
+	assert m is not None
 	assert 'research' in m.keywords
 	assert m.example == 't.research_assistant(query="AI trends")'
 
@@ -185,6 +188,7 @@ def test_augment_cli_adds_cli_only_cap():
 
 	assert 'tender_scout' in reg
 	m = reg.get('tender_scout')
+	assert m is not None
 	assert m.source == 'registry_cli'
 	assert 'procurement' in m.keywords
 
@@ -195,13 +199,16 @@ def test_augment_cli_does_not_overwrite_existing_keywords():
 
 	# Pre-seed keywords manually
 	existing = reg.get('research_assistant')
+	assert existing is not None
 	reg._manifests['research_assistant'] = existing.model_copy(
 		update={'keywords': ['already', 'set']}
 	)
 
 	reg.augment_cli(_MINIMAL_CLI_REGISTRY)
 	# Should not overwrite
-	assert reg.get('research_assistant').keywords == ['already', 'set']
+	m = reg.get('research_assistant')
+	assert m is not None
+	assert m.keywords == ['already', 'set']
 
 
 # ── SkillRegistry — search ────────────────────────────────────────────────────
@@ -345,6 +352,7 @@ def test_skill_md_discovery_overrides_registry(tmp_path, monkeypatch):
 	reg.bootstrap(_MINIMAL_WEB_REGISTRY, _MINIMAL_CATEGORY_MAP)
 
 	m = reg.get('research_assistant')
+	assert m is not None
 	assert m.description == 'Overridden by SKILL.md'
 	assert m.source == 'skill_md'
 
@@ -376,6 +384,7 @@ def test_skill_md_discovery_adds_new_skill(tmp_path, monkeypatch):
 
 	assert 'email_composer' in reg
 	m = reg.get('email_composer')
+	assert m is not None
 	assert m.source == 'skill_md'
 	assert m.category == 'content'
 	assert 'email' in m.keywords

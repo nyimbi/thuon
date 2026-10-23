@@ -22,7 +22,12 @@ from core.llm_utils import extract_json
 from core.skill_registry import SkillManifest, SkillRegistry
 
 if TYPE_CHECKING:
-	from core.ai_engine import OllamaModel
+	from typing import Protocol
+
+	class _TextGenerator(Protocol):
+		"""The one method the router needs — anything that can write text."""
+
+		def generate_text(self, prompt: str) -> str: ...
 
 logger = logging.getLogger('thuon.skill_router')
 
@@ -35,7 +40,7 @@ class SkillRouter:
 	Stage 2: LLM rerank only when top-2 candidates are within 1 BM25 point.
 	"""
 
-	def __init__(self, ai_engine: OllamaModel | None = None) -> None:
+	def __init__(self, ai_engine: _TextGenerator | None = None) -> None:
 		self._registry = SkillRegistry.get_instance()
 		self._ai = ai_engine
 		self._cap_list: str | None = None  # cached after first build
