@@ -15,12 +15,12 @@ class WhisperTranscriber:
 				return {'status': 'error', 'error': f'File not found: {file_path}'}
 
 			model = whisper.load_model(model_size)
-			options = {} if not language else {'language': language}
-			result = model.transcribe(file_path, **options)
+			options: dict[str, Any] = {} if not language else {'language': language}
+			result: dict[str, Any] = model.transcribe(file_path, **options)
 
 			segments = [
-				{'start': float(s['start']), 'end': float(s['end']), 'text': str(s['text'])}
-				for s in result.get('segments', [])
+				{'start': float(seg['start']), 'end': float(seg['end']), 'text': str(seg['text'])}
+				for seg in result.get('segments', [])
 			]
 
 			# derive duration from last segment's end time

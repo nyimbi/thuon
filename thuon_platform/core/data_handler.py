@@ -37,69 +37,81 @@ class DatabaseHandler:
 			self.conn.close()
 			self.conn = None
 
-	def _ensure_connected(self) -> bool:
+	def _ensure_connected(self) -> 'psycopg2.extensions.connection | None':
+		"""
+		Return a live connection, connecting first if needed, or None.
+
+		Returning the connection rather than a bool is what lets every caller
+		below bind it once. With a bool, `self.conn` stays Optional at each of
+		the 27 use sites, and the None branch that the guard rules out is
+		invisible to a reader as well as to a type checker.
+		"""
 		if self.conn is None or self.conn.closed:
-			return self.connect()
-		return True
+			self.connect()
+		return self.conn
 
 	def execute_query(self, query: str, params: tuple = ()) -> list[dict]:
-		if not self._ensure_connected():
+		conn = self._ensure_connected()
+		if conn is None:
 			return []
 		try:
-			with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+			with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
 				cur.execute(query, params)
 				if cur.description:
 					rows = cur.fetchall()
-					self.conn.commit()
+					conn.commit()
 					return [dict(r) for r in rows]
-				self.conn.commit()
+				conn.commit()
 				return []
 		except Exception as e:
-			self.conn.rollback()
+			conn.rollback()
 			logger.error(f"Query error: {e}")
 			return []
 
 	def create_table(self, table_name: str, schema: dict) -> bool:
 		cols = ', '.join(f'"{k}" {v}' for k, v in schema.items())
 		sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({cols})'
+		conn = self._ensure_connected()
+		if conn is None:
+			return False
 		try:
-			if not self._ensure_connected():
-				return False
-			with self.conn.cursor() as cur:
+			with conn.cursor() as cur:
 				cur.execute(sql)
-			self.conn.commit()
+			conn.commit()
 			return True
 		except Exception as e:
-			self.conn.rollback()
+			conn.rollback()
 			logger.error(f"Create table error: {e}")
 			return False
 
 	def drop_table(self, table_name: str) -> bool:
+		conn = self._ensure_connected()
+		if conn is None:
+			return False
 		try:
-			if not self._ensure_connected():
-				return False
-			with self.conn.cursor() as cur:
+			with conn.cursor() as cur:
 				cur.execute(f'DROP TABLE IF EXISTS "{table_name}"')
-			self.conn.commit()
+			conn.commit()
 			return True
 		except Exception as e:
-			self.conn.rollback()
+			conn.rollback()
 			logger.error(f"Drop table error: {e}")
 			return False
 
 	def insert_data(self, table_name: str, data: dict) -> bool:
-		if not self._ensure_connected():
+		conn = self._ensure_connected()
+		if conn is None:
 			return False
 		cols = ', '.join(f'"{k}"' for k in data)
 		placeholders = ', '.join(['%s'] * len(data))
 		sql = f'INSERT INTO "{table_name}" ({cols}) VALUES ({placeholders})'
 		try:
-			with self.conn.cursor() as cur:
+			with conn.cursor() as cur:
 				cur.execute(sql, list(data.values()))
-			self.conn.commit()
+			conn.commit()
 			return True
 		except Exception as e:
-			self.conn.rollback()
+			conn.rollback()
 			logger.error(f"Insert error: {e}")
 			return False
 
@@ -110,31 +122,33 @@ class DatabaseHandler:
 		return self.execute_query(sql, params)
 
 	def update_data(self, table_name: str, updates: dict, condition: str, params: tuple = ()) -> bool:
-		if not self._ensure_connected():
+		conn = self._ensure_connected()
+		if conn is None:
 			return False
 		set_clause = ', '.join(f'"{k}" = %s' for k in updates)
 		sql = f'UPDATE "{table_name}" SET {set_clause} WHERE {condition}'
 		all_params = list(updates.values()) + list(params)
 		try:
-			with self.conn.cursor() as cur:
+			with conn.cursor() as cur:
 				cur.execute(sql, all_params)
-			self.conn.commit()
+			conn.commit()
 			return True
 		except Exception as e:
-			self.conn.rollback()
+			conn.rollback()
 			logger.error(f"Update error: {e}")
 			return False
 
 	def delete_data(self, table_name: str, condition: str, params: tuple = ()) -> bool:
-		if not self._ensure_connected():
+		conn = self._ensure_connected()
+		if conn is None:
 			return False
 		sql = f'DELETE FROM "{table_name}" WHERE {condition}'
 		try:
-			with self.conn.cursor() as cur:
+			with conn.cursor() as cur:
 				cur.execute(sql, params)
-			self.conn.commit()
+			conn.commit()
 			return True
 		except Exception as e:
-			self.conn.rollback()
+			conn.rollback()
 			logger.error(f"Delete error: {e}")
 			return False
