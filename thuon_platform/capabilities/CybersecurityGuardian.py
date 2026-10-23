@@ -63,7 +63,7 @@ class CybersecurityGuardian:
 				return result
 		except Exception:
 			pass
-		result = {'result': response, 'system': system_description, 'scan_type': scan_type, 'status': 'success'}
+		result: dict = {'result': response, 'system': system_description, 'scan_type': scan_type, 'status': 'success'}
 		if nvd_cves:
 			result['nvd_cves_found'] = len(nvd_cves)
 		return result

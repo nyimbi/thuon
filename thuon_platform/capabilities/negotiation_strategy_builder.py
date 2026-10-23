@@ -7,7 +7,7 @@ from core.search_engine import SearchEngine
 
 
 class NegotiationStrategyBuilder:
-	def __init__(self, ai_engine: AIModel, search_engine: SearchEngine = None):
+	def __init__(self, ai_engine: AIModel, search_engine: SearchEngine | None = None):
 		self.ai_engine    = ai_engine
 		self.search_engine = search_engine
 

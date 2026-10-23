@@ -62,7 +62,7 @@ class RFPAssembler:
 		for sec_name in _SECTION_ORDER:
 			if sec_name not in sections:
 				continue
-			sec = sections[sec_name]
+			sec = sections.get(sec_name) if isinstance(sections, dict) else None
 			content = sec.get('content', str(sec)) if isinstance(sec, dict) else str(sec)
 			words   = sec.get('word_count', len(content.split())) if isinstance(sec, dict) else len(content.split())
 			heading = sec_name.replace('_', ' ').title()

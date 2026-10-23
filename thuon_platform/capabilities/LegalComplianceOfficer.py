@@ -24,7 +24,7 @@ def _chunk_text(text: str, size: int = _CHUNK_SIZE, overlap: int = _CHUNK_OVERLA
 
 
 class LegalComplianceOfficer:
-	def __init__(self, ai_engine: AIModel, search_engine: SearchEngine, rag_engine: RAGEngine = None):
+	def __init__(self, ai_engine: AIModel, search_engine: SearchEngine, rag_engine: RAGEngine | None = None):
 		self.ai_engine = ai_engine
 		self.search_engine = search_engine
 		self.rag_engine = rag_engine

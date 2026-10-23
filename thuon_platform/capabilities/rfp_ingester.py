@@ -133,7 +133,7 @@ class RFPIngester:
 		import os
 		import tempfile
 		try:
-			from pdf2image import convert_from_path
+			from pdf2image import convert_from_path  # type: ignore[import]
 		except ImportError:
 			logging.warning('pdf2image not installed; skipping vision OCR for page %d of %s', page_index, pdf_path)
 			return ''
@@ -167,7 +167,7 @@ class RFPIngester:
 		import os
 		import tempfile
 		try:
-			from pdf2image import convert_from_path
+			from pdf2image import convert_from_path  # type: ignore[import]
 		except ImportError:
 			logging.warning('pdf2image not installed; analyze_visual_elements requires it')
 			return []

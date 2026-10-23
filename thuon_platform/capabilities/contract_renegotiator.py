@@ -176,8 +176,11 @@ class ContractRenegotiator:
 		}
 
 	def _market_context(self, vendor: str, category: str) -> str:
+		engine = self.search_engine
+		if engine is None:
+			return ''
 		try:
-			results = self.search_engine.search(
+			results = engine.search(
 				f'{vendor} {category} pricing competitors alternatives 2025', num_results=3
 			)
 			return ' '.join(r.get('body', r.get('snippet', '')) for r in results[:2])[:500]

@@ -57,10 +57,12 @@ class RFPConsistencyChecker:
 		)
 
 		response = self.ai_engine.generate_text(prompt)
-		try:
-			return extract_json(response)
-		except Exception:
-			pass
+		# extract_json returns None rather than raising when the model emits no
+		# JSON, so the except below never fires and this method would return
+		# None from a `-> dict` signature.
+		result = extract_json(response)
+		if result:
+			return result
 
 		return {
 			'issues':                    [],

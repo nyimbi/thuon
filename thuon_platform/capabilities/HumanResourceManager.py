@@ -7,7 +7,7 @@ from core.data_handler import DatabaseHandler
 
 
 class HumanResourceManager:
-	def __init__(self, ai_engine: AIModel, data_handler: DatabaseHandler = None):
+	def __init__(self, ai_engine: AIModel, data_handler: DatabaseHandler | None = None):
 		self.ai_engine = ai_engine
 		self.data_handler = data_handler
 

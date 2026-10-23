@@ -24,8 +24,8 @@ class ResearchAssistant:
 		self,
 		ai_engine: AIModel,
 		search_engine: SearchEngine,
-		rag_engine: RAGEngine = None,
-		data_handler: DatabaseHandler = None,
+		rag_engine: RAGEngine | None = None,
+		data_handler: DatabaseHandler | None = None,
 	):
 		self.ai_engine = ai_engine
 		self.search_engine = search_engine
