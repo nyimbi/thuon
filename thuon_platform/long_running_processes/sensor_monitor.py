@@ -13,7 +13,7 @@ import logging
 import threading
 import feedparser
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Any, List
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -80,12 +80,16 @@ class DataSource(ABC):
 		self.config = config
 		self.source_name = config.get('name', 'Unnamed DataSource')
 
+	# `Any` in both signatures on purpose: the return of fetch_data is
+	# whatever the source yields (a parsed feed, a page of text, a list) and
+	# is only ever handed straight back to parse_data. Pinning it to one
+	# type is what made every subclass override incompatible.
 	@abstractmethod
-	def fetch_data(self):
+	def fetch_data(self) -> Any:
 		pass
 
 	@abstractmethod
-	def parse_data(self, raw_data) -> list:
+	def parse_data(self, raw_data: Any) -> list:
 		pass
 
 	def evaluate_event(self, parsed_item: dict, ai_engine) -> bool:
@@ -101,7 +105,7 @@ class DataSource(ABC):
 
 
 class RSSFeedDataSource(DataSource):
-	def __init__(self, config: dict):
+	def __init__(self, config: dict[str, Any]):
 		super().__init__(config)
 		self.feed_url = config.get('feed_url')
 		if not self.feed_url:
@@ -114,27 +118,29 @@ class RSSFeedDataSource(DataSource):
 			logger.error(f"RSS fetch error for '{self.source_name}': {e}")
 			return None
 
-	def parse_data(self, raw_feed) -> list:
-		if raw_feed and hasattr(raw_feed, 'entries'):
-			return list(raw_feed.entries)
+	def parse_data(self, raw_data) -> list:
+		if raw_data and hasattr(raw_data, 'entries'):
+			return list(raw_data.entries)
 		return []
 
 
 class WebScrapingDataSource(DataSource):
-	def __init__(self, config: dict):
+	def __init__(self, config: dict[str, Any]):
 		super().__init__(config)
-		self.scrape_url = config.get('scrape_url')
-		if not self.scrape_url:
+		scrape_url = config.get('scrape_url')
+		if not scrape_url:
 			raise ValueError(f"WebScrapingDataSource '{self.source_name}' requires 'scrape_url'.")
+		# Bound here as a str so fetch_data need not re-narrow the attribute.
+		self.scrape_url: str = str(scrape_url)
 
 	def fetch_data(self):
 		text = scrape_webpage(self.scrape_url)
 		return text if text else None
 
-	def parse_data(self, text: str) -> list:
-		if not text:
+	def parse_data(self, raw_data) -> list:
+		if not raw_data:
 			return []
-		return [{'title': f"Scraped from {self.scrape_url}", 'summary': text[:1000], 'source_url': self.scrape_url}]
+		return [{'title': f"Scraped from {self.scrape_url}", 'summary': str(raw_data)[:1000], 'source_url': self.scrape_url}]
 
 
 class DataSourceManager:
