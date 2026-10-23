@@ -116,6 +116,8 @@ class KnowledgeIngestionPipeline:
 		if not self._chunks:
 			return []
 		self._ensure_index()
+		if self._index is None:
+			return []
 		tokenized_query = query.lower().split()
 		scores = self._index.get_scores(tokenized_query)
 		ranked = sorted(zip(scores, self._chunks, strict=False), key=lambda x: -x[0])
@@ -155,10 +157,14 @@ class KnowledgeIngestionPipeline:
 			self._index = BM25Okapi(tokenized)
 
 	def _save(self) -> None:
+		if not self.store_path:
+			return
 		with open(self.store_path, 'w') as f:
 			json.dump(self._chunks, f)
 
 	def _load(self) -> None:
+		if not self.store_path:
+			return
 		with open(self.store_path) as f:
 			content = f.read().strip()
 		if content:

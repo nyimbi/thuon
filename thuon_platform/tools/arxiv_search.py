@@ -12,6 +12,13 @@ _NS = '{http://www.w3.org/2005/Atom}'
 _SORT_MAP = {'relevance': 'relevance', 'date': 'submittedDate', 'citations': 'relevance'}
 
 
+def _text(el) -> str:
+	"""Element text, stripped, or '' when the element or its text is absent."""
+	if el is None or el.text is None:
+		return ''
+	return el.text.strip()
+
+
 class ArxivSearcher:
 
 	def search(self, query: str, max_results: int = 10, sort_by: str = 'relevance', categories: list = []) -> dict[str, Any]:
@@ -20,7 +27,7 @@ class ArxivSearcher:
 				return {'status': 'error', 'error': 'Package requests not installed. Run: uv add requests'}
 
 			settings = get_settings()
-			base_url = settings.get_setting('tools.arxiv_base_url', 'https://export.arxiv.org/api/query')
+			base_url = str(settings.get_setting('tools.arxiv_base_url', 'https://export.arxiv.org/api/query'))
 
 			sort_key = _SORT_MAP.get(sort_by, 'relevance')
 
@@ -46,23 +53,23 @@ class ArxivSearcher:
 			papers = []
 			for entry in root.findall(f'{_NS}entry'):
 				title_el = entry.find(f'{_NS}title')
-				title = title_el.text.strip() if title_el is not None else ''
+				title = _text(title_el)
 
 				authors = [
-					a.find(f'{_NS}name').text.strip()
+					_text(a.find(f'{_NS}name'))
 					for a in entry.findall(f'{_NS}author')
 					if a.find(f'{_NS}name') is not None
 				]
 
 				summary_el = entry.find(f'{_NS}summary')
-				abstract = summary_el.text.strip() if summary_el is not None else ''
+				abstract = _text(summary_el)
 
 				id_el = entry.find(f'{_NS}id')
-				url = id_el.text.strip() if id_el is not None else ''
+				url = _text(id_el)
 				pdf_url = url.replace('/abs/', '/pdf/')
 
 				published_el = entry.find(f'{_NS}published')
-				published = published_el.text.strip() if published_el is not None else ''
+				published = _text(published_el)
 
 				# arxiv uses opensearch + atom; category tags live in <category term="...">
 				cats = [

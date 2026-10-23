@@ -34,31 +34,39 @@ class SessionStore:
 		self.db = data_handler
 		self._ready = False
 
-	def _ensure(self) -> bool:
-		if self._ready:
-			return True
+	def _ensure(self):
+		"""
+		Return a ready data handler, or None.
+
+		Returning the handler rather than a bool is what keeps `self.db`
+		non-Optional at each call site below; with a bool, every method
+		reads an attribute the guard already ruled out.
+		"""
 		if self.db is None:
-			return False
+			return None
+		if self._ready:
+			return self.db
 		try:
 			for stmt in _DDL.strip().split(';'):
 				stmt = stmt.strip()
 				if stmt:
 					self.db.execute_query(stmt)
 			self._ready = True
-			return True
+			return self.db
 		except Exception:
-			return False
+			return None
 
 	# ── Write ────────────────────────────────────────────────────────────
 
 	def save(self, session_id: str, capability: str, params: dict, result: dict) -> bool:
-		if not self._ensure():
+		db = self._ensure()
+		if db is None:
 			return False
 		try:
 			input_hash = hashlib.sha256(
 				json.dumps(params, sort_keys=True).encode()
 			).hexdigest()[:16]
-			self.db.execute_query(
+			db.execute_query(
 				"""
 				INSERT INTO capability_sessions
 				    (session_id, capability, input_hash, input_json, result_json, created_at)
@@ -75,10 +83,11 @@ class SessionStore:
 
 	def load(self, session_id: str) -> list[dict]:
 		"""Return all entries for a session, oldest first."""
-		if not self._ensure():
+		db = self._ensure()
+		if db is None:
 			return []
 		try:
-			return self.db.execute_query(
+			return db.execute_query(
 				"""
 				SELECT capability, input_json, result_json, created_at
 				FROM   capability_sessions
@@ -92,10 +101,11 @@ class SessionStore:
 
 	def latest(self, session_id: str, capability: str) -> dict | None:
 		"""Return the most recent result for a specific capability in this session."""
-		if not self._ensure():
+		db = self._ensure()
+		if db is None:
 			return None
 		try:
-			rows = self.db.execute_query(
+			rows = db.execute_query(
 				"""
 				SELECT result_json FROM capability_sessions
 				WHERE  session_id = %s AND capability = %s
@@ -131,11 +141,12 @@ class SessionStore:
 
 	def list_sessions(self, capability: str = '', limit: int = 20) -> list[dict]:
 		"""List recent sessions, optionally filtered by capability."""
-		if not self._ensure():
+		db = self._ensure()
+		if db is None:
 			return []
 		try:
 			if capability:
-				return self.db.execute_query(
+				return db.execute_query(
 					"""
 					SELECT DISTINCT session_id, MAX(created_at) AS last_active
 					FROM   capability_sessions
@@ -145,7 +156,7 @@ class SessionStore:
 					""",
 					(capability, limit),
 				)
-			return self.db.execute_query(
+			return db.execute_query(
 				"""
 				SELECT DISTINCT session_id, MAX(created_at) AS last_active
 				FROM   capability_sessions

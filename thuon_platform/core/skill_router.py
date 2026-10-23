@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from core.llm_utils import extract_json
 from core.skill_registry import SkillManifest, SkillRegistry
@@ -39,6 +39,22 @@ class SkillRouter:
 		self._registry = SkillRegistry.get_instance()
 		self._ai = ai_engine
 		self._cap_list: str | None = None  # cached after first build
+
+	@overload
+	def route(
+		self,
+		instruction: str,
+		top_k: Literal[1] = 1,
+		fallback: str = 'research_assistant',
+	) -> SkillManifest | None: ...
+
+	@overload
+	def route(
+		self,
+		instruction: str,
+		top_k: int,
+		fallback: str = 'research_assistant',
+	) -> list[SkillManifest]: ...
 
 	def route(
 		self,
@@ -167,8 +183,11 @@ class SkillRouter:
 			f'Options:\n{options}\n\n'
 			'Return ONLY the capability name, nothing else.'
 		)
+		ai = self._ai
+		if ai is None:
+			return None
 		try:
-			raw = self._ai.generate_text(prompt).strip().lower()
+			raw = ai.generate_text(prompt).strip().lower()
 			name = re.sub(r'[^a-z0-9_]', '', raw)
 			return next((m for m in candidates if m.name == name), None)
 		except Exception as exc:
