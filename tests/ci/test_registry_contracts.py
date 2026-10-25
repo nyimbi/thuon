@@ -22,6 +22,59 @@ assert _WEB_APP_FILE is not None  # a real module always has one
 _PIPELINES_DIR = pathlib.Path(_WEB_APP_FILE).parent.parent / 'data' / 'pipelines'
 
 
+def _cli_registry():
+	"""The CLI façade's own registry — a second surface with the same contract."""
+	import thuon
+	return thuon._REGISTRY
+
+
+def test_cli_registry_entries_resolve():
+	"""Every CLI entry must name a class and a method that exist.
+
+	Six entries named methods the classes never had (gather_competitive_
+	intelligence, review_contract, ...), so `t.<name>(...)` raised
+	AttributeError on every call while the web registry stayed correct.
+	"""
+	broken = []
+	for name, cfg in _cli_registry().items():
+		try:
+			getattr(importlib.import_module(cfg['module']), cfg['class'])
+		except Exception as exc:
+			broken.append(f'{name}: import {type(exc).__name__}: {exc}')
+			continue
+		cls = getattr(importlib.import_module(cfg['module']), cfg['class'])
+		if not hasattr(cls, cfg['method']):
+			broken.append(f'{name}: {cfg["class"]} has no method {cfg["method"]!r}')
+	assert broken == [], 'unresolvable CLI registry entries:\n' + '\n'.join(broken)
+
+
+def test_cli_registry_examples_are_callable():
+	"""Every documented example must name only parameters the method accepts."""
+	import re
+
+	drift = []
+	for name, cfg in _cli_registry().items():
+		cls = getattr(importlib.import_module(cfg['module']), cfg['class'])
+		accepted = set(inspect.signature(getattr(cls, cfg['method'])).parameters)
+		used = set(re.findall(r'(\w+)=', cfg.get('example', ''))) - {'t'}
+		if used - accepted:
+			drift.append(f'{name}: example passes {sorted(used - accepted)}, method takes {sorted(accepted)}')
+	assert drift == [], 'CLI example/signature drift:\n' + '\n'.join(drift)
+
+
+def test_cli_registry_deps_are_constructor_params():
+	"""A declared dep the constructor cannot accept is a TypeError at call time."""
+	renamed = {'db_handler': 'data_handler'}
+	bad = []
+	for name, cfg in _cli_registry().items():
+		cls = getattr(importlib.import_module(cfg['module']), cfg['class'])
+		ctor = set(inspect.signature(cls.__init__).parameters) - {'self'}
+		want = {renamed.get(d, d) for d in cfg['deps']}
+		if want - ctor:
+			bad.append(f'{name}: deps {sorted(want - ctor)} not in __init__{sorted(ctor)}')
+	assert bad == [], 'CLI dep/constructor drift:\n' + '\n'.join(bad)
+
+
 def _resolve(name):
 	"""Return (callable, signature) for a registry entry, or raise."""
 	cfg = REGISTRY[name]
