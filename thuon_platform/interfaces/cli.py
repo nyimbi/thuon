@@ -216,11 +216,12 @@ def cli_packs(args: argparse.Namespace) -> None:
 			print('No skill packs installed.')
 			return
 		for p in packs:
-			print(f"  {p['name']} v{p['version']} — {p['description']}")
-			if p['capabilities']:
-				print(f"    caps:   {', '.join(p['capabilities'])}")
-			if p['skills']:
-				print(f"    skills: {', '.join(p['skills'])}")
+			# The store records name/version/installed_at/files — there is no
+			# description, capabilities or skills field, so indexing them
+			# raised KeyError as soon as any pack was installed.
+			print(f"  {p['name']} v{p['version']}  ({p.get('installed_at', 'unknown')})")
+			files = p.get('files') or []
+			print(f"    {len(files)} file(s)")
 	elif args.action == 'remove':
 		if not args.name:
 			print('Error: pack name required for remove')
