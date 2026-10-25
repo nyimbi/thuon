@@ -12,7 +12,10 @@ class VectorSearchTool:
 	def search(self, query: str, collection: str = 'default', max_results: int = 10) -> dict[str, Any]:
 		try:
 			if self.rag_engine is not None:
-				raw = self.rag_engine.search(query)
+				# RAGEngine exposes query_vector_database(index_name, query, top_k);
+				# there is no `search`, so this branch always raised and the tool
+				# returned an error dict for every call that had an engine injected.
+				raw = self.rag_engine.query_vector_database(collection, query, top_k=max_results)
 				results = []
 				for item in (raw if isinstance(raw, list) else []):
 					results.append({
@@ -58,7 +61,12 @@ class VectorSearchTool:
 	def add_documents(self, texts: list, metadata: list = [], collection: str = 'default') -> dict[str, Any]:
 		try:
 			if self.rag_engine is not None:
-				self.rag_engine.add_documents(texts)
+				docs = [
+					{'text': t, **(metadata[i] if i < len(metadata) else {})}
+					for i, t in enumerate(texts)
+				]
+				if not self.rag_engine.index_documents(collection, docs, text_key='text'):
+					return {'status': 'error', 'error': 'Indexing failed — check the vector store connection'}
 				ids = [str(uuid.uuid4()) for _ in texts]
 				return {'status': 'success', 'collection': collection, 'added': len(texts), 'ids': ids}
 
