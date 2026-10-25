@@ -131,7 +131,7 @@ class ThuonMCPServer:
 			return _NOTIFICATION
 		raise _MCPMethodNotFound(method)
 
-	def handle(self) -> Response:
+	def handle(self) -> Response | tuple[Response, int]:
 		body   = request.get_json(force=True, silent=True) or {}
 		method = body.get('method', '')
 		rpc_id = body.get('id')
@@ -216,7 +216,7 @@ def build_mcp_blueprint(instance_factory: Callable[[str], Any]) -> Blueprint:
 	server = ThuonMCPServer(instance_factory)
 
 	@bp.route('/mcp', methods=['POST'])
-	def mcp_endpoint() -> Response:
+	def mcp_endpoint() -> Response | tuple[Response, int]:
 		return server.handle()
 
 	@bp.route('/mcp', methods=['GET'])

@@ -305,7 +305,9 @@ class RFPTracker:
 				naics=getattr(record, 'naics', ''),
 				budget_est=float(getattr(record, 'budget_est', 0) or 0),
 				bid_score=float(record.bid_score or 0),
-				win_themes=list(record.win_themes) if hasattr(record, 'win_themes') else [],
+				# RFPRecord declares __slots__ without win_themes, so this is
+				# always empty; kept explicit rather than passing a made-up list.
+				win_themes=[],
 				outcome=outcome,
 				notes=notes,
 			)

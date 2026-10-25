@@ -136,7 +136,10 @@ class EventReactor:
 		import re
 		import json
 		try:
-			data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
+			match = re.search(r'\{.*\}', response, re.DOTALL)
+			if match is None:
+				raise ValueError(f'no JSON object in model reply: {response[:120]!r}')
+			data = json.loads(match.group())
 			return int(data.get('choice', 1))
 		except Exception:
 			for i in range(5, 0, -1):

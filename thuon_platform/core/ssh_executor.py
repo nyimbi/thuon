@@ -46,7 +46,9 @@ def run_command(
 
 	max_output_bytes caps combined stdout+stderr to avoid OOM on large log tails.
 	"""
-	if not _PARAMIKO_OK:
+	# Test the module, not the flag: only the module reference narrows, and the
+	# guard has to narrow for every use below.
+	if paramiko is None:
 		raise SSHUnavailableError(
 			'paramiko is not installed. Run: uv add paramiko'
 		)
