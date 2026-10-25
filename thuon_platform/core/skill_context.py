@@ -48,11 +48,18 @@ class SkillContext:
 		self.notification_bus.publish(event=event, title=title, body=body, url=url)
 
 	def remember(self, content: str, source: str = 'capability') -> None:
-		"""Append to episodic memory if a memory store is available."""
-		if self.memory_store is None:
+		"""
+		Append to episodic memory if a memory store is available.
+
+		The store's writer is `log_episode(session_id, event_type, content)`.
+		There is no `add_episode`, and because the call sits inside a bare
+		`except Exception`, calling one logged nothing and said nothing.
+		"""
+		store = self.memory_store
+		if store is None:
 			return
 		try:
-			self.memory_store.add_episode(content=content, source=source)
+			store.log_episode(self.session_id or 'unscoped', source, content)
 		except Exception:
 			pass
 

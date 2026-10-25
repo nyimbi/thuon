@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from core.memory_store import MemoryStore
 from core.skill_context import SkillContext, build_context
 
 
@@ -47,13 +48,18 @@ def test_notify_no_bus_is_noop():
 
 # ── remember ─────────────────────────────────────────────────────────────────
 
-def test_remember_calls_memory_store():
-	mem = MagicMock()
-	ctx = SkillContext(memory_store=mem)
+def test_remember_calls_memory_store(tmp_path):
+	# A real store, not a MagicMock: the mock accepted `add_episode`, which
+	# MemoryStore does not have, so this test passed while `remember` wrote
+	# nothing at all.
+	store = MemoryStore(mem_dir=tmp_path)
+	ctx = SkillContext(memory_store=store, session_id='sess-1')
 	ctx.remember('Signed contract with Acme', source='contract_renegotiator')
-	mem.add_episode.assert_called_once_with(
-		content='Signed contract with Acme', source='contract_renegotiator'
-	)
+
+	episodes = store.recent_episodes(session_id='sess-1')
+	assert len(episodes) == 1
+	assert episodes[0]['content'] == 'Signed contract with Acme'
+	assert episodes[0]['type'] == 'contract_renegotiator'
 
 
 def test_remember_no_store_is_noop():
@@ -62,9 +68,9 @@ def test_remember_no_store_is_noop():
 
 
 def test_remember_store_exception_is_swallowed():
-	mem = MagicMock()
-	mem.add_episode.side_effect = RuntimeError('db down')
-	ctx = SkillContext(memory_store=mem)
+	store = MagicMock(spec=MemoryStore)
+	store.log_episode.side_effect = RuntimeError('db down')
+	ctx = SkillContext(memory_store=store)
 	ctx.remember('test')  # must not raise
 
 

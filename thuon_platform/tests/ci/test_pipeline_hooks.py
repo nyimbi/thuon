@@ -13,6 +13,7 @@ from core.pipeline_hooks import (
 	StepEvent,
 	build_hooks_from_context,
 )
+from core.memory_store import MemoryStore
 from core.skill_context import SkillContext
 
 
@@ -172,32 +173,36 @@ def test_bus_on_complete_publishes_complete():
 	assert 'blog_post' in kwargs['title']
 
 
-def test_memory_store_registers_after_hook():
-	mem = MagicMock()
-	ctx = SkillContext(memory_store=mem)
+def test_memory_store_registers_after_hook(tmp_path):
+	# Real store: a MagicMock accepted `add_episode`, which MemoryStore does
+	# not define, so the hook logged nothing and the test still passed.
+	mem = MemoryStore(mem_dir=tmp_path)
+	ctx = SkillContext(memory_store=mem, session_id='run-1')
 	hooks = build_hooks_from_context(ctx)
 	assert len(hooks.after_step) == 1
 	hooks.fire_after(_event(elapsed=2.5, step_name='write'))
-	mem.add_episode.assert_called_once()
-	content = mem.add_episode.call_args.kwargs['content']
-	assert 'write' in content
+
+	episodes = mem.recent_episodes(session_id='run-1')
+	assert len(episodes) == 1
+	assert 'write' in episodes[0]['content']
+	assert episodes[0]['type'] == 'pipeline_step'
 
 
 def test_memory_store_exception_is_swallowed():
-	mem = MagicMock()
-	mem.add_episode.side_effect = RuntimeError('db down')
+	mem = MagicMock(spec=MemoryStore)
+	mem.log_episode.side_effect = RuntimeError('db down')
 	ctx = SkillContext(memory_store=mem)
 	hooks = build_hooks_from_context(ctx)
 	hooks.fire_after(_event(elapsed=1.0))  # must not raise
 
 
-def test_both_bus_and_store_registered():
+def test_both_bus_and_store_registered(tmp_path):
 	bus = MagicMock()
-	mem = MagicMock()
-	ctx = SkillContext(notification_bus=bus, memory_store=mem)
+	mem = MemoryStore(mem_dir=tmp_path)
+	ctx = SkillContext(notification_bus=bus, memory_store=mem, session_id='run-2')
 	hooks = build_hooks_from_context(ctx)
 	# after_step: 1 bus hook + 1 memory hook
 	assert len(hooks.after_step) == 2
 	hooks.fire_after(_event(elapsed=0.5))
 	bus.publish.assert_called_once()
-	mem.add_episode.assert_called_once()
+	assert len(mem.recent_episodes(session_id='run-2')) == 1

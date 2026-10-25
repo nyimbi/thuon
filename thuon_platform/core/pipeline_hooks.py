@@ -140,14 +140,17 @@ def build_hooks_from_context(
 		hooks.on_complete.append(_notify_complete)
 
 	if context.memory_store is not None:
+		# Bound outside the closure so the None check narrows for the checker
+		# and so a store swapped out mid-run cannot change the target.
+		memory_store = context.memory_store
+
 		def _log_step(ev: StepEvent) -> None:
 			try:
-				context.memory_store.add_episode(  # type: ignore[union-attr]
-					content=(
-						f'Pipeline {ev.pipeline_name!r} step {ev.step_name!r} '
-						f'({ev.cap_name}) completed in {ev.elapsed:.1f}s'
-					),
-					source='pipeline_runner',
+				memory_store.log_episode(
+					context.session_id or 'unscoped',
+					'pipeline_step',
+					f'Pipeline {ev.pipeline_name!r} step {ev.step_name!r} '
+					f'({ev.cap_name}) completed in {ev.elapsed:.1f}s',
 				)
 			except Exception:
 				pass
