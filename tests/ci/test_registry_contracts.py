@@ -68,8 +68,10 @@ def test_cli_registry_deps_are_constructor_params():
 	bad = []
 	for name, cfg in _cli_registry().items():
 		cls = getattr(importlib.import_module(cfg['module']), cfg['class'])
-		ctor = set(inspect.signature(cls.__init__).parameters) - {'self'}
-		want = {renamed.get(d, d) for d in cfg['deps']}
+		ctor = {str(p) for p in inspect.signature(cls.__init__).parameters} - {'self'}
+		# deps is a list of str; the checker types it as possibly None, and sorted()
+		# on a set with a None member is a TypeError waiting for a bad entry.
+		want = {str(renamed.get(d, d)) for d in (cfg['deps'] or []) if d}
 		if want - ctor:
 			bad.append(f'{name}: deps {sorted(want - ctor)} not in __init__{sorted(ctor)}')
 	assert bad == [], 'CLI dep/constructor drift:\n' + '\n'.join(bad)
