@@ -667,8 +667,18 @@ class Thuon:
 	# ── #1 Routing ───────────────────────────────────────────────────────────
 
 	def _route(self, instruction: str) -> tuple[str, dict]:
-		"""Route instruction to (capability_name, params) via SkillRouter."""
+		"""
+		Route instruction to (capability_name, params) via SkillRouter.
+
+		The registry is a process-wide singleton that `SkillRegistry.reset()`
+		clears. The CLI augmentation used to run once at import, so anything that
+		reset the singleton afterwards left every CLI instruction falling back to
+		`research_assistant`. Re-assert it here: `augment_cli` is additive and
+		idempotent, so the call costs a dict walk and cannot clobber web entries.
+		"""
+		from core.skill_registry import SkillRegistry
 		from core.skill_router import SkillRouter
+		SkillRegistry.get_instance().augment_cli(_REGISTRY)
 		router = SkillRouter(ai_engine=self._get_dep('ai_engine'))
 		allowed = set(_REGISTRY) | set(self._custom_caps)
 		return router.route_with_params(instruction, allowed_names=allowed)

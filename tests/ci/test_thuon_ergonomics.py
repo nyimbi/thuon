@@ -704,3 +704,19 @@ class TestRouting:
 		# Should fall back to keyword matching, returning a valid capability
 		from thuon import _REGISTRY
 		assert cap in _REGISTRY
+
+	def test_routing_survives_a_registry_reset(self):
+		# The CLI registry is a process-wide singleton that SkillRegistry.reset()
+		# clears. The augmentation used to run once at import, so a reset left
+		# every CLI instruction falling back to research_assistant — the whole
+		# CLI-only half of the registry silently unroutable.
+		from core.skill_registry import SkillRegistry
+		from thuon import Thuon
+		SkillRegistry.reset()
+		try:
+			t = Thuon()
+			t._container['ai_engine'] = _mock_ai('not json')
+			cap, _ = t._route('find government procurement tender for ICT services')
+			assert cap == 'tender_scout'
+		finally:
+			SkillRegistry.reset()
