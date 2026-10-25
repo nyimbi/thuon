@@ -31,7 +31,7 @@ def main():
         from interfaces.web_app import create_app
         app = create_app()
         with app.app_context():
-            run_mcp_stdio(app.instance_factory)
+            run_mcp_stdio(app.instance_factory)  # type: ignore[attr-defined]
     else:
         print('Invalid interface specified.')
 

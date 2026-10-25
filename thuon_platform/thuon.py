@@ -328,8 +328,14 @@ def _make_search_engine(settings):
 def _make_rag_engine(settings):
 	from core.rag_engine import RAGEngine
 	from core.knowledge_graph_manager import KnowledgeGraphManager
-	kg = KnowledgeGraphManager()
-	return RAGEngine(knowledge_graph_manager=kg, ai_engine=_make_ai_engine(settings))
+	# RAGEngine's parameters are (weaviate_client, llm_engine, kg_manager).
+	# The old call used names that do not exist, so every construction raised
+	# TypeError and the factory fell through to the "unavailable" branch.
+	try:
+		kg = KnowledgeGraphManager.from_settings()
+	except Exception:
+		kg = None
+	return RAGEngine(llm_engine=_make_ai_engine(settings), kg_manager=kg)
 
 
 def _make_db_handler(settings):
@@ -561,7 +567,10 @@ class Thuon:
 		"""Reload config.yaml and flush cached dependencies."""
 		# Force settings to re-read from disk
 		import core.settings_manager as sm
-		sm._settings_instance = None
+		# The module keeps its singleton in `_settings`; `_settings_instance`
+		# never existed, so this assignment created a new attribute and the
+		# reload handed back the same cached SettingsManager.
+		sm._settings = None
 		self._settings = get_settings()
 		self._container.clear()
 		return self

@@ -1,6 +1,7 @@
 import imaplib
 import email
 import email.header
+import email.message  # `import email` alone does not bind the submodule
 import re
 from typing import Any
 
@@ -35,8 +36,10 @@ class EmailReader:
 			for uid in uids:
 				try:
 					_, msg_data = mail.fetch(uid, '(RFC822)')
+					if not msg_data or not isinstance(msg_data[0], tuple):
+						continue
 					raw = msg_data[0][1]
-					msg = email.message_from_bytes(raw)
+					msg = email.message_from_bytes(raw if isinstance(raw, bytes) else bytes(raw))
 
 					from_addr = self._decode_header(msg.get('From', ''))
 					to_addr = self._decode_header(msg.get('To', ''))
@@ -97,16 +100,18 @@ class EmailReader:
 					continue
 				if ct == 'text/plain' and not plain:
 					payload = part.get_payload(decode=True)
-					if payload:
+					# decode=True yields bytes; the stub also admits the
+					# undecoded Message when decoding is not possible.
+					if isinstance(payload, bytes):
 						plain = payload.decode(part.get_content_charset() or 'utf-8', errors='replace')
 				elif ct == 'text/html' and not html:
 					payload = part.get_payload(decode=True)
-					if payload:
+					if isinstance(payload, bytes):
 						html = payload.decode(part.get_content_charset() or 'utf-8', errors='replace')
 		else:
 			ct = msg.get_content_type()
 			payload = msg.get_payload(decode=True)
-			if payload:
+			if isinstance(payload, bytes):
 				text = payload.decode(msg.get_content_charset() or 'utf-8', errors='replace')
 				if ct == 'text/plain':
 					plain = text
