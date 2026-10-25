@@ -24,7 +24,7 @@ class VectorSearchTool:
 				return {'status': 'success', 'query': query, 'collection': collection, 'results': results, 'count': len(results)}
 
 			try:
-				import chromadb
+				import chromadb  # type: ignore[import]
 			except ImportError:
 				return {'status': 'error', 'error': 'Package chromadb not installed. Run: uv add chromadb'}
 
@@ -63,7 +63,7 @@ class VectorSearchTool:
 				return {'status': 'success', 'collection': collection, 'added': len(texts), 'ids': ids}
 
 			try:
-				import chromadb
+				import chromadb  # type: ignore[import]
 			except ImportError:
 				return {'status': 'error', 'error': 'Package chromadb not installed. Run: uv add chromadb'}
 

@@ -26,7 +26,7 @@ class KnowledgeGraphManager:
 	@classmethod
 	def from_settings(cls) -> 'KnowledgeGraphManager':
 		from core.settings_manager import get_settings
-		import weaviate
+		import weaviate  # type: ignore[import]
 		settings = get_settings()
 		url = settings.get_setting('weaviate.url', 'http://localhost:8080')
 		client = weaviate.connect_to_local(host=url.replace('http://', '').split(':')[0],
@@ -35,7 +35,7 @@ class KnowledgeGraphManager:
 
 	def create_schema(self, class_name: str, properties: list[dict]) -> bool:
 		try:
-			import weaviate.classes.config as wvc
+			import weaviate.classes.config as wvc  # type: ignore[import]
 			collection = self._client.collections.create(
 				name=class_name,
 				properties=[wvc.Property(name=p['name'], data_type=wvc.DataType.TEXT) for p in properties],
@@ -59,7 +59,7 @@ class KnowledgeGraphManager:
 
 	def add_edge(self, from_node_uuid: str, to_node_uuid: str, relationship_name: str, class_name: str, edge_properties: dict | None = None) -> bool:
 		try:
-			import weaviate.classes as wvc
+			import weaviate.classes as wvc  # type: ignore[import]
 			collection = self._client.collections.get(class_name)
 			collection.data.reference_add(
 				from_uuid=from_node_uuid,
@@ -100,7 +100,7 @@ class KnowledgeGraphManager:
 
 	def delete_edge(self, from_node_uuid: str, to_node_uuid: str, relationship_name: str, class_name: str) -> bool:
 		try:
-			import weaviate.classes as wvc
+			import weaviate.classes as wvc  # type: ignore[import]
 			collection = self._client.collections.get(class_name)
 			collection.data.reference_delete(
 				from_uuid=from_node_uuid,

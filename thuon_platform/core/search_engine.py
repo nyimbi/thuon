@@ -51,7 +51,7 @@ class TavilySearch(SearchEngine):
 			logger.warning("Tavily API key not configured, falling back to DuckDuckGo")
 			return DuckDuckGoSearch().search(query, num_results)
 		try:
-			from tavily import TavilyClient
+			from tavily import TavilyClient  # type: ignore[import]
 			response = TavilyClient(api_key=self.api_key).search(query, max_results=num_results)
 			return [{'title': r.get('title', ''), 'body': r.get('content', ''), 'href': r.get('url', '')} for r in response.get('results', [])]
 		except Exception as e:

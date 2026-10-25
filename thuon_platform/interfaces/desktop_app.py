@@ -18,6 +18,11 @@ Usage:
   uv run python main.py desktop
 """
 
+# pyright: reportAttributeAccessIssue=false, reportMissingImports=false
+# This module is PyObjC glue: AppKit/Foundation symbols and pywebview are
+# resolved at runtime from Objective-C, so the stubs cannot see them. Both
+# rules are scoped to this file rather than disabled repo-wide.
+
 from __future__ import annotations
 
 import logging
