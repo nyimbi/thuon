@@ -108,6 +108,22 @@ class TestKnowledgeIngestionPipeline:
 		finally:
 			os.unlink(store_path)
 
+	def test_corrupt_store_loads_empty_instead_of_raising(self):
+		# A truncated store used to raise JSONDecodeError out of the constructor,
+		# so every later ingest call on that path failed too.
+		from core.knowledge_ingestion import KnowledgeIngestionPipeline
+		with tempfile.NamedTemporaryFile(suffix='.json', delete=False, mode='w') as f:
+			f.write('{"chunks": [{"text": "half a fi')
+			store_path = f.name
+		try:
+			pipe = KnowledgeIngestionPipeline(store_path=store_path)
+			assert pipe.chunk_count == 0
+			# and it is still usable afterwards
+			pipe.ingest_text(' '.join(['data'] * 200), source='after-corruption')
+			assert pipe.chunk_count > 0
+		finally:
+			os.unlink(store_path)
+
 	def test_ingest_file_plain_text(self):
 		from core.knowledge_ingestion import KnowledgeIngestionPipeline
 		with tempfile.NamedTemporaryFile(suffix='.txt', mode='w', delete=False) as f:

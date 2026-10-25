@@ -7,8 +7,11 @@ Deduplicates by SHA-256 content hash. Optionally persists chunk store to JSON.
 from __future__ import annotations
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
+
+_log_ = logging.getLogger('thuon.knowledge_ingestion')
 
 
 def _chunk_text(text: str, size: int = 1000, overlap: int = 150) -> list[str]:
@@ -168,4 +171,11 @@ class KnowledgeIngestionPipeline:
 		with open(self.store_path) as f:
 			content = f.read().strip()
 		if content:
-			self._chunks = json.loads(content)
+			# A truncated or half-written store used to raise here and make every
+			# later ingestion call fail, with the parse error as the only clue.
+			# Start empty and say which file to look at.
+			try:
+				self._chunks = json.loads(content)
+			except json.JSONDecodeError as exc:
+				self._chunks = []
+				_log_.warning('Unreadable chunk store %s, starting empty: %s', self.store_path, exc)

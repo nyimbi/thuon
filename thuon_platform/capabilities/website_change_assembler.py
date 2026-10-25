@@ -7,14 +7,10 @@ Does NOT git push — human reviews and commits manually.
 import json
 import time
 from pathlib import Path
-from core.ai_engine import AIModel
 from core.settings_manager import get_settings
 
 
 class WebsiteChangeAssembler:
-	def __init__(self, ai_engine: AIModel):
-		self.ai_engine = ai_engine
-
 	def assemble(
 		self,
 		page_path: str = '/',
@@ -55,7 +51,17 @@ class WebsiteChangeAssembler:
 				'meta_description': meta_description,
 			}
 		if additional_pages:
-			extra = json.loads(additional_pages) if isinstance(additional_pages, str) else additional_pages
+			# The registry exposes this param as a free-text field, so a caller can
+			# hand over a malformed string. Parse it as untrusted input rather than
+			# letting a JSONDecodeError take down a run that already has a valid
+			# primary page to write.
+			extra = additional_pages
+			if isinstance(additional_pages, str):
+				try:
+					extra = json.loads(additional_pages)
+				except json.JSONDecodeError as exc:
+					errors.append(f'additional_pages is not valid JSON: {exc}')
+					extra = {}
 			if isinstance(extra, dict):
 				pages_to_write.update(extra)
 

@@ -546,10 +546,16 @@ Return JSON with:
 		return self._vote_pyramid(pyramids, hypothesis_results)
 
 	def _synthesize_pyramid_once(
-		self, question, scqa, findings_summary, confirmed_count, rejected_count,
+		self, question, scqa, findings_summary: str, confirmed_count, rejected_count,
 		mece_result, context, attempt
 	) -> dict:
-		rejected_branches = [r for r in json.loads(findings_summary) if r.get('verdict') == 'rejected']
+		# findings_summary is our own json.dumps output, but the signature takes a
+		# str, so a caller can hand over anything. Treat it as input, not as a fact.
+		try:
+			branches = json.loads(findings_summary)
+		except (json.JSONDecodeError, TypeError):
+			branches = []
+		rejected_branches = [r for r in branches if isinstance(r, dict) and r.get('verdict') == 'rejected']
 		rejected_str = json.dumps(rejected_branches, ensure_ascii=False) if rejected_branches else '[]'
 		gaps = json.dumps(mece_result.get('coverage_gaps', []), ensure_ascii=False)
 
