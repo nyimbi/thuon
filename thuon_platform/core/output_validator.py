@@ -12,24 +12,43 @@ import re
 from core.ai_engine import AIModel
 
 
+def _as_object(value) -> dict | None:
+	"""
+	Keep a parsed JSON object, reject everything else.
+
+	`json.loads` happily returns a list, a string or a number. The old code
+	returned whatever it got, so a model that answered with a bare array
+	(`[{...}, {...}]`) made `validated_llm_call` raise AttributeError on
+	`setdefault` instead of retrying — the one failure mode the retry loop
+	exists to handle.
+	"""
+	return value if isinstance(value, dict) else None
+
+
 def _extract_json(text: str) -> dict | None:
 	# Strategy 1: entire response is JSON
 	try:
-		return json.loads(text.strip())
+		found = _as_object(json.loads(text.strip()))
+		if found is not None:
+			return found
 	except Exception:
 		pass
 	# Strategy 2: first {...} block (most common LLM pattern)
 	try:
 		match = re.search(r'\{.*\}', text, re.DOTALL)
 		if match:
-			return json.loads(match.group())
+			found = _as_object(json.loads(match.group()))
+			if found is not None:
+				return found
 	except Exception:
 		pass
 	# Strategy 3: JSON inside a markdown code fence
 	try:
 		match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
 		if match:
-			return json.loads(match.group(1))
+			found = _as_object(json.loads(match.group(1)))
+			if found is not None:
+				return found
 	except Exception:
 		pass
 	return None

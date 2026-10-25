@@ -562,6 +562,28 @@ class TestOutputValidator:
 		assert result.get('matrix') == []
 		assert result.get('status') != 'parse_failed'
 
+	def test_json_array_retries_instead_of_raising(self):
+		# A bare array used to crash with AttributeError: 'list' object has no
+		# attribute 'setdefault'. With required_keys set the list survives the
+		# `not in` test and the retry happens to look the same either way, so
+		# this pins the case that actually reaches setdefault: no required keys.
+		from core.output_validator import validated_llm_call
+		ai = MagicMock()
+		ai.generate_text.side_effect = [
+			json.dumps([{'bid_score': 80}, {'bid_score': 90}]),
+			json.dumps({'bid_score': 85}),
+		]
+		result = validated_llm_call(ai, 'give me a list')
+		assert result['bid_score'] == 85
+		assert ai.generate_text.call_count == 2
+
+	def test_json_array_alone_falls_back(self):
+		from core.output_validator import validated_llm_call
+		ai = _fake_ai(json.dumps([1, 2, 3]))
+		result = validated_llm_call(ai, 'evaluate', required_keys=['bid_score'], max_retries=2)
+		assert result.get('status') == 'parse_failed'
+		assert result.get('_validated') is False
+
 	def test_optional_keys_not_required(self):
 		from core.output_validator import validated_llm_call
 		ai = _fake_ai(json.dumps({'win_themes': ['theme1']}))
