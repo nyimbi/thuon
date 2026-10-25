@@ -164,7 +164,7 @@ class TestSchemas:
 		import pytest
 		from pydantic import ValidationError
 		with pytest.raises(ValidationError):
-			ResearchInput(query='x', depth='ultradeep')
+			ResearchInput(query='x', depth='ultradeep')  # type: ignore[arg-type]
 
 	def test_research_input_num_sources_bounds(self):
 		from core.schemas import ResearchInput
@@ -207,7 +207,7 @@ class TestSchemas:
 		import pytest
 		from pydantic import ValidationError
 		with pytest.raises(ValidationError):
-			ResearchInput(query='x', unknown_field='y')
+			ResearchInput(query='x', unknown_field='y')  # type: ignore[call-arg]
 
 
 # ── #9 TraceContext ───────────────────────────────────────────────────────────

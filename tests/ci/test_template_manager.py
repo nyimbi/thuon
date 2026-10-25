@@ -29,14 +29,14 @@ def test_get_missing_template_returns_none():
 
 def test_apply_data_to_template():
 	tm = TemplateManager()
-	rendered = tm.apply_data_to_template('Hello {{ name }}!', {'name': 'World'})
+	rendered = tm.apply_data_to_template({'content': 'Hello {{ name }}!'}, {'name': 'World'})
 	assert 'World' in rendered
 
 
 def test_apply_data_missing_var():
 	tm = TemplateManager()
 	# Jinja2 undefined — should not raise, just render empty or keep as-is
-	rendered = tm.apply_data_to_template('Hello {{ missing_var }}!', {})
+	rendered = tm.apply_data_to_template({'content': 'Hello {{ missing_var }}!'}, {})
 	assert isinstance(rendered, str)
 
 

@@ -3,6 +3,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'thuon_platform'))
 
+from typing import cast
 from unittest.mock import MagicMock
 from core.ai_engine import OllamaModel
 
@@ -20,7 +21,8 @@ def test_generate_text():
 	m = _make_model('hello world')
 	result = m.generate_text('say hi')
 	assert result == 'hello world'
-	m.llm.invoke.assert_called_once_with('say hi')
+	# `llm` is declared as OllamaLLM; the test injects a MagicMock.
+	cast(MagicMock, m.llm).invoke.assert_called_once_with('say hi')
 
 
 def test_summarize_text():

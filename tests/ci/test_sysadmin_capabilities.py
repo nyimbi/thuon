@@ -128,7 +128,7 @@ class TestSSHExecutor:
 		"""run_command must raise SSHUnavailableError when paramiko absent."""
 		import sys
 		saved = sys.modules.get('paramiko')
-		sys.modules['paramiko'] = None  # simulate absence
+		sys.modules['paramiko'] = None  # type: ignore[assignment]  # simulate absence
 		try:
 			import importlib
 			import core.ssh_executor as mod

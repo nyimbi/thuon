@@ -156,6 +156,7 @@ class TestSkillRegistry:
 		}
 		r.augment_cli(cli_reg)
 		m = r.get('web_searcher')
+		assert m is not None
 		assert 'internet' in m.keywords
 
 	def test_augment_cli_adds_new_entry(self):

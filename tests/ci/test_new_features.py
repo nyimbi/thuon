@@ -67,6 +67,7 @@ class TestFeedbackStore:
 		fs.record_outcome(rfp_id='nb1', naics='99', outcome='no_bid')
 		fs.record_outcome(rfp_id='w1', naics='99', outcome='won')
 		wr = fs.win_rate(naics='99')
+		assert wr is not None
 		# only 1 decided bid
 		assert wr['sample_size'] == 1
 		assert wr['win_pct'] == 100.0
@@ -77,8 +78,10 @@ class TestFeedbackStore:
 		fs.record_outcome(rfp_id='b', issuer='DoD', outcome='lost')
 		fs.record_outcome(rfp_id='c', issuer='HHS', outcome='won')
 		wr_dod = fs.win_rate(issuer='DoD')
+		assert wr_dod is not None
 		assert wr_dod['sample_size'] == 2
 		wr_hhs = fs.win_rate(issuer='HHS')
+		assert wr_hhs is not None
 		assert wr_hhs['sample_size'] == 1
 
 	def test_similar_outcomes_returns_list(self, tmp_path):
@@ -362,7 +365,9 @@ class TestRFPTrackerCheckpoint:
 		assert result['action'] == 'auto-go'
 		assert result['advanced'] is True
 		from core.rfp_tracker import RFPStatus
-		assert t.get(r.id).status == RFPStatus.AWAITING_STRATEGY
+		stored = t.get(r.id)
+		assert stored is not None
+		assert stored.status == RFPStatus.AWAITING_STRATEGY
 
 	def test_auto_advance_low_score_no_bids(self, tmp_path):
 		t = self._tracker(tmp_path)
@@ -372,7 +377,9 @@ class TestRFPTrackerCheckpoint:
 		assert result['action'] == 'auto-no-bid'
 		assert result['advanced'] is True
 		from core.rfp_tracker import RFPStatus
-		assert t.get(r.id).status == RFPStatus.NO_BID
+		stored = t.get(r.id)
+		assert stored is not None
+		assert stored.status == RFPStatus.NO_BID
 
 	def test_auto_advance_mid_score_not_advanced(self, tmp_path):
 		t = self._tracker(tmp_path)
@@ -381,7 +388,9 @@ class TestRFPTrackerCheckpoint:
 		result = t.auto_advance_if_warranted(r.id)
 		assert result['advanced'] is False
 		from core.rfp_tracker import RFPStatus
-		assert t.get(r.id).status == RFPStatus.DISCOVERED
+		stored = t.get(r.id)
+		assert stored is not None
+		assert stored.status == RFPStatus.DISCOVERED
 
 	def test_auto_advance_returns_advanced_key_always(self, tmp_path):
 		t = self._tracker(tmp_path)

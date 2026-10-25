@@ -95,6 +95,7 @@ class TestRFPTrackerCRUD:
 		r = _minimal(t)
 		t.update(r.id, bid_score=90.0, bid_recommendation='go')
 		updated = t.get(r.id)
+		assert updated is not None
 		assert updated.bid_score == 90.0
 		assert updated.bid_recommendation == 'go'
 
@@ -118,13 +119,17 @@ class TestRFPFSM:
 		r = _minimal(t)
 		for step in ('evaluating', 'awaiting_strategy', 'responding', 'in_review', 'submitted', 'won'):
 			t.advance_status(r.id, step)
-		assert t.get(r.id).status == RFPStatus.WON
+		stored = t.get(r.id)
+		assert stored is not None
+		assert stored.status == RFPStatus.WON
 
 	def test_no_bid_from_discovered(self, tmp_path):
 		t = _tracker(tmp_path)
 		r = _minimal(t)
 		t.advance_status(r.id, 'no_bid')
-		assert t.get(r.id).status == RFPStatus.NO_BID
+		stored = t.get(r.id)
+		assert stored is not None
+		assert stored.status == RFPStatus.NO_BID
 
 	def test_invalid_transition_raises(self, tmp_path):
 		t = _tracker(tmp_path)
@@ -142,7 +147,9 @@ class TestRFPFSM:
 		for step in ('evaluating', 'awaiting_strategy', 'responding', 'in_review'):
 			t.advance_status(r.id, step)
 		t.advance_status(r.id, 'responding')
-		assert t.get(r.id).status == RFPStatus.RESPONDING
+		stored = t.get(r.id)
+		assert stored is not None
+		assert stored.status == RFPStatus.RESPONDING
 
 	def test_advance_nonexistent_returns_none(self, tmp_path):
 		t = _tracker(tmp_path)

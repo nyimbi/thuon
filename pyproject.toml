@@ -47,6 +47,12 @@ dependencies = [
     "paramiko>=3.0.0",
 ]
 
+[tool.pyright]
+# The tests import the platform as a namespace package (`core.x`, `thuon`),
+# which is how PYTHONPATH=thuon_platform makes them run. Without this the
+# checker reports 329 unresolvable imports and hides the real diagnostics.
+extraPaths = ["thuon_platform"]
+
 [tool.pytest.ini_options]
 pythonpath = ["thuon_platform"]
 # Both suites. Listing only thuon_platform/tests/ci meant the root suite never

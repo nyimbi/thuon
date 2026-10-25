@@ -4,6 +4,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'thuon_platform'))
 
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 
@@ -155,7 +156,7 @@ def test_academic_level_returns_phases():
 			'{"strengths": ["good coverage"], "weaknesses": ["limited sources"], "overall_rating": 7}',
 			'{"abstract": "This report covers X.", "conclusion": "X is important.", "research_quality_score": 7}',
 		]
-		dr.ai_engine.generate_text.side_effect = ai_responses
+		cast(MagicMock, dr.ai_engine).generate_text.side_effect = ai_responses
 		result = dr.research('impact of AI on education', level='academic')
 
 	assert isinstance(result, dict)
@@ -186,7 +187,7 @@ def test_academic_level_has_investigations():
 			+ ['{"strengths": [], "overall_rating": 6}']
 			+ ['{"abstract": "Abstract text.", "research_quality_score": 6}']
 		)
-		dr.ai_engine.generate_text.side_effect = ai_responses
+		cast(MagicMock, dr.ai_engine).generate_text.side_effect = ai_responses
 		result = dr.research('climate policy effectiveness', level='academic')
 
 	assert 'investigations' in result['phases']
@@ -218,7 +219,7 @@ def test_phd_level_returns_phases_dict():
 		# self_critique
 		'{"strengths": ["comprehensive"], "limitations": ["web sources only"], "overall_contribution": "Solid review"}',
 	]
-	dr.ai_engine.generate_text.side_effect = json_responses
+	cast(MagicMock, dr.ai_engine).generate_text.side_effect = json_responses
 
 	result = dr.research('impact of AI on K-12 education', level='phd')
 
@@ -246,7 +247,7 @@ def test_phd_level_formulates_research_question():
 		'{"title": "AI Education Review", "abstract": "Abstract.", "academic_quality_score": 7}',
 		'{"strengths": [], "limitations": []}',
 	]
-	dr.ai_engine.generate_text.side_effect = json_responses
+	cast(MagicMock, dr.ai_engine).generate_text.side_effect = json_responses
 
 	result = dr.research('AI and student outcomes', level='phd')
 	rq = result['phases']['research_question']
@@ -267,7 +268,7 @@ def test_phd_level_produces_self_critique():
 		'{"title": "Review", "abstract": "Abstract.", "academic_quality_score": 7}',
 		'{"strengths": ["broad"], "limitations": ["limited sources"]}',
 	]
-	dr.ai_engine.generate_text.side_effect = json_responses
+	cast(MagicMock, dr.ai_engine).generate_text.side_effect = json_responses
 
 	result = dr.research('test topic', level='phd')
 	assert 'limitations' in result

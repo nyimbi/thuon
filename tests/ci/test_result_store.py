@@ -35,6 +35,7 @@ class TestResultStoreInMemory:
 		self.store.save('cap', 'key', {'a': 1})
 		self.store.save('cap', 'key', {'a': 2})
 		latest = self.store.latest('cap', 'key')
+		assert latest is not None
 		assert latest['version'] == 2
 
 	def test_latest_none_when_empty(self):

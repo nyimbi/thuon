@@ -5,6 +5,7 @@ All external calls (ChatOllama, Playwright, requests, file I/O) are mocked.
 import sys, os, base64, json, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../thuon_platform'))
 
+from typing import Any, cast
 from unittest.mock import patch, MagicMock, mock_open
 
 
@@ -270,17 +271,17 @@ class TestVisionTools:
 		mock_vm.describe.return_value = 'A bar chart showing Q4 data.'
 		with patch('core.ai_engine.OllamaVisionModel', return_value=mock_vm):
 			from core.tools import analyze_image_file
-			result = analyze_image_file.func('/tmp/chart.png', '')
+			result = cast(Any, analyze_image_file).func('/tmp/chart.png', '')
 		assert result == 'A bar chart showing Q4 data.'
 
 	def test_analyze_image_file_error_returns_string(self):
 		with patch('core.ai_engine.OllamaVisionModel', side_effect=Exception('model not loaded')):
 			from core import tools
-			result = tools.analyze_image_file.func('/tmp/missing.png', 'describe')
+			result = cast(Any, tools.analyze_image_file).func('/tmp/missing.png', 'describe')
 		assert 'Vision analysis failed' in result
 
 	def test_extract_text_from_image_error_returns_string(self):
 		with patch('core.ai_engine.OllamaVisionModel', side_effect=Exception('no model')):
 			from core import tools
-			result = tools.extract_text_from_image.func('/tmp/doc.png')
+			result = cast(Any, tools.extract_text_from_image).func('/tmp/doc.png')
 		assert 'OCR failed' in result

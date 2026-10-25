@@ -17,7 +17,9 @@ import yaml
 import interfaces.web_app as web_app
 
 REGISTRY = web_app.CAPABILITY_REGISTRY
-_PIPELINES_DIR = pathlib.Path(web_app.__file__).parent.parent / 'data' / 'pipelines'
+_WEB_APP_FILE = web_app.__file__
+assert _WEB_APP_FILE is not None  # a real module always has one
+_PIPELINES_DIR = pathlib.Path(_WEB_APP_FILE).parent.parent / 'data' / 'pipelines'
 
 
 def _resolve(name):
