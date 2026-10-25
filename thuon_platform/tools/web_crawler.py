@@ -60,7 +60,10 @@ class WebCrawler:
 
 				# collect links for BFS
 				for a in soup.find_all('a', href=True):
-					href = a['href'].strip()
+					raw_href = a['href']
+					if not isinstance(raw_href, str):
+						continue
+					href = raw_href.strip()
 					if not href or href.startswith('#') or href.startswith('javascript:'):
 						continue
 					abs_url = urljoin(url, href)

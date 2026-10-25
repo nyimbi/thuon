@@ -92,7 +92,9 @@ Return only the JSON object."""
 						project=meeting_title or '',
 						tags='meeting,action-item',
 					)
-					tasks_created.append(task['id'])
+					# create() returns None if the row cannot be read back.
+					if task is not None:
+						tasks_created.append(task['id'])
 			except Exception:
 				pass
 

@@ -36,9 +36,11 @@ class WebFetcher:
 				text = html
 
 			# collect all href links from the page
+			# bs4 types attribute values as str | AttributeValueList; an href
+			# is always the former, but the checker cannot know that.
 			links: list[str] = [
-				a['href'] for a in soup.find_all('a', href=True)
-				if a['href'].startswith('http')
+				href for a in soup.find_all('a', href=True)
+				if isinstance(href := a['href'], str) and href.startswith('http')
 			]
 
 			word_count = len(re.findall(r'\S+', text)) if text else 0

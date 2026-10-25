@@ -1,6 +1,7 @@
 # core/utils.py
 
 import logging
+from typing import Any
 import yaml
 import json
 import jsonschema
@@ -22,7 +23,9 @@ def handle_exception(exception: Exception, message: str) -> None:
 	logger.error(f"{message}: {type(exception).__name__}: {exception}", exc_info=True)
 
 
-def validate_data(data: any, schema: dict) -> bool:
+# `Any` from typing, not the builtin `any` (a function, and a valid
+# annotation only because it evaluates to a callable).
+def validate_data(data: Any, schema: dict) -> bool:
 	try:
 		jsonschema.validate(instance=data, schema=schema)
 		return True
