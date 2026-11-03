@@ -25,12 +25,10 @@ class ResearchAssistant:
 		ai_engine: AIModel,
 		search_engine: SearchEngine,
 		rag_engine: RAGEngine | None = None,
-		data_handler: DatabaseHandler | None = None,
 	):
 		self.ai_engine = ai_engine
 		self.search_engine = search_engine
 		self.rag_engine = rag_engine
-		self.data_handler = data_handler
 
 	def perform_research(
 		self,

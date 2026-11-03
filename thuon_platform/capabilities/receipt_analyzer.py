@@ -33,8 +33,7 @@ _RECEIPT_PROMPT = (
 
 
 class ReceiptAnalyzer:
-	def __init__(self, ai_engine=None):
-		self.ai_engine = ai_engine
+	def __init__(self):
 		from core.ai_engine import OllamaVisionModel
 		self._vision = OllamaVisionModel()
 

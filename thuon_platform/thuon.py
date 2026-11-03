@@ -60,7 +60,7 @@ _REGISTRY: dict[str, dict] = {
 	'research_assistant': {
 		'module': 'capabilities.research_assistant',
 		'class': 'ResearchAssistant',
-		'deps': ['ai_engine', 'search_engine', 'rag_engine'],
+		'deps': ['ai_engine', 'search_engine'],
 		'method': 'perform_research',
 		'description': 'Multi-depth web research on any topic',
 		'keywords': ['research', 'investigate', 'find information', 'look up', 'study', 'analyze'],
@@ -78,7 +78,7 @@ _REGISTRY: dict[str, dict] = {
 	'competitive_intelligence_operative': {
 		'module': 'capabilities.competitive_intelligence_operative',
 		'class': 'CompetitiveIntelligenceOperative',
-		'deps': ['ai_engine', 'search_engine', 'rag_engine'],
+		'deps': ['ai_engine', 'search_engine'],
 		'method': 'analyze_competitor_landscape',
 		'description': 'Competitive analysis and market intelligence',
 		'keywords': ['competitive', 'competitor', 'market analysis', 'company analysis', 'compare'],
@@ -216,7 +216,7 @@ _REGISTRY: dict[str, dict] = {
 	'service_status_checker': {
 		'module': 'capabilities.service_status_checker',
 		'class': 'ServiceStatusChecker',
-		'deps': ['ai_engine'],
+		'deps': [],
 		'method': 'check',
 		'description': 'Check systemd service status across the fleet',
 		'keywords': ['service', 'systemd', 'status', 'running', 'failed', 'inactive'],
@@ -234,7 +234,7 @@ _REGISTRY: dict[str, dict] = {
 	'service_manager': {
 		'module': 'capabilities.service_manager',
 		'class': 'ServiceManager',
-		'deps': ['ai_engine'],
+		'deps': [],
 		'method': 'manage',
 		'description': 'Start/stop/restart/reload systemd services on remote hosts (dry_run=True by default)',
 		'keywords': ['restart', 'start', 'stop', 'service', 'systemctl', 'reload'],
@@ -261,7 +261,7 @@ _REGISTRY: dict[str, dict] = {
 	'openbao_operator': {
 		'module': 'capabilities.openbao_operator',
 		'class': 'OpenBaoOperator',
-		'deps': ['ai_engine'],
+		'deps': [],
 		'method': 'operate',
 		'description': 'Inspect OpenBao (Vault) seal status and get guided unseal instructions',
 		'keywords': ['vault', 'openbao', 'unseal', 'secrets', 'sealed', 'token'],

@@ -26,8 +26,8 @@ _OPENBAO_ADDR = 'http://127.0.0.1:8200'
 
 
 class OpenBaoOperator:
-	def __init__(self, ai_engine: AIModel) -> None:
-		self.ai_engine = ai_engine
+	def __init__(self) -> None:
+		pass
 
 	def operate(
 		self,

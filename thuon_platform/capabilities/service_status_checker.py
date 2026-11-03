@@ -43,8 +43,8 @@ def _parse_status(srv_hostname: str, srv_ip: str, service: str, stdout: str) -> 
 
 
 class ServiceStatusChecker:
-	def __init__(self, ai_engine: AIModel) -> None:
-		self.ai_engine = ai_engine
+	def __init__(self) -> None:
+		pass
 
 	def check(
 		self,

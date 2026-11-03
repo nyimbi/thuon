@@ -263,7 +263,7 @@ class TestSecurityAuditor:
 class TestServiceStatusChecker:
 	def test_check_returns_counts(self):
 		from capabilities.service_status_checker import ServiceStatusChecker
-		cap = ServiceStatusChecker(ai_engine=_ai())
+		cap = ServiceStatusChecker()
 
 		srv = _srv()
 		status_out = 'ActiveState=active\nSubState=running\nLoadState=loaded\n'
@@ -281,7 +281,7 @@ class TestServiceStatusChecker:
 
 	def test_no_servers_returns_error(self):
 		from capabilities.service_status_checker import ServiceStatusChecker
-		cap = ServiceStatusChecker(ai_engine=_ai())
+		cap = ServiceStatusChecker()
 		with patch('capabilities.service_status_checker.get_fleet_inventory') as gi:
 			m = MagicMock(); m.resolve.return_value = []
 			gi.return_value = m
@@ -340,7 +340,7 @@ class TestLogAnalyzer:
 class TestServiceManager:
 	def test_dry_run_returns_planned_command(self):
 		from capabilities.service_manager import ServiceManager
-		cap = ServiceManager(ai_engine=_ai())
+		cap = ServiceManager()
 
 		srv = _srv()
 		with patch('capabilities.service_manager.get_fleet_inventory') as gi:
@@ -354,13 +354,13 @@ class TestServiceManager:
 
 	def test_invalid_action_returns_error(self):
 		from capabilities.service_manager import ServiceManager
-		cap = ServiceManager(ai_engine=_ai())
+		cap = ServiceManager()
 		result = cap.manage(action='explode', service='caddy', host='easf')
 		assert 'error' in result
 
 	def test_status_ignores_dry_run(self):
 		from capabilities.service_manager import ServiceManager
-		cap = ServiceManager(ai_engine=_ai())
+		cap = ServiceManager()
 
 		srv = _srv()
 		with patch('capabilities.service_manager.get_fleet_inventory') as gi, \
@@ -453,7 +453,7 @@ class TestPostgresOperator:
 class TestOpenBaoOperator:
 	def test_unseal_instructions_never_executes(self):
 		from capabilities.openbao_operator import OpenBaoOperator
-		cap = OpenBaoOperator(ai_engine=_ai())
+		cap = OpenBaoOperator()
 
 		srv = _srv('ml')
 		with patch('capabilities.openbao_operator.get_fleet_inventory') as gi:
@@ -467,7 +467,7 @@ class TestOpenBaoOperator:
 
 	def test_seal_status_runs(self):
 		from capabilities.openbao_operator import OpenBaoOperator
-		cap = OpenBaoOperator(ai_engine=_ai())
+		cap = OpenBaoOperator()
 
 		srv = _srv('ml')
 		with patch('capabilities.openbao_operator.get_fleet_inventory') as gi, \
@@ -481,7 +481,7 @@ class TestOpenBaoOperator:
 
 	def test_invalid_action_returns_error(self):
 		from capabilities.openbao_operator import OpenBaoOperator
-		cap = OpenBaoOperator(ai_engine=_ai())
+		cap = OpenBaoOperator()
 		result = cap.operate(action='delete_all_secrets', host='ml')
 		assert 'error' in result
 

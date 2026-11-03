@@ -39,9 +39,8 @@ _DEADLINE_PATTERNS = [
 
 
 class TenderScout:
-	def __init__(self, search_engine, ai_engine=None):
+	def __init__(self, search_engine):
 		self.search_engine = search_engine
-		self.ai_engine = ai_engine
 
 	def search(
 		self,

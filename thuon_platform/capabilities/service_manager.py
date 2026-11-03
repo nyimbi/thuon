@@ -22,8 +22,8 @@ _READ_ONLY_ACTIONS = {'status', 'is-active', 'is-enabled', 'journal'}
 
 
 class ServiceManager:
-	def __init__(self, ai_engine: AIModel) -> None:
-		self.ai_engine = ai_engine
+	def __init__(self) -> None:
+		pass
 
 	def manage(
 		self,

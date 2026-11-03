@@ -69,7 +69,6 @@ class DailyBrief:
 		self,
 		ai_engine,
 		search_engine=None,
-		knowledge_pipeline=None,
 		calendar_store=None,
 		obsidian_bridge=None,
 		market_signal_provider=None,
@@ -77,7 +76,6 @@ class DailyBrief:
 	):
 		self.ai_engine              = ai_engine
 		self.search_engine          = search_engine
-		self.knowledge_pipeline     = knowledge_pipeline
 		self.calendar_store         = calendar_store
 		self.obsidian_bridge        = obsidian_bridge
 		self.market_signal_provider = market_signal_provider

@@ -24,8 +24,8 @@ _SECTION_ORDER = [
 
 
 class RFPAssembler:
-	def __init__(self, ai_engine: AIModel):
-		self.ai_engine = ai_engine
+	def __init__(self):
+		pass
 
 	def assemble(
 		self,
