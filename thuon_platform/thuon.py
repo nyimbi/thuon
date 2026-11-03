@@ -470,11 +470,9 @@ class Thuon:
 
 	def __init__(
 		self,
-		config_path: str | None = None,
 		output_dir: str = '/tmp/thuon',
 	):
 		self._settings     = get_settings()
-		self._config_path  = config_path
 		self._output_dir   = output_dir
 		self._container: dict[str, Any] = {}
 		self._custom_caps: dict[str, dict] = {}

@@ -52,7 +52,7 @@ def test_data_source_manager_stop():
 	from long_running_processes.sensor_monitor import DataSourceManager
 	ai = MagicMock()
 	search = MagicMock()
-	dsm = DataSourceManager(ai_engine=ai, search_engine=search, data_sources_config=[])
+	dsm = DataSourceManager(ai_engine=ai, data_sources_config=[])
 	# Start in thread and stop immediately
 	t = threading.Thread(target=dsm.monitor_data_sources, daemon=True)
 	t.start()

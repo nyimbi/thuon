@@ -88,7 +88,6 @@ def test_agent_loop_final_answer_no_tools():
 	from core.tools import web_search
 
 	agent = AgentLoop.__new__(AgentLoop)
-	agent.tools = [web_search]
 	agent.tools_by_name = {'web_search': web_search}
 	agent.max_iterations = 5
 	agent.system_prompt = None
@@ -113,7 +112,6 @@ def test_agent_loop_one_tool_call_then_answer():
 	mock_tool.invoke.return_value = 'Search result: Python is great.'
 
 	agent = AgentLoop.__new__(AgentLoop)
-	agent.tools = [mock_tool]
 	agent.tools_by_name = {'web_search': mock_tool}
 	agent.max_iterations = 10
 	agent.system_prompt = None
@@ -139,7 +137,6 @@ def test_agent_loop_unknown_tool_returns_error_message():
 	from core.agent_loop import AgentLoop
 
 	agent = AgentLoop.__new__(AgentLoop)
-	agent.tools = []
 	agent.tools_by_name = {}
 	agent.max_iterations = 3
 	agent.system_prompt = None
@@ -165,7 +162,6 @@ def test_agent_loop_max_iterations():
 	mock_tool.invoke.return_value = 'still searching...'
 
 	agent = AgentLoop.__new__(AgentLoop)
-	agent.tools = [mock_tool]
 	agent.tools_by_name = {'web_search': mock_tool}
 	agent.max_iterations = 3
 	agent.system_prompt = None

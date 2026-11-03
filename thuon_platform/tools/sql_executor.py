@@ -16,8 +16,8 @@ _READONLY_PREFIXES = ('select', 'with', 'explain')
 
 class SQLExecutor:
 
-	def __init__(self, data_handler=None):
-		self.data_handler = data_handler
+	def __init__(self):
+		pass
 
 	def query(self, sql: str, params: dict = {}, readonly: bool = True, max_rows: int = 1000) -> dict[str, Any]:
 		try:

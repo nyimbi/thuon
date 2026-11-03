@@ -28,8 +28,6 @@ environmental_event_detected_signal = blinker.Signal()
 
 class ProcessReactor:
 	def __init__(self, ai_engine=None, search_engine=None, polling_interval: float = 5.0):
-		self.ai_engine = ai_engine
-		self.search_engine = search_engine
 		self.process_list: List[subprocess.Popen] = []
 		self.process_status: Dict[int, str] = {}
 		self.process_metadata: Dict[int, dict] = {}
@@ -129,7 +127,6 @@ class EventReactor:
 	def __init__(self, ai_engine, process_reactor: ProcessReactor, search_engine=None):
 		self.ai_engine = ai_engine
 		self.process_reactor = process_reactor
-		self.search_engine = search_engine
 		logger.info("EventReactor initialized.")
 
 	def _parse_llm_choice(self, response: str) -> int:
@@ -217,8 +214,8 @@ if __name__ == '__main__':
 
 	ai_engine = OllamaModel()
 	search_engine = DuckDuckGoSearch()
-	reactor = ProcessReactor(ai_engine=ai_engine, search_engine=search_engine, polling_interval=2.0)
-	event_reactor = EventReactor(ai_engine=ai_engine, process_reactor=reactor, search_engine=search_engine)
+	reactor = ProcessReactor(polling_interval=2.0)
+	event_reactor = EventReactor(ai_engine=ai_engine, process_reactor=reactor)
 
 	price_change_detected_signal.connect(event_reactor.handle_price_change)
 	ma_announcement_detected_signal.connect(event_reactor.handle_ma_announcement)

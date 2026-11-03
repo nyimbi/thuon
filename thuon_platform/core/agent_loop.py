@@ -59,7 +59,6 @@ class AgentLoop:
 		url = base_url or settings.get_setting('ollama.endpoint', 'http://localhost:11434')
 
 		self.llm = ChatOllama(model=model, base_url=url, temperature=temperature)
-		self.tools = tools
 		self.tools_by_name: dict[str, Any] = {t.name: t for t in tools}
 		self.llm_with_tools = self.llm.bind_tools(tools)
 		self.max_iterations = max_iterations

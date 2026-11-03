@@ -77,7 +77,6 @@ class MarketEventSimulator:
 
 class DataSource(ABC):
 	def __init__(self, config: dict):
-		self.config = config
 		self.source_name = config.get('name', 'Unnamed DataSource')
 
 	# `Any` in both signatures on purpose: the return of fetch_data is
@@ -144,9 +143,8 @@ class WebScrapingDataSource(DataSource):
 
 
 class DataSourceManager:
-	def __init__(self, ai_engine, search_engine, data_sources_config: list):
+	def __init__(self, ai_engine, data_sources_config: list):
 		self.ai_engine = ai_engine
-		self.search_engine = search_engine
 		self.data_sources: List[DataSource] = []
 		self._stop_event = threading.Event()
 		self._load_data_sources(data_sources_config)
@@ -199,7 +197,7 @@ def run_monitor(ai_engine, search_engine, data_handler=None) -> None:
 	data_sources_config = [
 		{'type': 'rss_feed', 'name': 'TechCrunch', 'feed_url': 'http://feeds.feedburner.com/TechCrunch/'},
 	]
-	dsm = DataSourceManager(ai_engine=ai_engine, search_engine=search_engine, data_sources_config=data_sources_config)
+	dsm = DataSourceManager(ai_engine=ai_engine, data_sources_config=data_sources_config)
 	dsm_thread = threading.Thread(target=dsm.monitor_data_sources, daemon=True)
 	dsm_thread.start()
 
