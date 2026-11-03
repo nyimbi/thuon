@@ -136,3 +136,46 @@ def skills_dirs() -> list[Path]:
 	else:
 		dirs.append(Path.home() / '.thuon' / 'skills')
 	return dirs
+
+
+def skills_roots() -> list[Path]:
+	"""
+	Skill roots, env-overridable.
+
+	Ordered dedup of:
+	  1. THUON_SKILLS_DIRS env var (colon-separated list of roots)
+	  2. in-dev project Skills/ (app_root().parent / skills)
+	  3. bundled Skills/ (app_root() / skills)
+	  4. user skills (user_data_dir()/skills, or ~/.thuon/skills in dev)
+	"""
+	seen: set[Path] = set()
+	dirs: list[Path] = []
+
+	def _add(p: Path):
+		r = p.resolve() if p.exists() else p
+		if r in seen:
+			return
+		seen.add(r)
+		dirs.append(p)
+
+	if os.environ.get('THUON_SKILLS_DIRS'):
+		for raw in os.environ.get('THUON_SKILLS_DIRS', '').split(os.pathsep):
+			if raw:
+				_add(Path(raw).expanduser())
+
+	if not _frozen():
+		dirs_app_parent = app_root().parent / 'skills'
+		# avoid duplicates with env already
+		if dirs_app_parent.resolve() not in seen:
+			seen.add(dirs_app_parent.resolve())
+			dirs.append(dirs_app_parent)
+	app_skills = app_root() / 'skills'
+	if app_skills.resolve() not in seen:
+		seen.add(app_skills.resolve())
+		dirs.append(app_skills)
+
+	user_skills = (user_data_dir() / 'skills') if _frozen() else (Path.home() / '.thuon' / 'skills')
+	if user_skills.resolve() not in seen:
+		seen.add(user_skills.resolve())
+		dirs.append(user_skills)
+	return dirs

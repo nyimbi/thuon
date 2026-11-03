@@ -648,6 +648,17 @@ class Thuon:
 
 		meta = _REGISTRY.get(cap_name)
 		if meta is None:
+			from core.skill_registry import SkillRegistry
+			m = SkillRegistry.get_instance().get(cap_name)
+			if m is not None and m.body:
+				from core.skill_runner import SkillRunner
+				fake_meta = {
+					'module': 'core.skill_runner',
+					'class': 'SkillRunner',
+					'method': 'run',
+					'deps': [],
+				}
+				return SkillRunner(cap_name, self._get_dep('ai_engine')), fake_meta
 			raise ValueError(f'Unknown capability: {cap_name!r}')
 
 		mod  = importlib.import_module(meta['module'])
@@ -677,6 +688,8 @@ class Thuon:
 		from core.skill_registry import SkillRegistry
 		from core.skill_router import SkillRouter
 		SkillRegistry.get_instance().augment_cli(_REGISTRY)
+		from core.skill_registry import SkillRegistry
 		router = SkillRouter(ai_engine=self._get_dep('ai_engine'))
 		allowed = set(_REGISTRY) | set(self._custom_caps)
+		allowed |= {m.name for m in SkillRegistry.get_instance().all() if m.body}
 		return router.route_with_params(instruction, allowed_names=allowed)

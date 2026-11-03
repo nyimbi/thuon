@@ -110,7 +110,18 @@ class SkillRouter:
 
 		Returns (capability_name, params_dict).
 		"""
-		manifest = self.route(instruction, top_k=1, fallback=fallback)
+		candidates = self._registry.search(instruction, top_k=10)
+		manifest = candidates[0] if candidates else self._registry.get(fallback)
+		# Markdown-only (skill-only) entries must not shadow a typed capability:
+		# built-in skills ship long descriptions that overlap every business
+		# capability. Prefer a typed capability whenever one appears in the
+		# top results, so skills run only as an explicit, unambiguous best
+		# match (i.e. genuinely skill-exclusive) or via their explicit name.
+		if (manifest is not None and not (manifest.module and manifest.class_name and manifest.method)
+		        and len(candidates) > 1):
+			typed = [m for m in candidates if (m.module and m.class_name and m.method)]
+			if typed:
+				manifest = typed[0]
 		if manifest is None:
 			return fallback, {}
 		# Enforce allowed_names restriction — if the best match is outside the

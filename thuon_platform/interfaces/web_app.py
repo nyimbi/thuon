@@ -1820,7 +1820,10 @@ def create_app() -> Flask:
 			allowed_names=set(CAPABILITY_REGISTRY),
 		)
 
-		if cap_name not in CAPABILITY_REGISTRY:
+		from core.skill_registry import SkillRegistry
+		manifest = SkillRegistry.get_instance().get(cap_name)
+		skill_only = manifest is not None and bool(manifest.body) and cap_name not in CAPABILITY_REGISTRY
+		if cap_name not in CAPABILITY_REGISTRY and not skill_only:
 			return jsonify({
 				'error': 'Could not route instruction to a known capability',
 				'instruction': instruction,
@@ -1840,6 +1843,17 @@ def create_app() -> Flask:
 			skill_prompt = manifest.body.replace('$ARGUMENTS', instruction)
 
 		t0 = time.time()
+		if skill_only:
+			from core.skill_runner import SkillRunner
+			try:
+				svc = _get_services()
+				ai = svc.get('ai_engine')
+				res = SkillRunner(cap_name, ai).run(instruction=instruction)
+				skill_prompt = manifest.body.replace('$ARGUMENTS', instruction) if manifest and manifest.body else None
+				return jsonify({'capability': cap_name, 'params': params, 'result': res, 'elapsed': round(time.time() - t0, 2), 'routed_by': 'markdown_skill', 'skill_prompt': skill_prompt})
+			except Exception as exc:
+				return jsonify({'error': str(exc), 'capability': cap_name}), 500
+
 		try:
 			instance = _build_instance(cap_name)
 			method   = getattr(instance, cfg['method'])

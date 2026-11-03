@@ -35,8 +35,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger('thuon.skill_registry')
 
-from core.bundle import skills_dirs as _sd
-_SKILL_DIRS: list[Path] = _sd()
+from core.bundle import skills_roots as _sr
+_SKILL_DIRS: list[Path] = _sr()
 
 
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -305,6 +305,76 @@ class SkillRegistry:
 		return name in self._manifests
 
 
+def _tolerant_frontmatter(text: str) -> dict[str, Any]:
+	import yaml
+	"""
+	Line-oriented fallback used when yaml.safe_load rejects a SKILL.md
+	frontmatter block.
+
+	Extracts the fields we actually need (name, description, keywords,
+	category, model_tier, license, the `thuon:` block).  Values may be
+	inline scalars or YAML block scalars (`>`, `>-`, `|`, `|-`); block
+	scalars consume indented continuation lines the same way YAML does,
+	joining them with spaces.
+
+	The entire `thuon:` mapping is JSON-ish TOML-no — we just grab its raw
+	text and try safe_load on it; if that fails (a malformed embedded block)
+	it is discarded rather than bricking the rest of discovery.
+	"""
+	import re as _re
+
+	result: dict[str, Any] = {}
+	lines = text.splitlines()
+	i = 0
+	n = len(lines)
+	while i < n:
+		line = lines[i]
+		stripped = line.strip()
+		if not stripped or stripped.startswith('#'):
+			i += 1; continue
+		if ':' not in line or line[:1].isspace():
+			i += 1; continue
+		key, _, value = line.partition(':')
+		key = key.strip()
+		value = value.strip()
+		# block scalar: consume indented children
+		if value in ('>', '>-', '|', '|-', '>-', '>+'):
+			chunks = []
+			i += 1
+			while i < n and (lines[i].startswith('  ') or lines[i].startswith('\t')):
+				chunks.append(lines[i].strip())
+				i += 1
+			result[key] = ' '.join(chunks) if chunks else ''
+			continue
+		# top-level nested thuon: mapping
+		if key == 'thuon':
+			block_lines = []
+			i += 1
+			while i < n and (lines[i].startswith('  ') or lines[i].startswith('\t')):
+				block_lines.append(lines[i])
+				i += 1
+			block = '\n'.join(block_lines)
+			try:
+				result['thuon'] = yaml.safe_load(block) or {}
+			except yaml.YAMLError:
+				result['thuon'] = {}
+			continue
+		result[key] = value
+		i += 1
+
+	# Keywords may be inline `[a, b]`, strip brackets and split on commas
+	if isinstance(result.get('keywords'), str):
+		kw = result['keywords'].strip().strip('[]')
+		result['keywords'] = [x.strip(' \"\'') for x in kw.split(',') if x.strip()]
+	# description block scalars may include a leading sentence on the same line
+	if isinstance(result.get('description'), str) and result['description'] == '':
+		result.pop('description', None)
+	if 'name' not in result:
+		# best effort from the dir, caller will fall back to path.parent.name
+		result.setdefault('name', None)
+	return result
+
+
 # ── SKILL.md parser ───────────────────────────────────────────────────────────
 
 def _parse_skill_md(path: Path) -> SkillManifest:
@@ -341,7 +411,16 @@ def _parse_skill_md(path: Path) -> SkillManifest:
 	if text.startswith('---'):
 		parts = text.split('---', 2)
 		if len(parts) >= 3:
-			fm = yaml.safe_load(parts[1]) or {}
+			try:
+				fm = yaml.safe_load(parts[1]) or {}
+			except yaml.YAMLError as exc:
+				# Some source bundles (Claude-skill imports) use YAML that
+				# PyYAML rejects — e.g. description: >- followed by a bare
+				# sentence on the same line instead of a block. Keep the body.
+				logger.warning('Tolerant YAML parse for %s: %s', path.name, exc)
+				fm = _tolerant_frontmatter(parts[1])
+				if not fm.get('name'):
+					raise ValueError('no name recovered from frontmatter')
 			body = parts[2].strip()
 
 	thuon_ns: dict[str, Any] = fm.pop('thuon', {}) or {}
