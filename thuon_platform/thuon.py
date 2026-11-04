@@ -303,6 +303,24 @@ _REGISTRY: dict[str, dict] = {
 		'keywords': ['linux', 'admin', 'sysadmin', 'command', 'help', 'how to', 'server'],
 		'example': 't.linux_admin_assistant(question="why is the search server slow?", execute_safe=True)',
 	},
+	'skills_list': {
+		'module': 'capabilities.skill_hub',
+		'class': 'SkillHub',
+		'deps': [],
+		'method': 'list_skills',
+		'description': 'List installed markdown skills, optionally filtered by category or keyword',
+		'keywords': ['skills', 'list', 'markdown', 'plugins', 'discover', 'catalog'],
+		'example': 't.skills_list()',
+	},
+	'skills_run': {
+		'module': 'capabilities.skill_hub',
+		'class': 'SkillHub',
+		'deps': ['ai_engine'],
+		'method': 'run_skill',
+		'description': 'Run a markdown skill by name with a user request',
+		'keywords': ['skills', 'run', 'execute', 'markdown', 'invoke'],
+		'example': 't.skills_run(skill="market-sizing", instruction="TAM for EU consulting")',
+	},
 }
 
 # Augment SkillRegistry with CLI-only capabilities (keywords, examples, CLI-only caps)

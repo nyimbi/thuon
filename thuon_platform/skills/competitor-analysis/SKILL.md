@@ -3,6 +3,10 @@ name: competitor-analysis
 description: "Structured competitor benchmark on product, pricing, distribution, and moat, with a defensible differentiation thesis."
 keywords: [competitor, benchmark, positioning, differentiation, swot, moat]
 category: analysis
+thuon:
+  capability: research_assistant
+  category: research
+
 ---
 
 # Competitor Analysis Skill

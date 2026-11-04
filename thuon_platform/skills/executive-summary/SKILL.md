@@ -3,6 +3,9 @@ name: executive-summary
 description: "Produce a one-page executive summary: bottom line, three supporting points, decision required, and risk."
 keywords: [executive summary, board, one-pager, recommendation, decision]
 category: reporting
+thuon:
+  category: reporting
+
 ---
 
 # Executive Summary Skill

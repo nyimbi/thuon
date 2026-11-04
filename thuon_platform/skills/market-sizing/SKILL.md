@@ -3,6 +3,9 @@ name: market-sizing
 description: Estimate TAM/SAM/SOM for a product with triangulated top-down, bottom-up, and value-theory approaches; verification checks included.
 keywords: market size tam sam som market segmentation forecast
 category: strategy
+thuon:
+  category: reporting
+
 ---
 
 # Market Sizing Skill

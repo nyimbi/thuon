@@ -164,3 +164,6 @@ fleet:
       role: app
       tags: [datacraft, shule, token-x]
       ssh_user: root
+
+skills:
+  roots: []                      # additional SKILL.md roots (also set via THUON_SKILLS_DIRS)

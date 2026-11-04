@@ -705,6 +705,29 @@ CAPABILITY_REGISTRY = {
 		'module': 'capabilities.website_seo_optimizer',
 		'class': 'WebsiteSEOOptimizer',
 	},
+	'skills_list': {
+		'description': 'List installed markdown skills, optionally filtered by category or query.',
+		'method': 'list_skills',
+		'params': [
+			{'name': 'category', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'query', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': [],
+		'module': 'capabilities.skill_hub',
+		'class': 'SkillHub',
+	},
+	'skills_run': {
+		'description': 'Run a markdown skill by name with a user request.',
+		'method': 'run_skill',
+		'params': [
+			{'name': 'skill', 'type': 'str', 'required': True},
+			{'name': 'instruction', 'type': 'str', 'required': False, 'default': ''},
+			{'name': 'query', 'type': 'str', 'required': False, 'default': ''},
+		],
+		'deps': ['ai_engine'],
+		'module': 'capabilities.skill_hub',
+		'class': 'SkillHub',
+	},
 	'website_change_assembler': {
 		'description': 'Write finalized website content to the static site repo (human reviews and pushes).',
 		'method': 'assemble',

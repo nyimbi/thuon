@@ -3,6 +3,10 @@ name: research-synthesis
 description: "Synthesise multiple sources into a graded, triangulated answer with evidence levels and explicit falsifiers."
 keywords: [research, synthesis, evidence, triangulation, grade, sources]
 category: research
+thuon:
+  capability: research_assistant
+  category: research
+
 ---
 
 # Research Synthesis Skill

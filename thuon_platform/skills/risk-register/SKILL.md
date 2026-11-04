@@ -3,6 +3,9 @@ name: risk-register
 description: "Maintain and review a ranked risk register: likelihood, impact, velocity, mitigation, owner."
 keywords: [risk, register, mitigation, velocity, impact, likelihood]
 category: analysis
+thuon:
+  category: reporting
+
 ---
 
 # Risk Register Skill

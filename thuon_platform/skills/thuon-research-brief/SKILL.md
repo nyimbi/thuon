@@ -3,6 +3,10 @@ name: thuon-research-brief
 description: Write a structured, citation-grounded research brief for a business question, matching Thuon reporting conventions.
 keywords: research brief report structure citations
 category: research
+thuon:
+  capability: research_assistant
+  category: research
+
 ---
 
 # Thuon Research Brief Skill
