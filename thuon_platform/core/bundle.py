@@ -140,13 +140,14 @@ def skills_dirs() -> list[Path]:
 
 def skills_roots() -> list[Path]:
 	"""
-	Skill roots, env-overridable.
+	Skill roots, env- and settings-overridable.
 
-	Ordered dedup of:
+	Ordered, de-duplicated:
 	  1. THUON_SKILLS_DIRS env var (colon-separated list of roots)
-	  2. in-dev project Skills/ (app_root().parent / skills)
-	  3. bundled Skills/ (app_root() / skills)
-	  4. user skills (user_data_dir()/skills, or ~/.thuon/skills in dev)
+	  2. `settings.skills.roots` when a SettingsManager is loadable
+	  3. in-dev project Skills/ (app_root().parent / skills)
+	  4. bundled Skills/ (app_root() / skills)
+	  5. user skills (user_data_dir()/skills, or ~/.thuon/skills in dev)
 	"""
 	seen: set[Path] = set()
 	dirs: list[Path] = []
@@ -158,10 +159,23 @@ def skills_roots() -> list[Path]:
 		seen.add(r)
 		dirs.append(p)
 
-	if os.environ.get('THUON_SKILLS_DIRS'):
-		for raw in os.environ.get('THUON_SKILLS_DIRS', '').split(os.pathsep):
-			if raw:
-				_add(Path(raw).expanduser())
+	# Precedence, env first.
+	env_roots = os.environ.get('THUON_SKILLS_DIRS', '')
+	for raw in env_roots.split(os.pathsep):
+		if raw.strip():
+			_add(Path(raw.strip()).expanduser())
+
+	# config.yaml: `skills:` \n `  roots: [ ... ]` — read defensively; the
+	# SettingsManager is allowed to be mid-init or unresolvable per call.
+	try:
+		from core.settings_manager import get_settings
+		cfg = get_settings().get_setting('skills.roots', None)
+		if isinstance(cfg, list):
+			for raw in cfg:
+				if isinstance(raw, str) and raw.strip():
+					_add(Path(raw).expanduser())
+	except Exception:
+		pass
 
 	if not _frozen():
 		dirs_app_parent = app_root().parent / 'skills'
