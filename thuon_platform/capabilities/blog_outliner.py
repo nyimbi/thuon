@@ -4,7 +4,6 @@ Atomic capability: create a detailed structured outline for a blog post.
 """
 
 from core.ai_engine import AIModel
-from core.llm_utils import extract_json
 
 
 class BlogOutliner:
@@ -48,19 +47,16 @@ class BlogOutliner:
 			'- cta_suggestion (str): call-to-action for end of post'
 		)
 
-		response = self.ai_engine.generate_text(prompt)
-		# extract_json returns None rather than raising when the model emits no
-		# JSON, so the except below never fires and this method would return
-		# None from a `-> dict` signature.
-		result = extract_json(response)
-		if result:
-			return result
-
-		return {
-			'outline':                   [],
-			'meta_description':          '',
-			'seo_title':                 topic,
-			'estimated_word_count':      target_length,
-			'internal_links_suggested':  [],
-			'cta_suggestion':            '',
-		}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='outline',
+		                            required_keys=['outline'], max_retries=2)
+		if result.get('status') == 'parse_failed' or 'outline' not in result:
+			return {
+				'outline':                   [],
+				'meta_description':          '',
+				'seo_title':                 topic,
+				'estimated_word_count':      target_length,
+				'internal_links_suggested':  [],
+				'cta_suggestion':            '',
+			}
+		return result
