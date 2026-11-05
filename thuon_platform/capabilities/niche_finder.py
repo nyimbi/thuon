@@ -16,7 +16,6 @@
 #                    revenue_model, pricing_logic, risks, gtm_path
 
 import json
-import re
 import time
 
 from core.ai_engine import AIModel
@@ -325,14 +324,10 @@ class NicheFinder:
 	# ── Utilities ───────────────────────────────────────────────────────────
 
 	def _llm_json(self, prompt: str, fallback_key: str = 'result') -> dict:
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {fallback_key: response, 'status': 'success'}
+		# validated_llm_call: parse + retry + structured fallback.
+		from core.output_validator import validated_llm_call
+		return validated_llm_call(self.ai_engine, prompt, fallback_key=fallback_key,
+		                          required_keys=[], max_retries=2)
 
 
 def _format_results(results: list) -> str:

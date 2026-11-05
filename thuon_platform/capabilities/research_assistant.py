@@ -5,7 +5,6 @@ import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
 from core.rag_engine import RAGEngine
-from core.data_handler import DatabaseHandler
 
 
 def _llm_json(ai_engine, prompt: str) -> dict:
