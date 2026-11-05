@@ -1,7 +1,5 @@
 # capabilities/brand_sentiment_orchestrator.py
 
-import json
-import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
 
@@ -24,11 +22,9 @@ class BrandSentimentOrchestrator:
 			f"representative_mentions (list)), trending_topics (list), brand_strengths (list), "
 			f"brand_weaknesses (list), recommendations (list), monitoring_keywords (list)."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'brand': brand_name, 'sources': sources, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'brand': brand_name, 'sources': sources,
+			        'status': 'success'}
+		return result
