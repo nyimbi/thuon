@@ -1,7 +1,5 @@
 # capabilities/market_sales_research.py
 
-import json
-import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
 
@@ -28,11 +26,9 @@ class MarketSalesResearch:
 			f"opportunities (list), threats (list), entry_barriers (list), sales_channels (list), "
 			f"pricing_insights, recommendations (list)."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'product_category': product_category, 'region': region, 'metrics': metrics, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'product_category': product_category,
+			        'region': region, 'metrics': metrics, 'status': 'success'}
+		return result

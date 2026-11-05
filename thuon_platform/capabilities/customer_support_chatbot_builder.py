@@ -1,7 +1,5 @@
 # capabilities/customer_support_chatbot_builder.py
 
-import json
-import re
 from core.ai_engine import AIModel
 
 
@@ -23,11 +21,9 @@ class CustomerSupportChatbotBuilder:
 			f"fallback_responses (list), success_metrics (list), "
 			f"integration_requirements (list), training_data_recommendations."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'support_area': support_area, 'persona': desired_chatbot_persona, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'support_area': support_area,
+			        'persona': desired_chatbot_persona, 'status': 'success'}
+		return result
