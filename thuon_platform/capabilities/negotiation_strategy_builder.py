@@ -1,7 +1,5 @@
 # capabilities/negotiation_strategy_builder.py
 
-import json
-import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
 
@@ -39,11 +37,8 @@ class NegotiationStrategyBuilder:
 			f"psychological_insights (about counterparty), comparable_outcomes (list), "
 			f"success_metrics (list)."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'desired_outcomes': desired_outcomes, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'desired_outcomes': desired_outcomes, 'status': 'success'}
+		return result
