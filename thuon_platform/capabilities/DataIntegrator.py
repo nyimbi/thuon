@@ -1,7 +1,6 @@
 # capabilities/DataIntegrator.py
 
 import json
-import re
 from core.ai_engine import AIModel
 
 
@@ -23,11 +22,8 @@ class DataIntegrator:
 			f"estimated_data_volume_gb, integration_pipeline_steps (list), "
 			f"monitoring_metrics (list), error_handling_strategy."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'source_name': source_name, 'source_type': source_type, 'result': response, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'source_name': source_name, 'source_type': source_type, 'result': result.get('result', ''), 'status': 'success'}
+		return result

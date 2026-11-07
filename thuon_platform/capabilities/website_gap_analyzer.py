@@ -5,7 +5,6 @@ Atomic capability: identify content gaps and improvement priorities for a websit
 
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
-from core.llm_utils import extract_json
 
 
 class WebsiteGapAnalyzer:
@@ -53,20 +52,16 @@ class WebsiteGapAnalyzer:
 			'- value_propositions_to_add (list of str): company strengths not yet highlighted'
 		)
 
-		response = self.ai_engine.generate_text(prompt)
-		# extract_json returns None rather than raising when the model emits no
-		# JSON, so the except below never fires and this method would return
-		# None from a `-> dict` signature.
-		result = extract_json(response)
-		if result:
-			return result
-
-		return {
-			'missing_topics':          [],
-			'outdated_claims':         [],
-			'seo_gaps':                [],
-			'competitor_advantages':   [],
-			'improvement_priority':    [response[:300]],
-			'recommended_structure':   [],
-			'value_propositions_to_add': [],
-		}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {
+				'missing_topics':          [],
+				'outdated_claims':         [],
+				'seo_gaps':                [],
+				'competitor_advantages':   [],
+				'improvement_priority':    [str(result.get('result', ''))[:300]],
+				'recommended_structure':   [],
+				'value_propositions_to_add': [],
+			}
+		return result
