@@ -7,7 +7,6 @@ Writes output to data/rfp_responses/<id>/ and opens in neditor.
 import json
 import re
 import time
-from core.ai_engine import AIModel
 
 from core.bundle import writable_data_dir as _wdd
 _OUTPUT_DIR = _wdd() / 'rfp_responses'

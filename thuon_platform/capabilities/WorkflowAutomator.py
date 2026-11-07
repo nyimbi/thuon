@@ -1,7 +1,5 @@
 # capabilities/WorkflowAutomator.py
 
-import json
-import re
 from core.ai_engine import AIModel
 
 
@@ -25,11 +23,8 @@ class WorkflowAutomator:
 			f"monitoring_alerts (list), estimated_time_saved_hours_per_month, "
 			f"implementation_notes (list)."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'workflow_name': workflow_name, 'triggers': triggers, 'actions': actions, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'workflow_name': workflow_name, 'triggers': triggers, 'actions': actions, 'status': 'success'}
+		return result

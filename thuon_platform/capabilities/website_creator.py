@@ -1,7 +1,5 @@
 # capabilities/website_creator.py
 
-import json
-import re
 from core.ai_engine import AIModel
 
 
@@ -20,11 +18,8 @@ class WebsiteCreator:
 			f"tone_and_voice, color_palette_suggestion, typography_suggestion, "
 			f"social_proof_elements (list), trust_signals (list), conversion_goals (list)."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'purpose': website_purpose, 'audience': target_audience, 'pages': key_features, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'purpose': website_purpose, 'audience': target_audience, 'pages': key_features, 'status': 'success'}
+		return result

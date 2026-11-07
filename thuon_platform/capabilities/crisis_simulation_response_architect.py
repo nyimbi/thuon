@@ -1,7 +1,5 @@
 # capabilities/crisis_simulation_response_architect.py
 
-import json
-import re
 from core.ai_engine import AIModel
 
 
@@ -20,11 +18,8 @@ class CrisisSimulationResponseArchitect:
 			f"phase, timeframe, actions (list), responsible_parties), communication_plan, "
 			f"resource_requirements (list), recovery_timeline, lessons_learned (list), prevention_measures (list)."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'crisis_type': crisis_type, 'external_factors': external_factors, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'crisis_type': crisis_type, 'external_factors': external_factors, 'status': 'success'}
+		return result

@@ -4,7 +4,6 @@ import json
 import re
 from core.ai_engine import AIModel
 from core.search_engine import SearchEngine
-from core.rag_engine import RAGEngine
 
 
 class IntellectualPropertyStrategist:
