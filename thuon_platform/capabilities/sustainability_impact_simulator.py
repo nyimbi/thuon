@@ -1,7 +1,5 @@
 # capabilities/sustainability_impact_simulator.py
 
-import json
-import re
 from core.ai_engine import AIModel
 
 
@@ -22,11 +20,8 @@ class SustainabilityImpactSimulator:
 			f"regulatory_compliance (list of relevant standards), certification_eligibility (list), "
 			f"net_zero_pathway."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'impact_categories': impact_categories, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'impact_categories': impact_categories, 'status': 'success'}
+		return result

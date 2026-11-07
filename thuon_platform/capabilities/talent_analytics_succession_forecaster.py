@@ -1,8 +1,7 @@
 # capabilities/talent_analytics_succession_forecaster.py
 
-import json
-import re
 from core.ai_engine import AIModel
+import json
 from core.data_handler import DatabaseHandler
 
 
@@ -30,11 +29,8 @@ class TalentAnalyticsSuccessionForecaster:
 			f"talent_pipeline_health, critical_gaps (list), development_recommendations (list), "
 			f"succession_risk_level."
 		)
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {'result': response, 'role': job_role, 'criteria': criteria, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key='result', required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {'result': result.get('result', ''), 'role': job_role, 'criteria': criteria, 'status': 'success'}
+		return result
