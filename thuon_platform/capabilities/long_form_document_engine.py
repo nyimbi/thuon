@@ -1189,19 +1189,28 @@ Return JSON: {{"entries": [{{"term": "...", "sections": ["1", "2.3"], "see_also"
 		return text[:text.index('<think>')].strip()
 
 	def _llm_json(self, prompt: str, fallback: dict) -> dict:
-		try:
-			response = self._llm_text(prompt)
-			# Try raw parse first — handles models that return clean JSON
-			stripped = response.strip()
-			if stripped.startswith('{'):
-				try:
-					return json.loads(stripped)
-				except json.JSONDecodeError:
-					pass
-			# Fall back to span extraction (JSON embedded in prose)
-			span = self._extract_json_span(response, '{', '}')
-			if span:
-				return json.loads(span)
-		except Exception:
-			pass
+		# _llm_text may emit thinking (<think>) tokens and brace noise inside
+		# strings, so we keep its span-aware extraction rather than calling
+		# validated_llm_call (which would bypass _llm_text and regress on
+		# thinking models). Retry on parse failure to mirror the shared helper's
+		# retry loop without downgrading the extraction logic.
+		active_prompt = prompt
+		for _attempt in range(2):
+			try:
+				response = self._llm_text(active_prompt)
+				stripped = response.strip()
+				if stripped.startswith('{'):
+					try:
+						return json.loads(stripped)
+					except json.JSONDecodeError:
+						pass
+				span = self._extract_json_span(response, '{', '}')
+				if span:
+					return json.loads(span)
+			except Exception:
+				pass
+			active_prompt = (
+				prompt + '\n\nYour previous response was not parseable as JSON. '
+				'Return ONLY a raw JSON object (no markdown, no explanations).'
+			)
 		return dict(fallback)

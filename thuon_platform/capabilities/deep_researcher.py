@@ -552,14 +552,11 @@ class DeepResearcher:
 	# ── Utilities ─────────────────────────────────────────────────────────
 
 	def _llm_json(self, prompt: str, fallback_key: str = 'result') -> dict:
-		response = self.ai_engine.generate_text(prompt)
-		try:
-			match = re.search(r'\{.*\}', response, re.DOTALL)
-			if match:
-				return json.loads(match.group())
-		except Exception:
-			pass
-		return {fallback_key: response, 'status': 'success'}
+		from core.output_validator import validated_llm_call
+		result = validated_llm_call(self.ai_engine, prompt, fallback_key=fallback_key, required_keys=[], max_retries=2)
+		if result.get('status') == 'parse_failed':
+			return {fallback_key: result.get('result', ''), 'status': 'success'}
+		return result
 
 	@staticmethod
 	def _format_search_results(results: list) -> str:
